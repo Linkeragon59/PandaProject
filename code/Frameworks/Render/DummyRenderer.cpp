@@ -41,6 +41,7 @@ namespace Render
 		glm::mat4 matrix;
 		glm::vec4 vec;
 		auto test = matrix * vec;
+		(void)test;
 	}
 	
 	void DummyRenderer::Run()
