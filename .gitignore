@@ -1,0 +1,7 @@
+# CMake build folder
+/build/
+
+# Visual Studio folders
+**/.vs/
+**/.vscode/
+
