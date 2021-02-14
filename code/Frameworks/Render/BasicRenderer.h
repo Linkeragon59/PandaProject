@@ -9,11 +9,11 @@ struct GLFWwindow;
 
 namespace Render
 {
-	class TriangleRenderer
+	class BasicRenderer
 	{
 	public:
-		TriangleRenderer();
-		~TriangleRenderer();
+		BasicRenderer();
+		~BasicRenderer();
 
 		void Run();
 
@@ -80,13 +80,19 @@ namespace Render
 		void CleanupSwapChain();
 		void CreateSwapChainImageViews();
 		void CreateRenderPass();
+		void CreateDescriptorSetLayout();
 		void CreateGraphicsPipeline();
 		void CreateFrameBuffers();
 		void CreateCommandPool();
 		void CreateVertexBuffer();
 		void CreateIndexBuffer();
+		void CreateUniformBuffers();
+		void CreateDescriptorPool();
+		void CreateDescriptorSets();
 		void CreateCommandBuffers();
 		void CreateSynchronizationObjects();
+
+		void UpdateUniformBuffers(uint32_t anImageIndex);
 
 		GLFWwindow* myWindow = nullptr;
 
@@ -109,6 +115,7 @@ namespace Render
 		VkExtent2D mySwapChainExtent = VkExtent2D{ 0, 0 };
 
 		VkRenderPass myRenderPass = VK_NULL_HANDLE;
+		VkDescriptorSetLayout myDescriptorSetLayout;
 		VkPipelineLayout myPipelineLayout = VK_NULL_HANDLE;
 		VkPipeline myGraphicsPipeline = VK_NULL_HANDLE;
 
@@ -119,6 +126,12 @@ namespace Render
 		VkDeviceMemory myVertexBufferMemory;
 		VkBuffer myIndexBuffer;
 		VkDeviceMemory myIndexBufferMemory;
+
+		std::vector<VkBuffer> myUniformBuffers;
+		std::vector<VkDeviceMemory> myUniformBuffersMemory;
+
+		VkDescriptorPool myDescriptorPool;
+		std::vector<VkDescriptorSet> myDescriptorSets;
 
 		std::vector<VkSemaphore> myImageAvailableSemaphores;
 		std::vector<VkSemaphore> myRenderFinishedSemaphores;

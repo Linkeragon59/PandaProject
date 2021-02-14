@@ -1,9 +1,11 @@
-﻿#include "TriangleRenderer.h"
+#include "BasicRenderer.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <stdexcept>
 #include <assert.h>
@@ -12,6 +14,8 @@
 #include <fstream>
 #include <cstring>
 #include <array>
+#include <chrono>
+#include <thread>
 
 namespace Render
 {
@@ -59,15 +63,22 @@ namespace Render
 			}
 		};
 
+		struct UniformBufferObject
+		{
+			glm::mat4 myModel;
+			glm::mat4 myView;
+			glm::mat4 myProj;
+		};
+
 		const std::vector<Vertex> locVertices =
 		{
 			{{0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-			{{0.0f, -0.7f}, {1.0f, 0.0f, 0.0f}},
-			{{0.5f, -0.3f}, {1.0f, 1.0f, 0.0f}},
-			{{0.5f, 0.3f}, {0.0f, 1.0f, 0.0f}},
-			{{0.0f, 0.7f}, {0.0f, 1.0f, 1.0f}},
-			{{-0.5f, 0.3f}, {0.0f, 0.0f, 1.0f}},
-			{{-0.5f, -0.3f}, {1.0f, 0.0f, 1.0f}}
+			{{0.0f, -1.0f}, {1.0f, 0.0f, 0.0f}},
+			{{0.87f, -0.5f}, {1.0f, 1.0f, 0.0f}},
+			{{0.87f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+			{{0.0f, 1.0f}, {0.0f, 1.0f, 1.0f}},
+			{{-0.87f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+			{{-0.87f, -0.5f}, {1.0f, 0.0f, 1.0f}}
 		};
 
 		const std::vector<uint16_t> locIndices =
@@ -125,29 +136,38 @@ namespace Render
 		}
 	}
 
-	TriangleRenderer::TriangleRenderer()
+	BasicRenderer::BasicRenderer()
 	{
 		InitWindow();
 		InitVulkan();
 	}
 
-	TriangleRenderer::~TriangleRenderer()
+	BasicRenderer::~BasicRenderer()
 	{
 		Cleanup();
 	}
 
-	void TriangleRenderer::Run()
+	void BasicRenderer::Run()
 	{
 		while (!glfwWindowShouldClose(myWindow))
 		{
+			int wantedFPS = 60;
+			std::chrono::duration<double, std::milli> oneFrame = std::chrono::milliseconds((long)(1000.0f / wantedFPS));
+
+			auto start = std::chrono::high_resolution_clock::now();
 			glfwPollEvents();
 			DrawFrame();
+			auto end = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<double, std::milli> elapsed = end - start;
+
+			if (elapsed < oneFrame)
+				std::this_thread::sleep_for(oneFrame - elapsed);
 		}
 
 		vkDeviceWaitIdle(myLogicalDevice);
 	}
 
-	void TriangleRenderer::InitWindow()
+	void BasicRenderer::InitWindow()
 	{
 		glfwInit();
 
@@ -158,7 +178,7 @@ namespace Render
 		glfwSetFramebufferSizeCallback(myWindow, FramebufferResizeCallback);
 	}
 
-	void TriangleRenderer::InitVulkan()
+	void BasicRenderer::InitVulkan()
 	{
 		CreateInstance();
 		SetupDebugMessenger();
@@ -168,16 +188,20 @@ namespace Render
 		CreateSwapChain();
 		CreateSwapChainImageViews();
 		CreateRenderPass();
+		CreateDescriptorSetLayout();
 		CreateGraphicsPipeline();
 		CreateFrameBuffers();
 		CreateCommandPool();
 		CreateVertexBuffer();
 		CreateIndexBuffer();
+		CreateUniformBuffers();
+		CreateDescriptorPool();
+		CreateDescriptorSets();
 		CreateCommandBuffers();
 		CreateSynchronizationObjects();
 	}
 
-	void TriangleRenderer::DrawFrame()
+	void BasicRenderer::DrawFrame()
 	{
 		vkWaitForFences(myLogicalDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame], VK_TRUE, UINT64_MAX);
 
@@ -199,6 +223,8 @@ namespace Render
 		}
 
 		myImageFences[imageIndex] = myInFlightFrameFences[myCurrentInFlightFrame];
+
+		UpdateUniformBuffers(imageIndex);
 
 		VkSemaphore waitSemaphores[] = { myImageAvailableSemaphores[myCurrentInFlightFrame] };
 		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -248,7 +274,7 @@ namespace Render
 		myCurrentInFlightFrame = (myCurrentInFlightFrame + 1) % locMaxFramesInFlight;
 	}
 
-	void TriangleRenderer::Cleanup()
+	void BasicRenderer::Cleanup()
 	{
 		for (uint32_t i = 0; i < locMaxFramesInFlight; ++i)
 		{
@@ -258,6 +284,8 @@ namespace Render
 		}
 
 		CleanupSwapChain();
+
+		vkDestroyDescriptorSetLayout(myLogicalDevice, myDescriptorSetLayout, nullptr);
 
 		vkDestroyBuffer(myLogicalDevice, myIndexBuffer, nullptr);
 		vkFreeMemory(myLogicalDevice, myIndexBufferMemory, nullptr);
@@ -282,7 +310,7 @@ namespace Render
 		glfwTerminate();
 	}
 
-	bool TriangleRenderer::CheckValidationLayersSupport(const std::vector<const char*>& someValidationLayers)
+	bool BasicRenderer::CheckValidationLayersSupport(const std::vector<const char*>& someValidationLayers)
 	{
 		uint32_t layerCount = 0;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -309,7 +337,7 @@ namespace Render
 		return true;
 	}
 
-	bool TriangleRenderer::CheckInstanceExtensionsSupport(const std::vector<const char*>& someExtensions)
+	bool BasicRenderer::CheckInstanceExtensionsSupport(const std::vector<const char*>& someExtensions)
 	{
 		uint32_t extensionCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -336,7 +364,7 @@ namespace Render
 		return true;
 	}
 
-	bool TriangleRenderer::CheckDeviceExtensionsSupport(VkPhysicalDevice aPhysicalDevice, const std::vector<const char*>& someExtensions)
+	bool BasicRenderer::CheckDeviceExtensionsSupport(VkPhysicalDevice aPhysicalDevice, const std::vector<const char*>& someExtensions)
 	{
 		uint32_t extensionCount = 0;
 		vkEnumerateDeviceExtensionProperties(aPhysicalDevice, nullptr, &extensionCount, nullptr);
@@ -363,7 +391,7 @@ namespace Render
 		return true;
 	}
 
-	uint32_t TriangleRenderer::FindMemoryType(VkPhysicalDevice aPhysicalDevice, uint32_t aTypeFilter, VkMemoryPropertyFlags someProperties)
+	uint32_t BasicRenderer::FindMemoryType(VkPhysicalDevice aPhysicalDevice, uint32_t aTypeFilter, VkMemoryPropertyFlags someProperties)
 	{
 		VkPhysicalDeviceMemoryProperties memProperties;
 		vkGetPhysicalDeviceMemoryProperties(aPhysicalDevice, &memProperties);
@@ -379,7 +407,7 @@ namespace Render
 		throw std::runtime_error("Couldn't find a memory type satisfying the requirements");
 	}
 
-	bool TriangleRenderer::IsDeviceSuitable(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface)
+	bool BasicRenderer::IsDeviceSuitable(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface)
 	{
 		VkPhysicalDeviceProperties deviceProperties;
 		VkPhysicalDeviceFeatures deviceFeatures;
@@ -408,7 +436,7 @@ namespace Render
 		return true;
 	}
 
-	void TriangleRenderer::QuerySwapChainSupport(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface, SwapChainSupportDetails& someOutDetails)
+	void BasicRenderer::QuerySwapChainSupport(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface, SwapChainSupportDetails& someOutDetails)
 	{
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(aPhysicalDevice, aSurface, &someOutDetails.myCapabilities);
 		uint32_t formatCount = 0;
@@ -422,7 +450,7 @@ namespace Render
 		vkGetPhysicalDeviceSurfacePresentModesKHR(aPhysicalDevice, aSurface, &presentModeCount, someOutDetails.myPresentModes.data());
 	}
 
-	void TriangleRenderer::FindQueueFamilies(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface, QueueFamilyIndices& someOutQueueIndices)
+	void BasicRenderer::FindQueueFamilies(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface, QueueFamilyIndices& someOutQueueIndices)
 	{
 		uint32_t queueFamilyCount = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(aPhysicalDevice, &queueFamilyCount, nullptr);
@@ -453,7 +481,7 @@ namespace Render
 		}
 	}
 
-	VkExtent2D TriangleRenderer::SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& someCapabilities)
+	VkExtent2D BasicRenderer::SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& someCapabilities)
 	{
 		if (someCapabilities.currentExtent.width != UINT32_MAX)
 		{
@@ -468,7 +496,7 @@ namespace Render
 		}
 	}
 
-	VkSurfaceFormatKHR TriangleRenderer::SelectSwapChainFormat(const std::vector<VkSurfaceFormatKHR>& someAvailableFormats)
+	VkSurfaceFormatKHR BasicRenderer::SelectSwapChainFormat(const std::vector<VkSurfaceFormatKHR>& someAvailableFormats)
 	{
 		assert(someAvailableFormats.size() > 0);
 		for (const auto& availableFormat : someAvailableFormats)
@@ -481,7 +509,7 @@ namespace Render
 		return someAvailableFormats[0];
 	}
 
-	VkPresentModeKHR TriangleRenderer::SelectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& someAvailablePresentModes)
+	VkPresentModeKHR BasicRenderer::SelectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& someAvailablePresentModes)
 	{
 		assert(someAvailablePresentModes.size() > 0);
 		for (const auto& availablePresentMode : someAvailablePresentModes)
@@ -494,7 +522,7 @@ namespace Render
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	VkShaderModule TriangleRenderer::CreateShaderModule(VkDevice aLogicalDevice, const std::vector<char>& someByteCode)
+	VkShaderModule BasicRenderer::CreateShaderModule(VkDevice aLogicalDevice, const std::vector<char>& someByteCode)
 	{
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -511,7 +539,7 @@ namespace Render
 		return shaderModule;
 	}
 
-	void TriangleRenderer::CreateBuffer(
+	void BasicRenderer::CreateBuffer(
 		VkPhysicalDevice aPhysicalDevice,
 		VkDevice aLogicalDevice,
 		VkDeviceSize aSize,
@@ -552,15 +580,15 @@ namespace Render
 		vkBindBufferMemory(aLogicalDevice, anOutBuffer, anOutBufferMemory, 0);
 	}
 
-	void TriangleRenderer::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& aCreateInfo)
+	void BasicRenderer::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& aCreateInfo)
 	{
 		aCreateInfo = {};
 		aCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 		aCreateInfo.pNext = nullptr;
 		aCreateInfo.flags = 0;
 		aCreateInfo.messageSeverity =
-//			VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-//			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+			//			VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+			//			VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 		aCreateInfo.messageType =
@@ -571,7 +599,7 @@ namespace Render
 		aCreateInfo.pUserData = nullptr;
 	}
 
-	VKAPI_ATTR VkBool32 VKAPI_CALL TriangleRenderer::DebugCallback(
+	VKAPI_ATTR VkBool32 VKAPI_CALL BasicRenderer::DebugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT /*aMessageSeverity*/,
 		VkDebugUtilsMessageTypeFlagsEXT /*aMessageType*/,
 		const VkDebugUtilsMessengerCallbackDataEXT* aCallbackData,
@@ -581,13 +609,13 @@ namespace Render
 		return VK_FALSE; // Don't interrupt the execution
 	}
 
-	void TriangleRenderer::FramebufferResizeCallback(GLFWwindow* aWindow, int /*aWidth*/, int /*aHeight*/)
+	void BasicRenderer::FramebufferResizeCallback(GLFWwindow* aWindow, int /*aWidth*/, int /*aHeight*/)
 	{
-		auto app = reinterpret_cast<TriangleRenderer*>(glfwGetWindowUserPointer(aWindow));
+		auto app = reinterpret_cast<BasicRenderer*>(glfwGetWindowUserPointer(aWindow));
 		app->myFramebufferResized = true;
 	}
 
-	void TriangleRenderer::CreateInstance()
+	void BasicRenderer::CreateInstance()
 	{
 		if (locEnableValidationLayers && !CheckValidationLayersSupport(locValidationLayers))
 		{
@@ -646,7 +674,7 @@ namespace Render
 		}
 	}
 
-	void TriangleRenderer::SetupDebugMessenger()
+	void BasicRenderer::SetupDebugMessenger()
 	{
 		if (!locEnableValidationLayers)
 			return;
@@ -660,7 +688,7 @@ namespace Render
 		}
 	}
 
-	void TriangleRenderer::CreateSurface()
+	void BasicRenderer::CreateSurface()
 	{
 		if (glfwCreateWindowSurface(myInstance, myWindow, nullptr, &mySurface) != VK_SUCCESS)
 		{
@@ -668,7 +696,7 @@ namespace Render
 		}
 	}
 
-	void TriangleRenderer::PickPhysicalDevice()
+	void BasicRenderer::PickPhysicalDevice()
 	{
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(myInstance, &deviceCount, nullptr);
@@ -696,7 +724,7 @@ namespace Render
 		}
 	}
 
-	void TriangleRenderer::CreateLogicalDevice()
+	void BasicRenderer::CreateLogicalDevice()
 	{
 		QueueFamilyIndices queueIndices;
 		FindQueueFamilies(myPhysicalDevice, mySurface, queueIndices);
@@ -749,7 +777,7 @@ namespace Render
 		vkGetDeviceQueue(myLogicalDevice, queueIndices.myPresentFamily.value(), 0, &myPresentQueue);
 	}
 
-	void TriangleRenderer::CreateSwapChain()
+	void BasicRenderer::CreateSwapChain()
 	{
 		SwapChainSupportDetails swapChainSupportDetails;
 		QuerySwapChainSupport(myPhysicalDevice, mySurface, swapChainSupportDetails);
@@ -809,7 +837,7 @@ namespace Render
 		mySwapChainExtent = extent;
 	}
 
-	void TriangleRenderer::RecreateSwapChain()
+	void BasicRenderer::RecreateSwapChain()
 	{
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(myWindow, &width, &height);
@@ -828,10 +856,12 @@ namespace Render
 		CreateRenderPass();
 		CreateGraphicsPipeline();
 		CreateFrameBuffers();
+		CreateUniformBuffers();
+		CreateDescriptorPool();
 		CreateCommandBuffers();
 	}
 
-	void TriangleRenderer::CleanupSwapChain()
+	void BasicRenderer::CleanupSwapChain()
 	{
 		vkFreeCommandBuffers(myLogicalDevice, myCommandPool, static_cast<uint32_t>(myCommandBuffers.size()), myCommandBuffers.data());
 
@@ -839,6 +869,14 @@ namespace Render
 		{
 			vkDestroyFramebuffer(myLogicalDevice, framebuffer, nullptr);
 		}
+
+		for (size_t i = 0; i < mySwapChainImages.size(); ++i)
+		{
+			vkDestroyBuffer(myLogicalDevice, myUniformBuffers[i], nullptr);
+			vkFreeMemory(myLogicalDevice, myUniformBuffersMemory[i], nullptr);
+		}
+
+		vkDestroyDescriptorPool(myLogicalDevice, myDescriptorPool, nullptr);
 
 		vkDestroyPipeline(myLogicalDevice, myGraphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(myLogicalDevice, myPipelineLayout, nullptr);
@@ -853,7 +891,7 @@ namespace Render
 		vkDestroySwapchainKHR(myLogicalDevice, mySwapChain, nullptr);
 	}
 
-	void TriangleRenderer::CreateSwapChainImageViews()
+	void BasicRenderer::CreateSwapChainImageViews()
 	{
 		mySwapChainImageViews.resize(mySwapChainImages.size());
 		for (size_t i = 0, e = mySwapChainImages.size(); i < e; ++i)
@@ -882,7 +920,7 @@ namespace Render
 		}
 	}
 
-	void TriangleRenderer::CreateRenderPass()
+	void BasicRenderer::CreateRenderPass()
 	{
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.flags = 0;
@@ -937,11 +975,33 @@ namespace Render
 		}
 	}
 
-	void TriangleRenderer::CreateGraphicsPipeline()
+	void BasicRenderer::CreateDescriptorSetLayout()
 	{
-		auto vertShaderCode = locReadFile("Frameworks/shaders/triangleRenderer_vert.spv");
+		VkDescriptorSetLayoutBinding uboLayoutBinding{};
+		uboLayoutBinding.binding = 0;
+		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboLayoutBinding.descriptorCount = 1;
+		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		uboLayoutBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.pNext = nullptr;
+		layoutInfo.flags = 0;
+		layoutInfo.bindingCount = 1;
+		layoutInfo.pBindings = &uboLayoutBinding;
+
+		if (vkCreateDescriptorSetLayout(myLogicalDevice, &layoutInfo, nullptr, &myDescriptorSetLayout) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create a descriptor set!");
+		}
+	}
+
+	void BasicRenderer::CreateGraphicsPipeline()
+	{
+		auto vertShaderCode = locReadFile("Frameworks/shaders/basicRenderer_vert.spv");
 		auto vertShaderModule = CreateShaderModule(myLogicalDevice, vertShaderCode);
-		auto fragShaderCode = locReadFile("Frameworks/shaders/triangleRenderer_frag.spv");
+		auto fragShaderCode = locReadFile("Frameworks/shaders/basicRenderer_frag.spv");
 		auto fragShaderModule = CreateShaderModule(myLogicalDevice, fragShaderCode);
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
@@ -1012,7 +1072,7 @@ namespace Render
 		rasterizerStateInfo.rasterizerDiscardEnable = VK_FALSE;
 		rasterizerStateInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizerStateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizerStateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizerStateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizerStateInfo.depthBiasEnable = VK_FALSE;
 		rasterizerStateInfo.depthBiasConstantFactor = 0.0f;
 		rasterizerStateInfo.depthBiasClamp = 0.0f;
@@ -1057,8 +1117,8 @@ namespace Render
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.pNext = nullptr;
 		pipelineLayoutInfo.flags = 0;
-		pipelineLayoutInfo.setLayoutCount = 0;
-		pipelineLayoutInfo.pSetLayouts = nullptr;
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &myDescriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -1097,7 +1157,7 @@ namespace Render
 		vkDestroyShaderModule(myLogicalDevice, vertShaderModule, nullptr);
 	}
 
-	void TriangleRenderer::CreateFrameBuffers()
+	void BasicRenderer::CreateFrameBuffers()
 	{
 		mySwapChainFramebuffers.resize(mySwapChainImageViews.size());
 
@@ -1122,7 +1182,7 @@ namespace Render
 		}
 	}
 
-	void TriangleRenderer::CreateCommandPool()
+	void BasicRenderer::CreateCommandPool()
 	{
 		QueueFamilyIndices queueIndices;
 		FindQueueFamilies(myPhysicalDevice, mySurface, queueIndices);
@@ -1139,7 +1199,7 @@ namespace Render
 		}
 	}
 
-	void TriangleRenderer::CreateVertexBuffer()
+	void BasicRenderer::CreateVertexBuffer()
 	{
 		VkDeviceSize bufferSize = sizeof(Vertex) * locVertices.size();
 
@@ -1217,7 +1277,7 @@ namespace Render
 		vkFreeMemory(myLogicalDevice, stagingBufferMemory, nullptr);
 	}
 
-	void TriangleRenderer::CreateIndexBuffer()
+	void BasicRenderer::CreateIndexBuffer()
 	{
 		VkDeviceSize bufferSize = sizeof(uint16_t) * locIndices.size();
 
@@ -1295,7 +1355,88 @@ namespace Render
 		vkFreeMemory(myLogicalDevice, stagingBufferMemory, nullptr);
 	}
 
-	void TriangleRenderer::CreateCommandBuffers()
+	void BasicRenderer::CreateUniformBuffers()
+	{
+		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+		myUniformBuffers.resize(mySwapChainImages.size());
+		myUniformBuffersMemory.resize(mySwapChainImages.size());
+
+		for (size_t i = 0; i < mySwapChainImages.size(); ++i)
+		{
+			CreateBuffer(
+				myPhysicalDevice,
+				myLogicalDevice,
+				bufferSize,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				myUniformBuffers[i],
+				myUniformBuffersMemory[i]);
+		}
+	}
+
+	void BasicRenderer::CreateDescriptorPool()
+	{
+		VkDescriptorPoolSize poolSize{};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = static_cast<uint32_t>(mySwapChainImages.size());
+
+		VkDescriptorPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.pNext = nullptr;
+		poolInfo.flags = 0;
+		poolInfo.maxSets = static_cast<uint32_t>(mySwapChainImages.size());
+		poolInfo.poolSizeCount = 1;
+		poolInfo.pPoolSizes = &poolSize;
+
+		if (vkCreateDescriptorPool(myLogicalDevice, &poolInfo, nullptr, &myDescriptorPool) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create the descriptor pool!");
+		}
+	}
+
+	void BasicRenderer::CreateDescriptorSets()
+	{
+		std::vector<VkDescriptorSetLayout> layouts(mySwapChainImages.size(), myDescriptorSetLayout);
+
+		VkDescriptorSetAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.pNext = nullptr;
+		allocInfo.descriptorPool = myDescriptorPool;
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(layouts.size());
+		allocInfo.pSetLayouts = layouts.data();
+
+		myDescriptorSets.resize(mySwapChainImages.size());
+
+		if (vkAllocateDescriptorSets(myLogicalDevice, &allocInfo, myDescriptorSets.data()) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate the descriptor sets!");
+		}
+
+		for (size_t i = 0; i < mySwapChainImages.size(); ++i)
+		{
+			VkDescriptorBufferInfo bufferInfo{};
+			bufferInfo.buffer = myUniformBuffers[i];
+			bufferInfo.offset = 0;
+			bufferInfo.range = sizeof(UniformBufferObject);
+
+			VkWriteDescriptorSet descriptorWrite{};
+			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrite.pNext = nullptr;
+			descriptorWrite.dstSet = myDescriptorSets[i];
+			descriptorWrite.dstBinding = 0;
+			descriptorWrite.dstArrayElement = 0;
+			descriptorWrite.descriptorCount = 1;
+			descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrite.pImageInfo = nullptr;
+			descriptorWrite.pBufferInfo = &bufferInfo;
+			descriptorWrite.pTexelBufferView = nullptr;
+
+			vkUpdateDescriptorSets(myLogicalDevice, 1, &descriptorWrite, 0, nullptr);
+		}
+	}
+
+	void BasicRenderer::CreateCommandBuffers()
 	{
 		myCommandBuffers.resize(mySwapChainFramebuffers.size());
 
@@ -1346,6 +1487,8 @@ namespace Render
 
 			vkCmdBindIndexBuffer(myCommandBuffers[i], myIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
+			vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPipelineLayout, 0, 1, &myDescriptorSets[i], 0, nullptr);
+
 			vkCmdDrawIndexed(myCommandBuffers[i], static_cast<uint32_t>(locIndices.size()), 1, 0, 0, 0);
 
 			vkCmdEndRenderPass(myCommandBuffers[i]);
@@ -1357,7 +1500,7 @@ namespace Render
 		}
 	}
 
-	void TriangleRenderer::CreateSynchronizationObjects()
+	void BasicRenderer::CreateSynchronizationObjects()
 	{
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1390,5 +1533,27 @@ namespace Render
 		}
 
 		myImageFences.resize(mySwapChainImages.size(), VK_NULL_HANDLE);
+	}
+
+	void BasicRenderer::UpdateUniformBuffers(uint32_t anImageIndex)
+	{
+		// Using a UBO this way is not the most efficient way to pass frequently changing values to the shader.
+		// A more efficient way to pass a small buffer of data to shaders are push constants.
+
+		static auto startTime = std::chrono::high_resolution_clock::now();
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float elapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+		UniformBufferObject ubo{};
+		ubo.myModel = glm::rotate(glm::mat4(1.0f), elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.myView = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.myProj = glm::perspective(glm::radians(45.0f), mySwapChainExtent.width / (float)mySwapChainExtent.height, 0.1f, 10.0f);
+		ubo.myProj[1][1] *= -1; // adapt calculation for Vulkan
+
+		void* data;
+		vkMapMemory(myLogicalDevice, myUniformBuffersMemory[anImageIndex], 0, sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(myLogicalDevice, myUniformBuffersMemory[anImageIndex]);
 	}
 }

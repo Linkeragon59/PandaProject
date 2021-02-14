@@ -18,7 +18,8 @@ int main()
 
 	try
 	{
-		Render::Facade::RunTriangleRenderer();
+		//Render::Facade::RunTriangleRenderer();
+		Render::Facade::RunBasicRenderer();
 	}
 	catch (const std::exception& e)
 	{
