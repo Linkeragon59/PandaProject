@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <random> // for random_device and mt19937
 #include <cmath> // for floor
 
 // Smoothstep function

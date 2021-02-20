@@ -23,14 +23,16 @@ double grad(int hash, double x, double y) {
 // Constructor
 Perlin::Perlin()
 {
-    // Random permutation of {0, ..., 255}
+    // Define vector (0, ..., 255)
     std::vector<int> perm(256);
     for(int i = 0; i < 256; i++) 
     {
         perm.at(i) = i;
     }
-    // I'm not sure how random this is; also, we might need to set a seed
-    std::random_shuffle(perm.begin(), perm.end());
+    // Shuffle vector randomly
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(perm.begin(), perm.end(), g);
 
     // Duplicate permutation for use in Perlin algorithm
     myPerm = std::vector<int>(512);
