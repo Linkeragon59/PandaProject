@@ -51,7 +51,7 @@ void Map::Print()
     {
         for(int j = 0; j < gridY.size(); j++)
         {
-            biomeType b = BiomePt(gridX.at(i), gridX.at(j));
+            biomeType b = BiomePt(gridX.at(j), gridY.at(i));
             if(b == biomeType::land)
                 std::cout << "#";
             else
