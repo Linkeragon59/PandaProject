@@ -24,7 +24,7 @@ double grad(int hash, double x, double y) {
 Perlin::Perlin(int aNumberOctaves, double anOctavePersistence)
 {
     // Define vector (0, ..., 255)
-    std::vector<int> perm(256);
+    std::array<int, 256> perm;
     for(int i = 0; i < 256; i++) 
     {
         perm.at(i) = i;
@@ -36,7 +36,6 @@ Perlin::Perlin(int aNumberOctaves, double anOctavePersistence)
     std::shuffle(perm.begin(), perm.end(), g);
 
     // Duplicate permutation for use in Perlin algorithm
-    myPerm = std::vector<int>(512);
     for(int i = 0; i < 256; i++)
     {
         myPerm.at(i) = perm.at(i);

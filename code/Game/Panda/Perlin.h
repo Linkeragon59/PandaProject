@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <array>
 #include <algorithm>
 #include <random> // for random_device and mt19937
 #include <cmath> // for floor
@@ -19,10 +19,10 @@ public:
     ~Perlin();
     double SimpleNoisePt(double x, double y);
     double FractalNoisePt(double x, double y);
-    std::vector<int> GetPerm() const { return myPerm; };
+    std::array<int, 512> GetPerm() const { return myPerm; };
 
 private:
-    std::vector<int> myPerm;
+    std::array<int, 512> myPerm;
     int myNumberOctaves;
     double myOctavePersistence;
 };
