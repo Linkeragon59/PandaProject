@@ -2,6 +2,8 @@
 
 WIP Todo list : https://docs.google.com/document/d/1zTnrLVwBnSkQkD5-gCt3v7O8c8u-FKoWOFQj0SIL81w/edit
 
+Corentin's WIP doc : https://docs.google.com/document/d/11bgWyhwrEoCtvF0ndbinEszqc-oJ8s50h0C9FBs_dVQ/edit
+
 # Prerequisites
 Windows:
 - Visual Studio 2019
