@@ -17,9 +17,12 @@ class Perlin
 public: 
     Perlin();
     ~Perlin();
-    double NoisePt(double x, double y);
+    double SimpleNoisePt(double x, double y);
+    double FractalNoisePt(double x, double y);
     std::vector<int> GetPerm() const { return myPerm; };
 
 private:
     std::vector<int> myPerm;
+    int myNumberOctaves;
+    double myOctavePersistence;
 };

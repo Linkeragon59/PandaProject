@@ -36,7 +36,7 @@ biomeType Map::BiomePt(double x, double y)
     std::vector<double> habitatVars(nVars);
     for(int i = 0; i < nVars; i++)
     {
-        habitatVars.at(i) = myHabitatVars.at(i).NoisePt(x, y);
+        habitatVars.at(i) = myHabitatVars.at(i).FractalNoisePt(x, y);
     }
     biomeType biome = getBiome(habitatVars);
     return biome;

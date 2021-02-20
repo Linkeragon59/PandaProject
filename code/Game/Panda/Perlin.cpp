@@ -31,6 +31,7 @@ Perlin::Perlin()
     }
     // Shuffle vector randomly
     std::random_device rd;
+    // The argument is the random seed (here random itself)
     std::mt19937 g(rd());
     std::shuffle(perm.begin(), perm.end(), g);
 
@@ -41,6 +42,9 @@ Perlin::Perlin()
         myPerm.at(i) = perm.at(i);
         myPerm.at(256 + i) = perm.at(i);
     }
+
+    myNumberOctaves = 4;
+    myOctavePersistence = 0.6;
 }
 
 // Destructor
@@ -48,8 +52,8 @@ Perlin::~Perlin()
 {
 }
 
-// Evaluate field at point (x, y)
-double Perlin::NoisePt(double x, double y)
+// Evaluate simple Perlin field at point (x, y)
+double Perlin::SimpleNoisePt(double x, double y)
 {
     // Integer part of x and y modulo 255
     int xFloor = (int)floor(x) & 255;
@@ -78,4 +82,19 @@ double Perlin::NoisePt(double x, double y)
     double m2 = lerp(u, g01, g11);
     double m3 = lerp(v, m1, m2);
     return m3;
+}
+
+// Evaluate fractal Perlin field at point (x, y)
+double Perlin::FractalNoisePt(double x, double y)
+{
+    double noise = 0.0;
+    double ampli = 1.0;
+    double freq = 1.0;
+    for(int i = 0; i < myNumberOctaves; i++) 
+    {
+        noise = noise + ampli * SimpleNoisePt(freq * x, freq * y);
+        ampli = ampli * myOctavePersistence;
+        freq = freq * 2;
+    }
+    return noise;
 }
