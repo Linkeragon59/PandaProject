@@ -29,15 +29,7 @@ int main()
 		return EXIT_FAILURE;
 	}
 
-	Perlin field;
-	std::vector<int> perm = field.GetPerm();
-	std::cout << "The random permutation is: ";
-	for(int i = 0; i < 256; i++)
-		std::cout << perm.at(i) << ", ";
-	std::cout << std::endl;
-	std::cout << "Perlin field evaluated at (0.5, 0.5) is " << field.NoisePt(0.5, 0.5) << std::endl;
-
-	// This doesn't work (undefined reference to Map::Map)
+	// Test Perlin and Map classes
 	Map map;
 	map.Print();
 

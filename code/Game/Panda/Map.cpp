@@ -45,9 +45,17 @@ biomeType Map::BiomePt(double x, double y)
 // Print map (for testing purposes only...)
 void Map::Print()
 {
-    std::vector<double> gridX = {0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
-    std::vector<double> gridY = {0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+    // Define grids over x and y dimensions
+    int nX = 60;
+    int nY = 20;
+    std::vector<double> gridX(nX);
+    std::vector<double> gridY(nY);
+    for(int i = 0; i < nX; i++)
+        gridX.at(i) = 0.1 * i;
+    for(int i = 0; i < nY; i++)
+        gridY.at(i) = 0.1 * i;
 
+    // Loop over grids and print biome at (x, y)
     for(auto itY = gridY.begin(); itY != gridY.end(); itY++) 
     {
         for(auto itX = gridX.begin(); itX != gridX.end(); itX++) 
