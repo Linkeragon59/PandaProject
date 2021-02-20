@@ -3,6 +3,7 @@
 
 #include "RenderFacade.h"
 #include "DummyGameObject.h"
+#include "Perlin.h"
 
 int main()
 {
@@ -26,6 +27,10 @@ int main()
 		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}
+
+	// This doesn't work, I get "undefined reference to Perlin::Perlin"
+	// Perlin field;
+	// std::cout << "Perlin field evaluated at (0.5, 0.5) is " << field.NoisePt(0.5, 0.5) << std::endl;
 
 	return EXIT_SUCCESS;
 }
