@@ -8,7 +8,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #include <stb_image.h>
+#pragma GCC diagnostic pop
 
 #include <stdexcept>
 #include <assert.h>
