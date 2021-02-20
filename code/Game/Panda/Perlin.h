@@ -17,6 +17,7 @@ public:
     Perlin();
     ~Perlin();
     double NoisePt(double x, double y);
+    std::vector<int> GetPerm() const { return myPerm; };
 
 private:
     std::vector<int> myPerm;
