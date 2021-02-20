@@ -15,7 +15,7 @@ double grad(int hash, double x, double y);
 class Perlin
 {
 public: 
-    Perlin();
+    Perlin(int numberOctaves, double octavePersistence);
     ~Perlin();
     double SimpleNoisePt(double x, double y);
     double FractalNoisePt(double x, double y);

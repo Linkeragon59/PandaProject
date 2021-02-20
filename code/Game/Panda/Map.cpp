@@ -1,5 +1,13 @@
 #include "Map.h"
 
+namespace
+{
+    // Some characteristics of the map
+    int locNumberHabitatVars = 3;
+    int locNumberOctaves = 4;
+    double locOctavePersistence = 0.6;
+}
+
 // Get biome from habitat variables
 biomeType getBiome(std::vector<double> habitatVars)
 {
@@ -21,7 +29,15 @@ biomeType getBiome(std::vector<double> habitatVars)
 // Constructor
 Map::Map()
 {
-    myHabitatVars = std::vector<Perlin>(3);
+    // Reserve memory
+    myHabitatVars.reserve(locNumberHabitatVars);
+    // Create habitat variables and store in vector
+    for(int i = 0; i < locNumberHabitatVars; i++)
+    {
+        myHabitatVars.push_back(
+            Perlin(locNumberOctaves, locOctavePersistence)
+        );
+    }
 }
 
 // Destructor

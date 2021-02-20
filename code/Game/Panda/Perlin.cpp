@@ -21,7 +21,7 @@ double grad(int hash, double x, double y) {
 }
 
 // Constructor
-Perlin::Perlin()
+Perlin::Perlin(int aNumberOctaves, double anOctavePersistence)
 {
     // Define vector (0, ..., 255)
     std::vector<int> perm(256);
@@ -43,8 +43,9 @@ Perlin::Perlin()
         myPerm.at(256 + i) = perm.at(i);
     }
 
-    myNumberOctaves = 4;
-    myOctavePersistence = 0.6;
+    // Set attributes for fractal noise
+    myNumberOctaves = aNumberOctaves;
+    myOctavePersistence = anOctavePersistence;
 }
 
 // Destructor
