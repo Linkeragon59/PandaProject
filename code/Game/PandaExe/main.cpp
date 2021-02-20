@@ -4,6 +4,7 @@
 #include "RenderFacade.h"
 #include "DummyGameObject.h"
 #include "Perlin.h"
+#include "Map.h"
 
 int main()
 {
@@ -28,14 +29,16 @@ int main()
 		return EXIT_FAILURE;
 	}
 
-	// This doesn't work, I get "undefined reference to Perlin::Perlin"
 	Perlin field;
-	std::vector perm = field.GetPerm();
+	std::vector<int> perm = field.GetPerm();
 	std::cout << "The random permutation is: ";
 	for(int i = 0; i < 256; i++)
 		std::cout << perm.at(i) << ", ";
 	std::cout << std::endl;
 	std::cout << "Perlin field evaluated at (0.5, 0.5) is " << field.NoisePt(0.5, 0.5) << std::endl;
+
+	Map map;
+	map.Print();
 
 	return EXIT_SUCCESS;
 }
