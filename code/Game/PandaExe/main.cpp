@@ -38,8 +38,8 @@ int main()
 	std::cout << "Perlin field evaluated at (0.5, 0.5) is " << field.NoisePt(0.5, 0.5) << std::endl;
 
 	// This doesn't work (undefined reference to Map::Map)
-	// Map map;
-	// map.Print();
+	Map map;
+	map.Print();
 
 	return EXIT_SUCCESS;
 }
