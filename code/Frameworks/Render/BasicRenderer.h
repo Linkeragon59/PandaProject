@@ -113,6 +113,8 @@ namespace Render
 
 		VkSurfaceKHR mySurface = VK_NULL_HANDLE;
 		VkPhysicalDevice myPhysicalDevice = VK_NULL_HANDLE;
+		VkPhysicalDeviceFeatures myAvailableFeatures{};
+		VkPhysicalDeviceFeatures myRequestedFeatures{};
 		VkDevice myLogicalDevice = VK_NULL_HANDLE;
 
 		VkQueue myGraphicsQueue = VK_NULL_HANDLE;

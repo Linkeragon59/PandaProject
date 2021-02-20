@@ -8,11 +8,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
+#ifdef __linux__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#endif
 #include <stb_image.h>
+#ifdef __linux__
 #pragma GCC diagnostic pop
+#endif
 
 #include <stdexcept>
 #include <assert.h>
@@ -32,10 +36,10 @@ namespace Render
 		const uint32_t locWindowHeight = 600;
 
 		const std::vector<const char*> locValidationLayers = { "VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_monitor" };
-#ifdef _DEBUG
-		constexpr bool locEnableValidationLayers = true;
-#else
+#if defined(NDEBUG) || defined(__linux__)
 		constexpr bool locEnableValidationLayers = false;
+#else
+		constexpr bool locEnableValidationLayers = true;
 #endif
 		const std::vector<const char*> locDeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
@@ -437,9 +441,6 @@ namespace Render
 		// This can help to find the best possible GPU to use based on the application needs
 		(void)deviceProperties;
 		(void)deviceFeatures;
-
-		if (!deviceFeatures.samplerAnisotropy)
-			return false;
 
 		// Request that the device supports the extensions we need
 		if (!CheckDeviceExtensionsSupport(aPhysicalDevice, locDeviceExtensions))
@@ -865,6 +866,7 @@ namespace Render
 
 	void BasicRenderer::PickPhysicalDevice()
 	{
+
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(myInstance, &deviceCount, nullptr);
 
@@ -889,10 +891,15 @@ namespace Render
 		{
 			throw std::runtime_error("No suitable physical device was found!");
 		}
+		
+		vkGetPhysicalDeviceFeatures(myPhysicalDevice, &myAvailableFeatures);
 	}
 
 	void BasicRenderer::CreateLogicalDevice()
 	{
+		if (myAvailableFeatures.samplerAnisotropy == VK_TRUE)
+			myRequestedFeatures.samplerAnisotropy = VK_TRUE;
+
 		QueueFamilyIndices queueIndices;
 		FindQueueFamilies(myPhysicalDevice, mySurface, queueIndices);
 		assert(queueIndices.IsComplete());
@@ -913,9 +920,6 @@ namespace Render
 			queueCreateInfos.push_back(queueCreateInfo);
 		}
 
-		VkPhysicalDeviceFeatures deviceFeatures{};
-		deviceFeatures.samplerAnisotropy = VK_TRUE;
-
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		createInfo.pNext = nullptr;
@@ -934,7 +938,7 @@ namespace Render
 		}
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(locDeviceExtensions.size());
 		createInfo.ppEnabledExtensionNames = locDeviceExtensions.data();
-		createInfo.pEnabledFeatures = &deviceFeatures;
+		createInfo.pEnabledFeatures = &myRequestedFeatures;
 
 		if (vkCreateDevice(myPhysicalDevice, &createInfo, nullptr, &myLogicalDevice) != VK_SUCCESS)
 		{
@@ -1462,8 +1466,16 @@ namespace Render
 		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerInfo.mipLodBias = 0.0f;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-		samplerInfo.maxAnisotropy = 16.0f;
+		if (myRequestedFeatures.samplerAnisotropy == VK_TRUE)
+		{
+			samplerInfo.anisotropyEnable = VK_TRUE;
+			samplerInfo.maxAnisotropy = 16.0f;
+		}
+		else
+		{
+			samplerInfo.anisotropyEnable = VK_FALSE;
+			samplerInfo.maxAnisotropy = 1.0f;
+		}
 		samplerInfo.compareEnable = VK_FALSE;
 		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 		samplerInfo.minLod = 0.0f;
