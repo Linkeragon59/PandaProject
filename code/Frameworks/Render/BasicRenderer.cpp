@@ -36,10 +36,10 @@ namespace Render
 		const uint32_t locWindowHeight = 600;
 
 		const std::vector<const char*> locValidationLayers = { "VK_LAYER_KHRONOS_validation", "VK_LAYER_LUNARG_monitor" };
-#if defined(NDEBUG) || defined(__linux__)
-		constexpr bool locEnableValidationLayers = false;
-#else
+#if defined(_WINDOWS) && !defined(NDEBUG)
 		constexpr bool locEnableValidationLayers = true;
+#else
+		constexpr bool locEnableValidationLayers = false;
 #endif
 		const std::vector<const char*> locDeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
