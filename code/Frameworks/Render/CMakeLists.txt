@@ -11,6 +11,7 @@ target_include_directories(Render PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/glm/0.9.9.8/include)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/glfw/3.3/include)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/stb)
+target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/tinyobjloader)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/VulkanSDK/1.2.162.1/include)
 
 if ( CMAKE_SYSTEM_NAME MATCHES "Linux" )

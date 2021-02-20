@@ -51,7 +51,9 @@ namespace Render
 		static bool IsDeviceSuitable(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface);
 		static void QuerySwapChainSupport(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface, SwapChainSupportDetails& someOutDetails);
 		static void FindQueueFamilies(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface, QueueFamilyIndices& someOutQueueIndices);
-		
+		static VkFormat FindSupportedFormat(VkPhysicalDevice aPhysicalDevice, const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures);
+		static VkFormat FindBestDepthFormat(VkPhysicalDevice aPhysicalDevice);
+
 		static VkExtent2D SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& someCapabilities);
 		static VkSurfaceFormatKHR SelectSwapChainFormat(const std::vector<VkSurfaceFormatKHR>& someAvailableFormats);
 		static VkPresentModeKHR SelectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& someAvailablePresentModes);
@@ -60,7 +62,7 @@ namespace Render
 
 		static VkCommandBuffer BeginOneShotCommand(VkDevice aLogicalDevice, VkCommandPool aCommandPool);
 		static void EndOneShotCommand(VkDevice aLogicalDevice, VkCommandPool aCommandPool, VkQueue aQueue, VkCommandBuffer aCommandBuffer);
-		static void TransitionImageLayout(VkDevice aLogicalDevice, VkCommandPool aCommandPool, VkQueue aQueue, VkImage anImage, VkImageLayout anOldLayout, VkImageLayout aNewLayout);
+		static void TransitionImageLayout(VkDevice aLogicalDevice, VkCommandPool aCommandPool, VkQueue aQueue, VkImage anImage, VkFormat aFormat, VkImageLayout anOldLayout, VkImageLayout aNewLayout);
 		
 		static void CreateImage(VkPhysicalDevice aPhysicalDevice, VkDevice aLogicalDevice, uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkImage& anOutImage, VkDeviceMemory& anOutImageMemory);
 		static void CreateBuffer(VkPhysicalDevice aPhysicalDevice, VkDevice aLogicalDevice, VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkBuffer& anOutBuffer, VkDeviceMemory& anOutBufferMemory);
@@ -92,6 +94,7 @@ namespace Render
 		void CreateGraphicsPipeline();
 		void CreateFrameBuffers();
 		void CreateCommandPool();
+		void CreateDepthResources();
 		void CreateTextureImage();
 		void CreateTextureImageView();
 		void CreateTextureSampler();
@@ -135,11 +138,15 @@ namespace Render
 		VkCommandPool myCommandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> myCommandBuffers;
 
+		VkImage myDepthImage = VK_NULL_HANDLE;
+		VkDeviceMemory myDepthImageMemory = VK_NULL_HANDLE;
+		VkImageView myDepthImageView = VK_NULL_HANDLE;
+
 		VkImage myTextureImage = VK_NULL_HANDLE;
 		VkDeviceMemory myTextureImageMemory = VK_NULL_HANDLE;
 		VkImageView myTextureImageView = VK_NULL_HANDLE;
 
-		VkSampler myTextureSampler;
+		VkSampler myTextureSampler = VK_NULL_HANDLE;
 
 		VkBuffer myVertexBuffer = VK_NULL_HANDLE;
 		VkDeviceMemory myVertexBufferMemory = VK_NULL_HANDLE;
