@@ -20,17 +20,25 @@
 #endif
 
 #if USE_VMA
-#ifdef _WINDOWS
+#if defined(_WINDOWS)
 #pragma warning(push)
 #pragma warning(disable:4100)
 #pragma warning(disable:4127)
 #pragma warning(disable:4324)
+#elif defined(__linux__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
 #endif
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
-#ifdef _WINDOWS
+#if defined(_WINDOWS)
 #pragma warning(pop)
-#endif
+#elif defined(__linux__)
+#pragma GCC diagnostic pop
 #endif
 
 #include <stdexcept>

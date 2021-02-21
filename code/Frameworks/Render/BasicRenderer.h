@@ -2,7 +2,7 @@
 
 #include "vulkan/vulkan.h"
 
-#define USE_VMA 0
+#define USE_VMA 1
 
 #if USE_VMA
 #include "vk_mem_alloc.h"
