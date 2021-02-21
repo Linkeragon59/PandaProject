@@ -20,5 +20,6 @@ public:
     biomeType BiomePt(double x, double y);
 
 private:
+    double myXmin, myXmax, myYmin, myYmax;
     std::vector<Perlin> myHabitatVars; 
 };
