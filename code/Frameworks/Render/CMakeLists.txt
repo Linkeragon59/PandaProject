@@ -13,6 +13,7 @@ target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/glfw/3
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/stb)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/tinyobjloader)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/VulkanSDK/1.2.162.1/include)
+target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/VulkanMemoryAllocator)
 
 if ( CMAKE_SYSTEM_NAME MATCHES "Linux" )
 	target_link_directories(Render PUBLIC ${CMAKE_SOURCE_DIR}/code/Extern/glfw/3.3/lib/linux)

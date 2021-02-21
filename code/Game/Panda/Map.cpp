@@ -48,9 +48,9 @@ Map::~Map()
 // Get biome at point (x, y)
 biomeType Map::BiomePt(double x, double y)
 {
-    int nVars = myHabitatVars.size();
+    size_t nVars = myHabitatVars.size();
     std::vector<double> habitatVars(nVars);
-    for(int i = 0; i < nVars; i++)
+    for(size_t i = 0; i < nVars; i++)
     {
         habitatVars.at(i) = myHabitatVars.at(i).FractalNoisePt(x, y);
     }

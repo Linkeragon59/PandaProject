@@ -19,6 +19,20 @@
 #pragma GCC diagnostic pop
 #endif
 
+#if USE_VMA
+#ifdef _WINDOWS
+#pragma warning(push)
+#pragma warning(disable:4100)
+#pragma warning(disable:4127)
+#pragma warning(disable:4324)
+#endif
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+#ifdef _WINDOWS
+#pragma warning(pop)
+#endif
+#endif
+
 #include <stdexcept>
 #include <assert.h>
 #include <iostream>
@@ -216,6 +230,9 @@ namespace Render
 		CreateSurface();
 		PickPhysicalDevice();
 		CreateLogicalDevice();
+#if USE_VMA
+		CreateVmaAllocator();
+#endif
 		CreateSwapChain();
 		CreateSwapChainImageViews();
 		CreateRenderPass();
@@ -322,18 +339,31 @@ namespace Render
 
 		vkDestroyDescriptorSetLayout(myLogicalDevice, myDescriptorSetLayout, nullptr);
 
+#if USE_VMA
+		vmaDestroyBuffer(myVmaAllocator, myIndexBuffer, myIndexBufferAlloc);
+		vmaDestroyBuffer(myVmaAllocator, myVertexBuffer, myVertexBufferAlloc);
+#else
 		vkDestroyBuffer(myLogicalDevice, myIndexBuffer, nullptr);
 		vkFreeMemory(myLogicalDevice, myIndexBufferMemory, nullptr);
 		vkDestroyBuffer(myLogicalDevice, myVertexBuffer, nullptr);
 		vkFreeMemory(myLogicalDevice, myVertexBufferMemory, nullptr);
+#endif
 
 		vkDestroySampler(myLogicalDevice, myTextureSampler, nullptr);
 
 		vkDestroyImageView(myLogicalDevice, myTextureImageView, nullptr);
+#if USE_VMA
+		vmaDestroyImage(myVmaAllocator, myTextureImage, myTextureImageAlloc);
+#else
 		vkDestroyImage(myLogicalDevice, myTextureImage, nullptr);
 		vkFreeMemory(myLogicalDevice, myTextureImageMemory, nullptr);
+#endif
 
 		vkDestroyCommandPool(myLogicalDevice, myCommandPool, nullptr);
+
+#if USE_VMA
+		vmaDestroyAllocator(myVmaAllocator);
+#endif
 
 		vkDestroyDevice(myLogicalDevice, nullptr);
 
@@ -432,6 +462,7 @@ namespace Render
 		return true;
 	}
 
+#if !USE_VMA
 	uint32_t BasicRenderer::FindMemoryType(VkPhysicalDevice aPhysicalDevice, uint32_t aTypeFilter, VkMemoryPropertyFlags someProperties)
 	{
 		VkPhysicalDeviceMemoryProperties memProperties;
@@ -447,6 +478,7 @@ namespace Render
 
 		throw std::runtime_error("Couldn't find a memory type satisfying the requirements");
 	}
+#endif
 
 	bool BasicRenderer::IsDeviceSuitable(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface)
 	{
@@ -728,6 +760,97 @@ namespace Render
 		EndOneShotCommand(aLogicalDevice, aCommandPool, aQueue, commandBuffer);
 	}
 
+#if USE_VMA
+	void BasicRenderer::CreateImage(VmaAllocator aVmaAllocator, uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkImage& anOutImage, VmaAllocation& anOutImageAlloc)
+	{
+		VkImageCreateInfo imageInfo{};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.pNext = nullptr;
+		imageInfo.flags = 0;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.format = aFormat;
+		imageInfo.extent.width = aWidth;
+		imageInfo.extent.height = aHeight;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.tiling = aTiling;
+		imageInfo.usage = aUsage;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.queueFamilyIndexCount = 0; // Ignored when using VK_SHARING_MODE_EXCLUSIVE
+		imageInfo.pQueueFamilyIndices = nullptr;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VmaAllocationCreateInfo allocInfo{};
+		allocInfo.flags = 0; // Could pre-map the memory for staging buffers using VMA_ALLOCATION_CREATE_MAPPED_BIT
+		if (someProperties == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		{
+			allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		}
+		else
+		{
+			throw std::runtime_error("Image allocation usage not supported yet.");
+		}
+		allocInfo.requiredFlags = someProperties;
+		allocInfo.preferredFlags = 0;
+		allocInfo.memoryTypeBits = 0;
+		allocInfo.pool = nullptr;
+		allocInfo.pUserData = nullptr;
+		allocInfo.priority = 0.0f;
+
+		if (vmaCreateImage(aVmaAllocator, &imageInfo, &allocInfo, &anOutImage, &anOutImageAlloc, nullptr) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate image memory!");
+		}
+	}
+
+	void BasicRenderer::CreateBuffer(VmaAllocator aVmaAllocator, VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkBuffer& anOutBuffer, VmaAllocation& anOutBufferAlloc)
+	{
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.pNext = nullptr;
+		bufferInfo.flags = 0;
+		bufferInfo.size = aSize;
+		bufferInfo.usage = aUsage;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		bufferInfo.queueFamilyIndexCount = 0;
+		bufferInfo.pQueueFamilyIndices = nullptr;
+
+		VmaAllocationCreateInfo allocInfo{};
+		allocInfo.flags = 0;
+		if (someProperties == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		{
+			allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		}
+		else if (someProperties == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+		{
+			if (aUsage == VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+			{
+				allocInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+			}
+			else
+			{
+				allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+			}
+		}
+		else
+		{
+			throw std::runtime_error("Buffer allocation usage not supported yet.");
+		}
+		allocInfo.requiredFlags = someProperties;
+		allocInfo.preferredFlags = 0;
+		allocInfo.memoryTypeBits = 0;
+		allocInfo.pool = nullptr;
+		allocInfo.pUserData = nullptr;
+		allocInfo.priority = 0.0f;
+
+		if (vmaCreateBuffer(aVmaAllocator, &bufferInfo, &allocInfo, &anOutBuffer, &anOutBufferAlloc, nullptr) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate buffer memory!");
+		}
+	}
+#else
 	void BasicRenderer::CreateImage(VkPhysicalDevice aPhysicalDevice, VkDevice aLogicalDevice, uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkImage& anOutImage, VkDeviceMemory& anOutImageMemory)
 	{
 		VkImageCreateInfo imageInfo{};
@@ -811,6 +934,7 @@ namespace Render
 
 		vkBindBufferMemory(aLogicalDevice, anOutBuffer, anOutBufferMemory, 0);
 	}
+#endif
 
 	void BasicRenderer::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& aCreateInfo)
 	{
@@ -1012,6 +1136,30 @@ namespace Render
 		vkGetDeviceQueue(myLogicalDevice, queueIndices.myPresentFamily.value(), 0, &myPresentQueue);
 	}
 
+#if USE_VMA
+	void BasicRenderer::CreateVmaAllocator()
+	{
+		VmaAllocatorCreateInfo allocatorInfo{};
+		allocatorInfo.flags = 0;
+		allocatorInfo.physicalDevice = myPhysicalDevice;
+		allocatorInfo.device = myLogicalDevice;
+		allocatorInfo.preferredLargeHeapBlockSize = 0; // defaults to 256 MiB
+		allocatorInfo.pAllocationCallbacks = nullptr;
+		allocatorInfo.pDeviceMemoryCallbacks = nullptr;
+		allocatorInfo.frameInUseCount = locMaxFramesInFlight;
+		allocatorInfo.pHeapSizeLimit = nullptr;
+		allocatorInfo.pVulkanFunctions = nullptr;
+		allocatorInfo.pRecordSettings = nullptr;
+		allocatorInfo.instance = myInstance;
+		allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
+
+		if (vmaCreateAllocator(&allocatorInfo, &myVmaAllocator) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create the vma allocator!");
+		}
+	}
+#endif
+
 	void BasicRenderer::CreateSwapChain()
 	{
 		SwapChainSupportDetails swapChainSupportDetails;
@@ -1111,8 +1259,12 @@ namespace Render
 
 		for (size_t i = 0; i < mySwapChainImages.size(); ++i)
 		{
+#if USE_VMA
+			vmaDestroyBuffer(myVmaAllocator, myUniformBuffers[i], myUniformBuffersAllocs[i]);
+#else
 			vkDestroyBuffer(myLogicalDevice, myUniformBuffers[i], nullptr);
 			vkFreeMemory(myLogicalDevice, myUniformBuffersMemory[i], nullptr);
+#endif
 		}
 
 		vkDestroyDescriptorPool(myLogicalDevice, myDescriptorPool, nullptr);
@@ -1123,8 +1275,12 @@ namespace Render
 		vkDestroyRenderPass(myLogicalDevice, myRenderPass, nullptr);
 
 		vkDestroyImageView(myLogicalDevice, myDepthImageView, nullptr);
+#if USE_VMA
+		vmaDestroyImage(myVmaAllocator, myDepthImage, myDepthImageAlloc);
+#else
 		vkDestroyImage(myLogicalDevice, myDepthImage, nullptr);
 		vkFreeMemory(myLogicalDevice, myDepthImageMemory, nullptr);
+#endif
 
 		for (auto imageView : mySwapChainImageViews)
 		{
@@ -1487,7 +1643,11 @@ namespace Render
 	{
 		VkFormat bestDepthFormat = FindBestDepthFormat(myPhysicalDevice);
 
+#if USE_VMA
+		CreateImage(myVmaAllocator, mySwapChainExtent.width, mySwapChainExtent.height, bestDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, myDepthImage, myDepthImageAlloc);
+#else
 		CreateImage(myPhysicalDevice, myLogicalDevice, mySwapChainExtent.width, mySwapChainExtent.height, bestDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, myDepthImage, myDepthImageMemory);
+#endif
 
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1527,6 +1687,15 @@ namespace Render
 		VkDeviceSize imageSize = static_cast<VkDeviceSize>(texWidth) * static_cast<VkDeviceSize>(texHeight) * 4;
 
 		VkBuffer stagingBuffer;
+#if USE_VMA
+		VmaAllocation stagingBufferAlloc;
+		CreateBuffer(myVmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferAlloc);
+
+		void* data;
+		vmaMapMemory(myVmaAllocator, stagingBufferAlloc, &data);
+		memcpy(data, pixels, static_cast<size_t>(imageSize));
+		vmaUnmapMemory(myVmaAllocator, stagingBufferAlloc);
+#else
 		VkDeviceMemory stagingBufferMemory;
 		CreateBuffer(myPhysicalDevice, myLogicalDevice, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
 
@@ -1534,10 +1703,15 @@ namespace Render
 		vkMapMemory(myLogicalDevice, stagingBufferMemory, 0, imageSize, 0, &data);
 		memcpy(data, pixels, static_cast<size_t>(imageSize));
 		vkUnmapMemory(myLogicalDevice, stagingBufferMemory);
+#endif
 
 		stbi_image_free(pixels);
 
+#if USE_VMA
+		CreateImage(myVmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, myTextureImage, myTextureImageAlloc);
+#else
 		CreateImage(myPhysicalDevice, myLogicalDevice, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, myTextureImage, myTextureImageMemory);
+#endif
 
 		TransitionImageLayout(myLogicalDevice, myCommandPool, myGraphicsQueue, myTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -1559,8 +1733,12 @@ namespace Render
 
 		TransitionImageLayout(myLogicalDevice, myCommandPool, myGraphicsQueue, myTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
+#if USE_VMA
+		vmaDestroyBuffer(myVmaAllocator, stagingBuffer, stagingBufferAlloc);
+#else
 		vkDestroyBuffer(myLogicalDevice, stagingBuffer, nullptr);
 		vkFreeMemory(myLogicalDevice, stagingBufferMemory, nullptr);
+#endif
 	}
 
 	void BasicRenderer::CreateTextureImageView()
@@ -1629,6 +1807,29 @@ namespace Render
 		VkDeviceSize bufferSize = sizeof(Vertex) * locVertices.size();
 
 		VkBuffer stagingBuffer;
+#if USE_VMA
+		VmaAllocation stagingBufferAlloc;
+		CreateBuffer(
+			myVmaAllocator,
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			stagingBuffer,
+			stagingBufferAlloc);
+
+		void* data;
+		vmaMapMemory(myVmaAllocator, stagingBufferAlloc, &data);
+		memcpy(data, locVertices.data(), (size_t)bufferSize);
+		vmaUnmapMemory(myVmaAllocator, stagingBufferAlloc);
+
+		CreateBuffer(
+			myVmaAllocator,
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			myVertexBuffer,
+			myVertexBufferAlloc);
+#else
 		VkDeviceMemory stagingBufferMemory;
 		CreateBuffer(
 			myPhysicalDevice,
@@ -1652,6 +1853,7 @@ namespace Render
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			myVertexBuffer,
 			myVertexBufferMemory);
+#endif
 
 		VkCommandBuffer commandBuffer = BeginOneShotCommand(myLogicalDevice, myCommandPool);
 
@@ -1663,8 +1865,12 @@ namespace Render
 
 		EndOneShotCommand(myLogicalDevice, myCommandPool, myGraphicsQueue, commandBuffer);
 
+#if USE_VMA
+		vmaDestroyBuffer(myVmaAllocator, stagingBuffer, stagingBufferAlloc);
+#else
 		vkDestroyBuffer(myLogicalDevice, stagingBuffer, nullptr);
 		vkFreeMemory(myLogicalDevice, stagingBufferMemory, nullptr);
+#endif
 	}
 
 	void BasicRenderer::CreateIndexBuffer()
@@ -1672,6 +1878,29 @@ namespace Render
 		VkDeviceSize bufferSize = sizeof(uint16_t) * locIndices.size();
 
 		VkBuffer stagingBuffer;
+#if USE_VMA
+		VmaAllocation stagingBufferAlloc;
+		CreateBuffer(
+			myVmaAllocator,
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			stagingBuffer,
+			stagingBufferAlloc);
+
+		void* data;
+		vmaMapMemory(myVmaAllocator, stagingBufferAlloc, &data);
+		memcpy(data, locIndices.data(), (size_t)bufferSize);
+		vmaUnmapMemory(myVmaAllocator, stagingBufferAlloc);
+
+		CreateBuffer(
+			myVmaAllocator,
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			myIndexBuffer,
+			myIndexBufferAlloc);
+#else
 		VkDeviceMemory stagingBufferMemory;
 		CreateBuffer(
 			myPhysicalDevice,
@@ -1695,6 +1924,7 @@ namespace Render
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			myIndexBuffer,
 			myIndexBufferMemory);
+#endif
 
 		VkCommandBuffer commandBuffer = BeginOneShotCommand(myLogicalDevice, myCommandPool);
 
@@ -1706,8 +1936,12 @@ namespace Render
 
 		EndOneShotCommand(myLogicalDevice, myCommandPool, myGraphicsQueue, commandBuffer);
 
+#if USE_VMA
+		vmaDestroyBuffer(myVmaAllocator, stagingBuffer, stagingBufferAlloc);
+#else
 		vkDestroyBuffer(myLogicalDevice, stagingBuffer, nullptr);
 		vkFreeMemory(myLogicalDevice, stagingBufferMemory, nullptr);
+#endif
 	}
 
 	void BasicRenderer::CreateUniformBuffers()
@@ -1715,10 +1949,23 @@ namespace Render
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
 		myUniformBuffers.resize(mySwapChainImages.size());
+#if USE_VMA
+		myUniformBuffersAllocs.resize(mySwapChainImages.size());
+#else
 		myUniformBuffersMemory.resize(mySwapChainImages.size());
+#endif
 
 		for (size_t i = 0; i < mySwapChainImages.size(); ++i)
 		{
+#if USE_VMA
+			CreateBuffer(
+				myVmaAllocator,
+				bufferSize,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				myUniformBuffers[i],
+				myUniformBuffersAllocs[i]);
+#else
 			CreateBuffer(
 				myPhysicalDevice,
 				myLogicalDevice,
@@ -1727,6 +1974,7 @@ namespace Render
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				myUniformBuffers[i],
 				myUniformBuffersMemory[i]);
+#endif
 		}
 	}
 
@@ -1927,9 +2175,16 @@ namespace Render
 		ubo.myProj = glm::perspective(glm::radians(45.0f), mySwapChainExtent.width / (float)mySwapChainExtent.height, 0.1f, 10.0f);
 		ubo.myProj[1][1] *= -1; // adapt calculation for Vulkan
 
+#if USE_VMA
+		void* data;
+		vmaMapMemory(myVmaAllocator, myUniformBuffersAllocs[anImageIndex], &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vmaUnmapMemory(myVmaAllocator, myUniformBuffersAllocs[anImageIndex]);
+#else
 		void* data;
 		vkMapMemory(myLogicalDevice, myUniformBuffersMemory[anImageIndex], 0, sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
 		vkUnmapMemory(myLogicalDevice, myUniformBuffersMemory[anImageIndex]);
+#endif
 	}
 }
