@@ -62,13 +62,13 @@ biomeType Map::BiomePt(double x, double y)
     size_t nVars = myHabitatVars.size();
     std::vector<double> habitatVars(nVars);
 
-    // Elevation includes a penalty for distance to centre
+    // Elevation includes a penalty for distance to centre (island-like map)
     double xCentre = (myXmin + myXmax)/2,
         yCentre = (myYmin + myYmax)/2;
     double distToCentre = 
         sqrt((x - xCentre)*(x - xCentre) + (y - yCentre)*(y - yCentre));
-    distToCentre = distToCentre - (myXmax - myXmin)/2;
-    habitatVars.at(0) = myHabitatVars.at(0).FractalNoisePt(x, y) - distToCentre;
+    distToCentre = distToCentre - (myXmax - myXmin)/3;
+    habitatVars.at(0) = myHabitatVars.at(0).FractalNoisePt(x, y) - 0.6 * distToCentre;
     
     // Get other habitat variables (temperature...)
     for(size_t i = 1; i < nVars; i++)
