@@ -11,6 +11,8 @@ namespace
     double locXmax = 10;
     double locYmin = 0;
     double locYmax = 10;
+    double locIslandRadius = 0.3;
+    double locIslandSlope = 0.6;
 }
 
 // Get biome from habitat variables
@@ -67,8 +69,9 @@ biomeType Map::BiomePt(double x, double y)
         yCentre = (myYmin + myYmax)/2;
     double distToCentre = 
         sqrt((x - xCentre)*(x - xCentre) + (y - yCentre)*(y - yCentre));
-    distToCentre = distToCentre - (myXmax - myXmin)/3;
-    habitatVars.at(0) = myHabitatVars.at(0).FractalNoisePt(x, y) - 0.6 * distToCentre;
+    double scaledDistToCentre = 
+        locIslandSlope * (distToCentre - (myXmax - myXmin) * locIslandRadius);
+    habitatVars.at(0) = myHabitatVars.at(0).FractalNoisePt(x, y) - scaledDistToCentre;
     
     // Get other habitat variables (temperature...)
     for(size_t i = 1; i < nVars; i++)
