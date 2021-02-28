@@ -2,7 +2,17 @@ cmake_minimum_required(VERSION 3.6.2)
 
 file(GLOB Headers *.h)
 file(GLOB Sources *.cpp)
-add_library(Render STATIC ${Headers} ${Sources})
+
+set(KTX_DIR ${CMAKE_SOURCE_DIR}/code/Extern/ktx)
+set(KTX_SOURCES
+    ${KTX_DIR}/lib/texture.c
+    ${KTX_DIR}/lib/hashlist.c
+    ${KTX_DIR}/lib/checkheader.c
+    ${KTX_DIR}/lib/swap.c
+    ${KTX_DIR}/lib/memstream.c
+    ${KTX_DIR}/lib/filestream.c)
+
+add_library(Render STATIC ${Headers} ${Sources} ${KTX_SOURCES})
 
 target_compile_features(Render PRIVATE cxx_std_20)
 
@@ -12,6 +22,9 @@ target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/glm/0.
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/glfw/3.3/include)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/stb)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/tinyobjloader)
+target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/ktx/include)
+target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/ktx/other_include)
+target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/tinygltf)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/VulkanSDK/1.2.162.1/include)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/VulkanMemoryAllocator)
 

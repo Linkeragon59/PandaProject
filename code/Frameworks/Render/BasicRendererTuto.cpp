@@ -1,4 +1,4 @@
-#include "BasicRenderer.h"
+﻿#include "BasicRendererTuto.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -158,18 +158,18 @@ namespace Render
 		}
 	}
 
-	BasicRenderer::BasicRenderer()
+	BasicRendererTuto::BasicRendererTuto()
 	{
 		InitWindow();
 		InitVulkan();
 	}
 
-	BasicRenderer::~BasicRenderer()
+	BasicRendererTuto::~BasicRendererTuto()
 	{
 		Cleanup();
 	}
 
-	void BasicRenderer::Run()
+	void BasicRendererTuto::Run()
 	{
 		while (!glfwWindowShouldClose(myWindow))
 		{
@@ -189,7 +189,7 @@ namespace Render
 		vkDeviceWaitIdle(myLogicalDevice);
 	}
 
-	void BasicRenderer::InitWindow()
+	void BasicRendererTuto::InitWindow()
 	{
 		glfwInit();
 
@@ -200,17 +200,18 @@ namespace Render
 		glfwSetFramebufferSizeCallback(myWindow, FramebufferResizeCallback);
 	}
 
-	void BasicRenderer::InitVulkan()
+	void BasicRendererTuto::InitVulkan()
 	{
 		CreateInstance();
 		SetupDebugMessenger();
 		CreateSurface();
 		PickPhysicalDevice();
 		CreateLogicalDevice();
+#if USE_VMA
 		CreateVmaAllocator();
+#endif
 		CreateSwapChain();
 		CreateSwapChainImageViews();
-
 		CreateRenderPass();
 		CreateDescriptorSetLayout();
 		CreateGraphicsPipeline();
@@ -229,7 +230,7 @@ namespace Render
 		CreateSynchronizationObjects();
 	}
 
-	void BasicRenderer::DrawFrame()
+	void BasicRendererTuto::DrawFrame()
 	{
 		vkWaitForFences(myLogicalDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame], VK_TRUE, UINT64_MAX);
 
@@ -302,7 +303,7 @@ namespace Render
 		myCurrentInFlightFrame = (myCurrentInFlightFrame + 1) % locMaxFramesInFlight;
 	}
 
-	void BasicRenderer::Cleanup()
+	void BasicRendererTuto::Cleanup()
 	{
 		for (uint32_t i = 0; i < locMaxFramesInFlight; ++i)
 		{
@@ -315,17 +316,31 @@ namespace Render
 
 		vkDestroyDescriptorSetLayout(myLogicalDevice, myDescriptorSetLayout, nullptr);
 
+#if USE_VMA
 		vmaDestroyBuffer(myVmaAllocator, myIndexBuffer, myIndexBufferAlloc);
 		vmaDestroyBuffer(myVmaAllocator, myVertexBuffer, myVertexBufferAlloc);
+#else
+		vkDestroyBuffer(myLogicalDevice, myIndexBuffer, nullptr);
+		vkFreeMemory(myLogicalDevice, myIndexBufferMemory, nullptr);
+		vkDestroyBuffer(myLogicalDevice, myVertexBuffer, nullptr);
+		vkFreeMemory(myLogicalDevice, myVertexBufferMemory, nullptr);
+#endif
 
 		vkDestroySampler(myLogicalDevice, myTextureSampler, nullptr);
 
 		vkDestroyImageView(myLogicalDevice, myTextureImageView, nullptr);
+#if USE_VMA
 		vmaDestroyImage(myVmaAllocator, myTextureImage, myTextureImageAlloc);
+#else
+		vkDestroyImage(myLogicalDevice, myTextureImage, nullptr);
+		vkFreeMemory(myLogicalDevice, myTextureImageMemory, nullptr);
+#endif
 
 		vkDestroyCommandPool(myLogicalDevice, myCommandPool, nullptr);
 
+#if USE_VMA
 		vmaDestroyAllocator(myVmaAllocator);
+#endif
 
 		vkDestroyDevice(myLogicalDevice, nullptr);
 
@@ -343,7 +358,7 @@ namespace Render
 		glfwTerminate();
 	}
 
-	bool BasicRenderer::CheckValidationLayersSupport(const std::vector<const char*>& someValidationLayers)
+	bool BasicRendererTuto::CheckValidationLayersSupport(const std::vector<const char*>& someValidationLayers)
 	{
 		uint32_t layerCount = 0;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -370,7 +385,7 @@ namespace Render
 		return true;
 	}
 
-	bool BasicRenderer::CheckInstanceExtensionsSupport(const std::vector<const char*>& someExtensions)
+	bool BasicRendererTuto::CheckInstanceExtensionsSupport(const std::vector<const char*>& someExtensions)
 	{
 		uint32_t extensionCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -397,7 +412,7 @@ namespace Render
 		return true;
 	}
 
-	bool BasicRenderer::CheckDeviceExtensionsSupport(VkPhysicalDevice aPhysicalDevice, const std::vector<const char*>& someExtensions)
+	bool BasicRendererTuto::CheckDeviceExtensionsSupport(VkPhysicalDevice aPhysicalDevice, const std::vector<const char*>& someExtensions)
 	{
 		uint32_t extensionCount = 0;
 		vkEnumerateDeviceExtensionProperties(aPhysicalDevice, nullptr, &extensionCount, nullptr);
@@ -424,7 +439,25 @@ namespace Render
 		return true;
 	}
 
-	bool BasicRenderer::IsDeviceSuitable(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface)
+#if !USE_VMA
+	uint32_t BasicRendererTuto::FindMemoryType(VkPhysicalDevice aPhysicalDevice, uint32_t aTypeFilter, VkMemoryPropertyFlags someProperties)
+	{
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(aPhysicalDevice, &memProperties);
+
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
+		{
+			if (aTypeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & someProperties) == someProperties)
+			{
+				return i;
+			}
+		}
+
+		throw std::runtime_error("Couldn't find a memory type satisfying the requirements");
+	}
+#endif
+
+	bool BasicRendererTuto::IsDeviceSuitable(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface)
 	{
 		VkPhysicalDeviceProperties deviceProperties;
 		VkPhysicalDeviceFeatures deviceFeatures;
@@ -453,7 +486,7 @@ namespace Render
 		return true;
 	}
 
-	void BasicRenderer::QuerySwapChainSupport(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface, SwapChainSupportDetails& someOutDetails)
+	void BasicRendererTuto::QuerySwapChainSupport(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface, SwapChainSupportDetails& someOutDetails)
 	{
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(aPhysicalDevice, aSurface, &someOutDetails.myCapabilities);
 		uint32_t formatCount = 0;
@@ -467,7 +500,7 @@ namespace Render
 		vkGetPhysicalDeviceSurfacePresentModesKHR(aPhysicalDevice, aSurface, &presentModeCount, someOutDetails.myPresentModes.data());
 	}
 
-	void BasicRenderer::FindQueueFamilies(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface, QueueFamilyIndices& someOutQueueIndices)
+	void BasicRendererTuto::FindQueueFamilies(VkPhysicalDevice aPhysicalDevice, VkSurfaceKHR aSurface, QueueFamilyIndices& someOutQueueIndices)
 	{
 		uint32_t queueFamilyCount = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(aPhysicalDevice, &queueFamilyCount, nullptr);
@@ -498,13 +531,13 @@ namespace Render
 		}
 	}
 
-	VkFormat BasicRenderer::FindSupportedFormat(VkPhysicalDevice aPhysicalDevice, const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures)
+	VkFormat BasicRendererTuto::FindSupportedFormat(VkPhysicalDevice aPhysicalDevice, const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures)
 	{
 		for (VkFormat format : someCandidateFormats)
 		{
 			VkFormatProperties props;
 			vkGetPhysicalDeviceFormatProperties(aPhysicalDevice, format, &props);
-
+			
 			if (aTiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & someFeatures) == someFeatures)
 			{
 				return format;
@@ -518,7 +551,7 @@ namespace Render
 		throw std::runtime_error("Couldn't find an available format!");
 	}
 
-	VkFormat BasicRenderer::FindBestDepthFormat(VkPhysicalDevice aPhysicalDevice)
+	VkFormat BasicRendererTuto::FindBestDepthFormat(VkPhysicalDevice aPhysicalDevice)
 	{
 		return FindSupportedFormat(
 			aPhysicalDevice,
@@ -528,7 +561,7 @@ namespace Render
 		);
 	}
 
-	VkExtent2D BasicRenderer::SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& someCapabilities)
+	VkExtent2D BasicRendererTuto::SelectSwapChainExtent(const VkSurfaceCapabilitiesKHR& someCapabilities)
 	{
 		if (someCapabilities.currentExtent.width != UINT32_MAX)
 		{
@@ -543,7 +576,7 @@ namespace Render
 		}
 	}
 
-	VkSurfaceFormatKHR BasicRenderer::SelectSwapChainFormat(const std::vector<VkSurfaceFormatKHR>& someAvailableFormats)
+	VkSurfaceFormatKHR BasicRendererTuto::SelectSwapChainFormat(const std::vector<VkSurfaceFormatKHR>& someAvailableFormats)
 	{
 		assert(someAvailableFormats.size() > 0);
 		for (const auto& availableFormat : someAvailableFormats)
@@ -556,7 +589,7 @@ namespace Render
 		return someAvailableFormats[0];
 	}
 
-	VkPresentModeKHR BasicRenderer::SelectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& someAvailablePresentModes)
+	VkPresentModeKHR BasicRendererTuto::SelectSwapChainPresentMode(const std::vector<VkPresentModeKHR>& someAvailablePresentModes)
 	{
 		assert(someAvailablePresentModes.size() > 0);
 		for (const auto& availablePresentMode : someAvailablePresentModes)
@@ -569,7 +602,7 @@ namespace Render
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	VkShaderModule BasicRenderer::CreateShaderModule(VkDevice aLogicalDevice, const std::vector<char>& someByteCode)
+	VkShaderModule BasicRendererTuto::CreateShaderModule(VkDevice aLogicalDevice, const std::vector<char>& someByteCode)
 	{
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -586,7 +619,7 @@ namespace Render
 		return shaderModule;
 	}
 
-	VkCommandBuffer BasicRenderer::BeginOneShotCommand(VkDevice aLogicalDevice, VkCommandPool aCommandPool)
+	VkCommandBuffer BasicRendererTuto::BeginOneShotCommand(VkDevice aLogicalDevice, VkCommandPool aCommandPool)
 	{
 		VkCommandBuffer commandBuffer;
 
@@ -616,7 +649,7 @@ namespace Render
 		return commandBuffer;
 	}
 
-	void BasicRenderer::EndOneShotCommand(VkDevice aLogicalDevice, VkCommandPool aCommandPool, VkQueue aQueue, VkCommandBuffer aCommandBuffer)
+	void BasicRendererTuto::EndOneShotCommand(VkDevice aLogicalDevice, VkCommandPool aCommandPool, VkQueue aQueue, VkCommandBuffer aCommandBuffer)
 	{
 		if (vkEndCommandBuffer(aCommandBuffer) != VK_SUCCESS)
 		{
@@ -634,7 +667,7 @@ namespace Render
 		vkFreeCommandBuffers(aLogicalDevice, aCommandPool, 1, &aCommandBuffer);
 	}
 
-	void BasicRenderer::TransitionImageLayout(VkDevice aLogicalDevice, VkCommandPool aCommandPool, VkQueue aQueue, VkImage anImage, VkFormat aFormat, VkImageLayout anOldLayout, VkImageLayout aNewLayout)
+	void BasicRendererTuto::TransitionImageLayout(VkDevice aLogicalDevice, VkCommandPool aCommandPool, VkQueue aQueue, VkImage anImage, VkFormat aFormat, VkImageLayout anOldLayout, VkImageLayout aNewLayout)
 	{
 		VkCommandBuffer commandBuffer = BeginOneShotCommand(aLogicalDevice, aCommandPool);
 
@@ -704,7 +737,8 @@ namespace Render
 		EndOneShotCommand(aLogicalDevice, aCommandPool, aQueue, commandBuffer);
 	}
 
-	void BasicRenderer::CreateImage(VmaAllocator aVmaAllocator, uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkImage& anOutImage, VmaAllocation& anOutImageAlloc)
+#if USE_VMA
+	void BasicRendererTuto::CreateImage(VmaAllocator aVmaAllocator, uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkImage& anOutImage, VmaAllocation& anOutImageAlloc)
 	{
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -748,7 +782,7 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateBuffer(VmaAllocator aVmaAllocator, VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkBuffer& anOutBuffer, VmaAllocation& anOutBufferAlloc)
+	void BasicRendererTuto::CreateBuffer(VmaAllocator aVmaAllocator, VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkBuffer& anOutBuffer, VmaAllocation& anOutBufferAlloc)
 	{
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -793,8 +827,93 @@ namespace Render
 			throw std::runtime_error("Failed to allocate buffer memory!");
 		}
 	}
+#else
+	void BasicRendererTuto::CreateImage(VkPhysicalDevice aPhysicalDevice, VkDevice aLogicalDevice, uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkImage& anOutImage, VkDeviceMemory& anOutImageMemory)
+	{
+		VkImageCreateInfo imageInfo{};
+		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageInfo.pNext = nullptr;
+		imageInfo.flags = 0;
+		imageInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageInfo.format = aFormat;
+		imageInfo.extent.width = aWidth;
+		imageInfo.extent.height = aHeight;
+		imageInfo.extent.depth = 1;
+		imageInfo.mipLevels = 1;
+		imageInfo.arrayLayers = 1;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.tiling = aTiling;
+		imageInfo.usage = aUsage;
+		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.queueFamilyIndexCount = 0; // Ignored when using VK_SHARING_MODE_EXCLUSIVE
+		imageInfo.pQueueFamilyIndices = nullptr;
+		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-	void BasicRenderer::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& aCreateInfo)
+		if (vkCreateImage(aLogicalDevice, &imageInfo, nullptr, &anOutImage) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create an image!");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetImageMemoryRequirements(aLogicalDevice, anOutImage, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.pNext = nullptr;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = FindMemoryType(aPhysicalDevice, memRequirements.memoryTypeBits, someProperties);
+
+		if (vkAllocateMemory(aLogicalDevice, &allocInfo, nullptr, &anOutImageMemory) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate image memory!");
+		}
+
+		vkBindImageMemory(aLogicalDevice, anOutImage, anOutImageMemory, 0);
+	}
+
+	void BasicRendererTuto::CreateBuffer(
+		VkPhysicalDevice aPhysicalDevice,
+		VkDevice aLogicalDevice,
+		VkDeviceSize aSize,
+		VkBufferUsageFlags aUsage,
+		VkMemoryPropertyFlags someProperties,
+		VkBuffer& anOutBuffer,
+		VkDeviceMemory& anOutBufferMemory)
+	{
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.pNext = nullptr;
+		bufferInfo.flags = 0;
+		bufferInfo.size = aSize;
+		bufferInfo.usage = aUsage;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		bufferInfo.queueFamilyIndexCount = 0;
+		bufferInfo.pQueueFamilyIndices = nullptr;
+
+		if (vkCreateBuffer(aLogicalDevice, &bufferInfo, nullptr, &anOutBuffer) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create a buffer!");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(aLogicalDevice, anOutBuffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.pNext = nullptr;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = FindMemoryType(aPhysicalDevice, memRequirements.memoryTypeBits, someProperties);
+
+		if (vkAllocateMemory(aLogicalDevice, &allocInfo, nullptr, &anOutBufferMemory) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate memory!");
+		}
+
+		vkBindBufferMemory(aLogicalDevice, anOutBuffer, anOutBufferMemory, 0);
+	}
+#endif
+
+	void BasicRendererTuto::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& aCreateInfo)
 	{
 		aCreateInfo = {};
 		aCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -813,7 +932,7 @@ namespace Render
 		aCreateInfo.pUserData = nullptr;
 	}
 
-	VKAPI_ATTR VkBool32 VKAPI_CALL BasicRenderer::DebugCallback(
+	VKAPI_ATTR VkBool32 VKAPI_CALL BasicRendererTuto::DebugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT /*aMessageSeverity*/,
 		VkDebugUtilsMessageTypeFlagsEXT /*aMessageType*/,
 		const VkDebugUtilsMessengerCallbackDataEXT* aCallbackData,
@@ -823,13 +942,13 @@ namespace Render
 		return VK_FALSE; // Don't interrupt the execution
 	}
 
-	void BasicRenderer::FramebufferResizeCallback(GLFWwindow* aWindow, int /*aWidth*/, int /*aHeight*/)
+	void BasicRendererTuto::FramebufferResizeCallback(GLFWwindow* aWindow, int /*aWidth*/, int /*aHeight*/)
 	{
-		auto app = reinterpret_cast<BasicRenderer*>(glfwGetWindowUserPointer(aWindow));
+		auto app = reinterpret_cast<BasicRendererTuto*>(glfwGetWindowUserPointer(aWindow));
 		app->myFramebufferResized = true;
 	}
 
-	void BasicRenderer::CreateInstance()
+	void BasicRendererTuto::CreateInstance()
 	{
 		if (locEnableValidationLayers && !CheckValidationLayersSupport(locValidationLayers))
 		{
@@ -887,7 +1006,7 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::SetupDebugMessenger()
+	void BasicRendererTuto::SetupDebugMessenger()
 	{
 		if (!locEnableValidationLayers)
 			return;
@@ -901,7 +1020,7 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateSurface()
+	void BasicRendererTuto::CreateSurface()
 	{
 		if (glfwCreateWindowSurface(myInstance, myWindow, nullptr, &mySurface) != VK_SUCCESS)
 		{
@@ -909,7 +1028,7 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::PickPhysicalDevice()
+	void BasicRendererTuto::PickPhysicalDevice()
 	{
 
 		uint32_t deviceCount = 0;
@@ -936,11 +1055,11 @@ namespace Render
 		{
 			throw std::runtime_error("No suitable physical device was found!");
 		}
-
+		
 		vkGetPhysicalDeviceFeatures(myPhysicalDevice, &myAvailableFeatures);
 	}
 
-	void BasicRenderer::CreateLogicalDevice()
+	void BasicRendererTuto::CreateLogicalDevice()
 	{
 		if (myAvailableFeatures.samplerAnisotropy == VK_TRUE)
 			myRequestedFeatures.samplerAnisotropy = VK_TRUE;
@@ -994,7 +1113,8 @@ namespace Render
 		vkGetDeviceQueue(myLogicalDevice, queueIndices.myPresentFamily.value(), 0, &myPresentQueue);
 	}
 
-	void BasicRenderer::CreateVmaAllocator()
+#if USE_VMA
+	void BasicRendererTuto::CreateVmaAllocator()
 	{
 		VmaAllocatorCreateInfo allocatorInfo{};
 		allocatorInfo.flags = 0;
@@ -1015,8 +1135,9 @@ namespace Render
 			throw std::runtime_error("Failed to create the vma allocator!");
 		}
 	}
+#endif
 
-	void BasicRenderer::CreateSwapChain()
+	void BasicRendererTuto::CreateSwapChain()
 	{
 		SwapChainSupportDetails swapChainSupportDetails;
 		QuerySwapChainSupport(myPhysicalDevice, mySurface, swapChainSupportDetails);
@@ -1076,7 +1197,7 @@ namespace Render
 		mySwapChainExtent = extent;
 	}
 
-	void BasicRenderer::RecreateSwapChain()
+	void BasicRendererTuto::RecreateSwapChain()
 	{
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(myWindow, &width, &height);
@@ -1104,7 +1225,7 @@ namespace Render
 		myImageFences.resize(mySwapChainImages.size(), VK_NULL_HANDLE);
 	}
 
-	void BasicRenderer::CleanupSwapChain()
+	void BasicRendererTuto::CleanupSwapChain()
 	{
 		vkFreeCommandBuffers(myLogicalDevice, myCommandPool, static_cast<uint32_t>(myCommandBuffers.size()), myCommandBuffers.data());
 
@@ -1115,7 +1236,12 @@ namespace Render
 
 		for (size_t i = 0; i < mySwapChainImages.size(); ++i)
 		{
+#if USE_VMA
 			vmaDestroyBuffer(myVmaAllocator, myUniformBuffers[i], myUniformBuffersAllocs[i]);
+#else
+			vkDestroyBuffer(myLogicalDevice, myUniformBuffers[i], nullptr);
+			vkFreeMemory(myLogicalDevice, myUniformBuffersMemory[i], nullptr);
+#endif
 		}
 
 		vkDestroyDescriptorPool(myLogicalDevice, myDescriptorPool, nullptr);
@@ -1126,7 +1252,12 @@ namespace Render
 		vkDestroyRenderPass(myLogicalDevice, myRenderPass, nullptr);
 
 		vkDestroyImageView(myLogicalDevice, myDepthImageView, nullptr);
+#if USE_VMA
 		vmaDestroyImage(myVmaAllocator, myDepthImage, myDepthImageAlloc);
+#else
+		vkDestroyImage(myLogicalDevice, myDepthImage, nullptr);
+		vkFreeMemory(myLogicalDevice, myDepthImageMemory, nullptr);
+#endif
 
 		for (auto imageView : mySwapChainImageViews)
 		{
@@ -1136,7 +1267,7 @@ namespace Render
 		vkDestroySwapchainKHR(myLogicalDevice, mySwapChain, nullptr);
 	}
 
-	void BasicRenderer::CreateSwapChainImageViews()
+	void BasicRendererTuto::CreateSwapChainImageViews()
 	{
 		mySwapChainImageViews.resize(mySwapChainImages.size());
 		for (size_t i = 0, e = mySwapChainImages.size(); i < e; ++i)
@@ -1165,7 +1296,7 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateRenderPass()
+	void BasicRendererTuto::CreateRenderPass()
 	{
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.flags = 0;
@@ -1237,7 +1368,7 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateDescriptorSetLayout()
+	void BasicRendererTuto::CreateDescriptorSetLayout()
 	{
 		VkDescriptorSetLayoutBinding uboLayoutBinding{};
 		uboLayoutBinding.binding = 0;
@@ -1268,11 +1399,11 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateGraphicsPipeline()
+	void BasicRendererTuto::CreateGraphicsPipeline()
 	{
-		auto vertShaderCode = locReadFile("Frameworks/shaders/basicRenderer_vert.spv");
+		auto vertShaderCode = locReadFile("Frameworks/shaders/basicRendererTuto_vert.spv");
 		auto vertShaderModule = CreateShaderModule(myLogicalDevice, vertShaderCode);
-		auto fragShaderCode = locReadFile("Frameworks/shaders/basicRenderer_frag.spv");
+		auto fragShaderCode = locReadFile("Frameworks/shaders/basicRendererTuto_frag.spv");
 		auto fragShaderModule = CreateShaderModule(myLogicalDevice, fragShaderCode);
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
@@ -1442,7 +1573,7 @@ namespace Render
 		vkDestroyShaderModule(myLogicalDevice, vertShaderModule, nullptr);
 	}
 
-	void BasicRenderer::CreateFrameBuffers()
+	void BasicRendererTuto::CreateFrameBuffers()
 	{
 		mySwapChainFramebuffers.resize(mySwapChainImageViews.size());
 
@@ -1468,7 +1599,7 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateCommandPool()
+	void BasicRendererTuto::CreateCommandPool()
 	{
 		QueueFamilyIndices queueIndices;
 		FindQueueFamilies(myPhysicalDevice, mySurface, queueIndices);
@@ -1485,11 +1616,15 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateDepthResources()
+	void BasicRendererTuto::CreateDepthResources()
 	{
 		VkFormat bestDepthFormat = FindBestDepthFormat(myPhysicalDevice);
 
+#if USE_VMA
 		CreateImage(myVmaAllocator, mySwapChainExtent.width, mySwapChainExtent.height, bestDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, myDepthImage, myDepthImageAlloc);
+#else
+		CreateImage(myPhysicalDevice, myLogicalDevice, mySwapChainExtent.width, mySwapChainExtent.height, bestDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, myDepthImage, myDepthImageMemory);
+#endif
 
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1517,7 +1652,7 @@ namespace Render
 		TransitionImageLayout(myLogicalDevice, myCommandPool, myGraphicsQueue, myDepthImage, bestDepthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 	}
 
-	void BasicRenderer::CreateTextureImage()
+	void BasicRendererTuto::CreateTextureImage()
 	{
 		int texWidth, texHeight, texChannels;
 		stbi_uc* pixels = stbi_load(locTestTexture.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -1529,6 +1664,7 @@ namespace Render
 		VkDeviceSize imageSize = static_cast<VkDeviceSize>(texWidth) * static_cast<VkDeviceSize>(texHeight) * 4;
 
 		VkBuffer stagingBuffer;
+#if USE_VMA
 		VmaAllocation stagingBufferAlloc;
 		CreateBuffer(myVmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferAlloc);
 
@@ -1536,10 +1672,23 @@ namespace Render
 		vmaMapMemory(myVmaAllocator, stagingBufferAlloc, &data);
 		memcpy(data, pixels, static_cast<size_t>(imageSize));
 		vmaUnmapMemory(myVmaAllocator, stagingBufferAlloc);
+#else
+		VkDeviceMemory stagingBufferMemory;
+		CreateBuffer(myPhysicalDevice, myLogicalDevice, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(myLogicalDevice, stagingBufferMemory, 0, imageSize, 0, &data);
+		memcpy(data, pixels, static_cast<size_t>(imageSize));
+		vkUnmapMemory(myLogicalDevice, stagingBufferMemory);
+#endif
 
 		stbi_image_free(pixels);
 
+#if USE_VMA
 		CreateImage(myVmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, myTextureImage, myTextureImageAlloc);
+#else
+		CreateImage(myPhysicalDevice, myLogicalDevice, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, myTextureImage, myTextureImageMemory);
+#endif
 
 		TransitionImageLayout(myLogicalDevice, myCommandPool, myGraphicsQueue, myTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
@@ -1561,10 +1710,15 @@ namespace Render
 
 		TransitionImageLayout(myLogicalDevice, myCommandPool, myGraphicsQueue, myTextureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
+#if USE_VMA
 		vmaDestroyBuffer(myVmaAllocator, stagingBuffer, stagingBufferAlloc);
+#else
+		vkDestroyBuffer(myLogicalDevice, stagingBuffer, nullptr);
+		vkFreeMemory(myLogicalDevice, stagingBufferMemory, nullptr);
+#endif
 	}
 
-	void BasicRenderer::CreateTextureImageView()
+	void BasicRendererTuto::CreateTextureImageView()
 	{
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1582,14 +1736,14 @@ namespace Render
 		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
-
+		
 		if (vkCreateImageView(myLogicalDevice, &viewInfo, nullptr, &myTextureImageView) != VK_SUCCESS)
 		{
 			throw std::runtime_error("Failed to create a view for the texture!");
 		}
 	}
 
-	void BasicRenderer::CreateTextureSampler()
+	void BasicRendererTuto::CreateTextureSampler()
 	{
 		VkSamplerCreateInfo samplerInfo{};
 		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -1625,11 +1779,12 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateVertexBuffer()
+	void BasicRendererTuto::CreateVertexBuffer()
 	{
 		VkDeviceSize bufferSize = sizeof(Vertex) * locVertices.size();
 
 		VkBuffer stagingBuffer;
+#if USE_VMA
 		VmaAllocation stagingBufferAlloc;
 		CreateBuffer(
 			myVmaAllocator,
@@ -1651,6 +1806,31 @@ namespace Render
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			myVertexBuffer,
 			myVertexBufferAlloc);
+#else
+		VkDeviceMemory stagingBufferMemory;
+		CreateBuffer(
+			myPhysicalDevice,
+			myLogicalDevice,
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			stagingBuffer,
+			stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(myLogicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, locVertices.data(), (size_t)bufferSize);
+		vkUnmapMemory(myLogicalDevice, stagingBufferMemory);
+
+		CreateBuffer(
+			myPhysicalDevice,
+			myLogicalDevice,
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			myVertexBuffer,
+			myVertexBufferMemory);
+#endif
 
 		VkCommandBuffer commandBuffer = BeginOneShotCommand(myLogicalDevice, myCommandPool);
 
@@ -1662,14 +1842,20 @@ namespace Render
 
 		EndOneShotCommand(myLogicalDevice, myCommandPool, myGraphicsQueue, commandBuffer);
 
+#if USE_VMA
 		vmaDestroyBuffer(myVmaAllocator, stagingBuffer, stagingBufferAlloc);
+#else
+		vkDestroyBuffer(myLogicalDevice, stagingBuffer, nullptr);
+		vkFreeMemory(myLogicalDevice, stagingBufferMemory, nullptr);
+#endif
 	}
 
-	void BasicRenderer::CreateIndexBuffer()
+	void BasicRendererTuto::CreateIndexBuffer()
 	{
 		VkDeviceSize bufferSize = sizeof(uint16_t) * locIndices.size();
 
 		VkBuffer stagingBuffer;
+#if USE_VMA
 		VmaAllocation stagingBufferAlloc;
 		CreateBuffer(
 			myVmaAllocator,
@@ -1691,6 +1877,31 @@ namespace Render
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			myIndexBuffer,
 			myIndexBufferAlloc);
+#else
+		VkDeviceMemory stagingBufferMemory;
+		CreateBuffer(
+			myPhysicalDevice,
+			myLogicalDevice,
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			stagingBuffer,
+			stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(myLogicalDevice, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, locIndices.data(), (size_t)bufferSize);
+		vkUnmapMemory(myLogicalDevice, stagingBufferMemory);
+
+		CreateBuffer(
+			myPhysicalDevice,
+			myLogicalDevice,
+			bufferSize,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			myIndexBuffer,
+			myIndexBufferMemory);
+#endif
 
 		VkCommandBuffer commandBuffer = BeginOneShotCommand(myLogicalDevice, myCommandPool);
 
@@ -1702,18 +1913,28 @@ namespace Render
 
 		EndOneShotCommand(myLogicalDevice, myCommandPool, myGraphicsQueue, commandBuffer);
 
+#if USE_VMA
 		vmaDestroyBuffer(myVmaAllocator, stagingBuffer, stagingBufferAlloc);
+#else
+		vkDestroyBuffer(myLogicalDevice, stagingBuffer, nullptr);
+		vkFreeMemory(myLogicalDevice, stagingBufferMemory, nullptr);
+#endif
 	}
 
-	void BasicRenderer::CreateUniformBuffers()
+	void BasicRendererTuto::CreateUniformBuffers()
 	{
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
 		myUniformBuffers.resize(mySwapChainImages.size());
+#if USE_VMA
 		myUniformBuffersAllocs.resize(mySwapChainImages.size());
+#else
+		myUniformBuffersMemory.resize(mySwapChainImages.size());
+#endif
 
 		for (size_t i = 0; i < mySwapChainImages.size(); ++i)
 		{
+#if USE_VMA
 			CreateBuffer(
 				myVmaAllocator,
 				bufferSize,
@@ -1721,10 +1942,20 @@ namespace Render
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				myUniformBuffers[i],
 				myUniformBuffersAllocs[i]);
+#else
+			CreateBuffer(
+				myPhysicalDevice,
+				myLogicalDevice,
+				bufferSize,
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				myUniformBuffers[i],
+				myUniformBuffersMemory[i]);
+#endif
 		}
 	}
 
-	void BasicRenderer::CreateDescriptorPool()
+	void BasicRendererTuto::CreateDescriptorPool()
 	{
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -1746,7 +1977,7 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateDescriptorSets()
+	void BasicRendererTuto::CreateDescriptorSets()
 	{
 		std::vector<VkDescriptorSetLayout> layouts(mySwapChainImages.size(), myDescriptorSetLayout);
 
@@ -1804,7 +2035,7 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateCommandBuffers()
+	void BasicRendererTuto::CreateCommandBuffers()
 	{
 		myCommandBuffers.resize(mySwapChainFramebuffers.size());
 
@@ -1870,7 +2101,7 @@ namespace Render
 		}
 	}
 
-	void BasicRenderer::CreateSynchronizationObjects()
+	void BasicRendererTuto::CreateSynchronizationObjects()
 	{
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -1905,7 +2136,7 @@ namespace Render
 		myImageFences.resize(mySwapChainImages.size(), VK_NULL_HANDLE);
 	}
 
-	void BasicRenderer::UpdateUniformBuffers(uint32_t anImageIndex)
+	void BasicRendererTuto::UpdateUniformBuffers(uint32_t anImageIndex)
 	{
 		// Using a UBO this way is not the most efficient way to pass frequently changing values to the shader.
 		// A more efficient way to pass a small buffer of data to shaders are push constants.
@@ -1921,9 +2152,16 @@ namespace Render
 		ubo.myProj = glm::perspective(glm::radians(45.0f), mySwapChainExtent.width / (float)mySwapChainExtent.height, 0.1f, 10.0f);
 		ubo.myProj[1][1] *= -1; // adapt calculation for Vulkan
 
+#if USE_VMA
 		void* data;
 		vmaMapMemory(myVmaAllocator, myUniformBuffersAllocs[anImageIndex], &data);
 		memcpy(data, &ubo, sizeof(ubo));
 		vmaUnmapMemory(myVmaAllocator, myUniformBuffersAllocs[anImageIndex]);
+#else
+		void* data;
+		vkMapMemory(myLogicalDevice, myUniformBuffersMemory[anImageIndex], 0, sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(myLogicalDevice, myUniformBuffersMemory[anImageIndex]);
+#endif
 	}
 }
