@@ -5,6 +5,7 @@
 #include "DummyGameObject.h"
 #include "Perlin.h"
 #include "Map.h"
+#include "Input.h"
 
 int main()
 {
@@ -32,6 +33,9 @@ int main()
 	// Test Perlin and Map classes
 	Map map;
 	map.Print();
+
+	InputManager input;
+	input.Create();
 
 	return EXIT_SUCCESS;
 }
