@@ -2,28 +2,41 @@
 
 #include <iostream>
 
-enum MouseInput
+struct GLFWwindow;
+
+namespace Base
 {
-    Button1 = 0,
-    Button2 = 1
-};
-
-class InputManager
-{
-public:
-    static void Create()
+    enum MouseInput
     {
-        ourInstance = new InputManager;
-    }
-    static void Destroy()
+        Button1 = 0,
+        Button2 = 1
+    };
+
+    class InputManager
     {
-        delete ourInstance;
-        ourInstance = nullptr;
-    }
-    static InputManager* GetInstance() { return ourInstance; }
+    public:
+        InputManager();
+        ~InputManager();
 
-    bool PollInput(MouseInput);
+        static void Create()
+        {
+            ourInstance = new InputManager;
+        }
+        static void Destroy()
+        {
+            delete ourInstance;
+            ourInstance = nullptr;
+        }
+        static InputManager* GetInstance() { return ourInstance; }
 
-private:
-    static InputManager* ourInstance;
-};
+        void InitWindow();
+        void Cleanup();
+
+        void PollInput(MouseInput anInput);
+        void MouseButtonCallback(int button, int action);
+
+    private:
+        static InputManager* ourInstance;
+        GLFWwindow* myWindow = nullptr;
+    };
+} // namespace Base

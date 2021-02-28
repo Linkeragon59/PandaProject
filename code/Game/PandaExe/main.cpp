@@ -34,8 +34,10 @@ int main()
 	Map map;
 	map.Print();
 
-	InputManager input;
+	// Test InputManager class
+	Base::InputManager input;
 	input.Create();
+	input.PollInput(Base::Button1);
 
 	return EXIT_SUCCESS;
 }
