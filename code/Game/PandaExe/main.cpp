@@ -38,6 +38,7 @@ int main()
 	GameWork* gameWork = new GameWork();
 	gameWork->Create();
 	gameWork->Run();
+	gameWork->Destroy();
 
 	return EXIT_SUCCESS;
 }

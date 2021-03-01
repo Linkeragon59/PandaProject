@@ -22,7 +22,7 @@ namespace Base
         static void Destroy();
         static InputManager* GetInstance() { return ourInstance; }
 
-        void PollInput(GLFWwindow* window, MouseInput anInput);
+        int PollInput(GLFWwindow* window, MouseInput anInput);
         
     private:
         static InputManager* ourInstance;

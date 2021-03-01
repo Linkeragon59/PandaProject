@@ -37,7 +37,11 @@ void GameWork::Run()
 {
     while (!glfwWindowShouldClose(ourInstance->myWindow))
 	{
-       glfwPollEvents();
+        glfwPollEvents();
+        if(myInputManager->PollInput(ourInstance->myWindow, Base::Button1))
+            std::cout << "Button 1 clicked" << std::endl;
+        if(myInputManager->PollInput(ourInstance->myWindow, Base::Button2))
+            std::cout << "Button 2 clicked" << std::endl;
     }
 }
 

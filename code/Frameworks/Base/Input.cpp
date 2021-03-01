@@ -24,21 +24,8 @@ namespace Base
         ourInstance = nullptr;
     }
 
-    void InputManager::PollInput(GLFWwindow* aWindow, MouseInput anInput)
+    int InputManager::PollInput(GLFWwindow* aWindow, MouseInput anInput)
     {
-        bool clicked = false;
-
-        while (!glfwWindowShouldClose(aWindow))
-		{
-            glfwPollEvents();
-            int isButtonClicked = glfwGetMouseButton(aWindow, anInput);
-            if(isButtonClicked == GLFW_PRESS)
-                clicked = true;
-        }
-
-        if(clicked)
-            std::cout << "Button clicked" << std::endl;
-        else
-            std::cout << "Button not clicked" << std::endl;
+            return glfwGetMouseButton(aWindow, anInput);
     }
 }
