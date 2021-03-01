@@ -5,7 +5,7 @@
 #include "DummyGameObject.h"
 #include "Perlin.h"
 #include "Map.h"
-#include "Input.h"
+#include "GameWork.h"
 
 int main()
 {
@@ -35,9 +35,9 @@ int main()
 	map.Print();
 
 	// Test InputManager class
-	Base::InputManager input;
-	input.Create();
-	input.PollInput(Base::Button1);
+	GameWork* gameWork = new GameWork();
+	gameWork->Create();
+	gameWork->Run();
 
 	return EXIT_SUCCESS;
 }

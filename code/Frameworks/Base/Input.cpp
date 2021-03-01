@@ -3,44 +3,35 @@
 
 namespace Base
 {
-    namespace
-	{
-		const uint32_t locWindowWidth = 800;
-		const uint32_t locWindowHeight = 600;
-    }
-
     InputManager* InputManager::ourInstance = nullptr;
 
 	InputManager::InputManager()
 	{
-		InitWindow();
 	}
 
     InputManager::~InputManager()
 	{
-		Cleanup();
 	}
 
-    void InputManager::InitWindow()
-	{
-		glfwInit();
-		myWindow = glfwCreateWindow(locWindowWidth, locWindowHeight, "GLFW input test", nullptr, nullptr);
-	}
-
-    void InputManager::Cleanup()
+    void InputManager::Create()
     {
-        glfwDestroyWindow(myWindow);
-        glfwTerminate();
+        ourInstance = new InputManager;
+    }
+    
+    void InputManager::Destroy()
+    {
+        delete ourInstance;
+        ourInstance = nullptr;
     }
 
-    void InputManager::PollInput(MouseInput anInput)
+    void InputManager::PollInput(GLFWwindow* aWindow, MouseInput anInput)
     {
         bool clicked = false;
 
-        while (!glfwWindowShouldClose(myWindow))
+        while (!glfwWindowShouldClose(aWindow))
 		{
             glfwPollEvents();
-            int isButtonClicked = glfwGetMouseButton(myWindow, anInput);
+            int isButtonClicked = glfwGetMouseButton(aWindow, anInput);
             if(isButtonClicked == GLFW_PRESS)
                 clicked = true;
         }

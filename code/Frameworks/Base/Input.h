@@ -18,25 +18,13 @@ namespace Base
         InputManager();
         ~InputManager();
 
-        static void Create()
-        {
-            ourInstance = new InputManager;
-        }
-        static void Destroy()
-        {
-            delete ourInstance;
-            ourInstance = nullptr;
-        }
+        static void Create();
+        static void Destroy();
         static InputManager* GetInstance() { return ourInstance; }
 
-        void InitWindow();
-        void Cleanup();
-
-        void PollInput(MouseInput anInput);
-        void MouseButtonCallback(int button, int action);
-
+        void PollInput(GLFWwindow* window, MouseInput anInput);
+        
     private:
         static InputManager* ourInstance;
-        GLFWwindow* myWindow = nullptr;
     };
 } // namespace Base
