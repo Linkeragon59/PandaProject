@@ -38,10 +38,13 @@ void GameWork::Run()
     while (!glfwWindowShouldClose(ourInstance->myWindow))
 	{
         glfwPollEvents();
-        if(myInputManager->PollInput(ourInstance->myWindow, Base::Button1))
-            std::cout << "Button 1 clicked" << std::endl;
-        if(myInputManager->PollInput(ourInstance->myWindow, Base::Button2))
-            std::cout << "Button 2 clicked" << std::endl;
+        if(myInputManager->PollMouseInput(ourInstance->myWindow, Base::Button1))
+            std::cout << "Button 1 clicked";
+        if(myInputManager->PollMouseInput(ourInstance->myWindow, Base::Button2))
+            std::cout << "Button 2 clicked";
+
+        double xMousePosition = myInputManager->PollMousePosition(ourInstance->myWindow);
+        std::cout << " | Mouse position: " << xMousePosition << std::endl;
     }
 }
 

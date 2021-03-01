@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 struct GLFWwindow;
 
 namespace Base
@@ -22,8 +20,9 @@ namespace Base
         static void Destroy();
         static InputManager* GetInstance() { return ourInstance; }
 
-        int PollInput(GLFWwindow* window, MouseInput anInput);
-        
+        int PollMouseInput(GLFWwindow* window, MouseInput anInput);
+        double PollMousePosition(GLFWwindow* window);
+
     private:
         static InputManager* ourInstance;
     };

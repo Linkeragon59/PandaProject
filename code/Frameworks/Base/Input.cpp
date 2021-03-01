@@ -24,8 +24,15 @@ namespace Base
         ourInstance = nullptr;
     }
 
-    int InputManager::PollInput(GLFWwindow* aWindow, MouseInput anInput)
+    int InputManager::PollMouseInput(GLFWwindow* aWindow, MouseInput anInput)
     {
             return glfwGetMouseButton(aWindow, anInput);
+    }
+
+    double InputManager::PollMousePosition(GLFWwindow* aWindow)
+    {
+        double xpos, ypos;
+        glfwGetCursorPos(aWindow, &xpos, &ypos);
+        return xpos;
     }
 }
