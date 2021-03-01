@@ -35,7 +35,7 @@ void GameWork::Destroy()
 
 void GameWork::Run()
 {
-    while (!glfwWindowShouldClose(myWindow))
+    while (!glfwWindowShouldClose(ourInstance->myWindow))
 	{
        glfwPollEvents();
     }
@@ -44,7 +44,7 @@ void GameWork::Run()
 void GameWork::InitWindow()
 {
 	glfwInit();
-	myWindow = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.1", nullptr, nullptr);
+	ourInstance->myWindow = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.1", nullptr, nullptr);
 }
 
 void GameWork::Cleanup()
