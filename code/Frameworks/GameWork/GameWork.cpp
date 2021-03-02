@@ -43,8 +43,8 @@ void GameWork::Run()
         if(myInputManager->PollMouseInput(ourInstance->myWindow, Base::Button2))
             std::cout << "Button 2 clicked";
 
-        double xMousePosition = myInputManager->PollMousePosition(ourInstance->myWindow);
-        std::cout << " | Mouse position: " << xMousePosition << std::endl;
+        vec2 mousePosition = myInputManager->PollMousePosition(ourInstance->myWindow);
+        std::cout << " | Mouse position: " << mousePosition.x << " : " << mousePosition.y << std::endl;
     }
 }
 

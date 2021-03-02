@@ -29,10 +29,13 @@ namespace Base
             return glfwGetMouseButton(aWindow, anInput);
     }
 
-    double InputManager::PollMousePosition(GLFWwindow* aWindow)
+    vec2 InputManager::PollMousePosition(GLFWwindow* aWindow)
     {
-        double xpos, ypos;
-        glfwGetCursorPos(aWindow, &xpos, &ypos);
-        return xpos;
+        double xPosition, yPosition;
+        glfwGetCursorPos(aWindow, &xPosition, &yPosition);
+        vec2 position;
+        position.x = xPosition;
+        position.y = yPosition;
+        return position;
     }
 }

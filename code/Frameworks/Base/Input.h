@@ -2,6 +2,14 @@
 
 struct GLFWwindow;
 
+// We should eventually use the GLM class for this, but I'm
+// not sure yet how to include it safely
+struct vec2
+{
+    double x;
+    double y;
+};
+
 namespace Base
 {
     enum MouseInput
@@ -21,7 +29,7 @@ namespace Base
         static InputManager* GetInstance() { return ourInstance; }
 
         int PollMouseInput(GLFWwindow* window, MouseInput anInput);
-        double PollMousePosition(GLFWwindow* window);
+        vec2 PollMousePosition(GLFWwindow* window);
 
     private:
         static InputManager* ourInstance;
