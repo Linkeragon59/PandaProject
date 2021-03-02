@@ -18,6 +18,17 @@ namespace Base
         Button2 = 1
     };
 
+    enum KeyInput
+    {
+        KeyA = 65,
+        KeyD = 68,
+        KeyI = 73,
+        KeyS = 83,
+        KeyW = 87,
+        KeySpace = 32,
+        KeyEscape = 256
+    };
+
     class InputManager
     {
     public:
@@ -28,8 +39,9 @@ namespace Base
         static void Destroy();
         static InputManager* GetInstance() { return ourInstance; }
 
-        int PollMouseInput(GLFWwindow* window, MouseInput anInput);
+        int PollMouseInput(GLFWwindow* window, MouseInput input);
         vec2 PollMousePosition(GLFWwindow* window);
+        int PollKeyInput(GLFWwindow* window, KeyInput input);
 
     private:
         static InputManager* ourInstance;

@@ -24,9 +24,9 @@ namespace Base
         ourInstance = nullptr;
     }
 
-    int InputManager::PollMouseInput(GLFWwindow* aWindow, MouseInput anInput)
+    int InputManager::PollMouseInput(GLFWwindow* window, MouseInput input)
     {
-            return glfwGetMouseButton(aWindow, anInput);
+            return glfwGetMouseButton(window, input);
     }
 
     vec2 InputManager::PollMousePosition(GLFWwindow* aWindow)
@@ -37,5 +37,10 @@ namespace Base
         position.x = xPosition;
         position.y = yPosition;
         return position;
+    }
+
+    int InputManager::PollKeyInput(GLFWwindow* window, KeyInput input)
+    {
+            return glfwGetKey(window, input);
     }
 }
