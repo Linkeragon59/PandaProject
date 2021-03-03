@@ -2,7 +2,7 @@
 #include "GameWork.h"
 
 GameWork* GameWork::ourInstance = nullptr;
-Base::InputManager* GameWork::myInputManager = nullptr;
+Input::InputManager* GameWork::myInputManager = nullptr;
 
 namespace
 {
@@ -21,7 +21,7 @@ GameWork::~GameWork()
 void GameWork::Create()
 {
     ourInstance = new GameWork;
-    Base::InputManager *myInputManager = new Base::InputManager();
+    Input::InputManager *myInputManager = new Input::InputManager();
 	myInputManager->Create();
     ourInstance->InitWindow();
 }
@@ -38,13 +38,13 @@ void GameWork::Run()
     while (!glfwWindowShouldClose(ourInstance->myWindow))
 	{
         glfwPollEvents();
-        if(myInputManager->PollKeyInput(ourInstance->myWindow, Base::KeyW))
+        if(myInputManager->PollKeyInput(ourInstance->myWindow, Input::KeyW))
             std::cout << "FORWARD";
-        else if(myInputManager->PollKeyInput(ourInstance->myWindow, Base::KeyA))
+        else if(myInputManager->PollKeyInput(ourInstance->myWindow, Input::KeyA))
             std::cout << "LEFT";
-        else if(myInputManager->PollKeyInput(ourInstance->myWindow, Base::KeyD))
+        else if(myInputManager->PollKeyInput(ourInstance->myWindow, Input::KeyD))
             std::cout << "RIGHT";
-        else if(myInputManager->PollKeyInput(ourInstance->myWindow, Base::KeyS))
+        else if(myInputManager->PollKeyInput(ourInstance->myWindow, Input::KeyS))
             std::cout << "BACKWARD";
 
         vec2 mousePosition = myInputManager->PollMousePosition(ourInstance->myWindow);

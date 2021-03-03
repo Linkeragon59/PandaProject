@@ -1,7 +1,7 @@
 #include <GLFW/glfw3.h>
 #include "Input.h"
 
-namespace Base
+namespace Input
 {
     InputManager* InputManager::ourInstance = nullptr;
 

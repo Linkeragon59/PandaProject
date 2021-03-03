@@ -21,6 +21,6 @@ public:
 
 private:
     static GameWork* ourInstance;
-    static Base::InputManager* myInputManager;
+    static Input::InputManager* myInputManager;
     GLFWwindow* myWindow = nullptr;
 };

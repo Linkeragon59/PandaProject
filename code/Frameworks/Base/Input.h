@@ -10,7 +10,7 @@ struct vec2
     double y;
 };
 
-namespace Base
+namespace Input
 {
     enum MouseInput
     {
