@@ -91,4 +91,16 @@ namespace Input
 
         glfwGetCursorPos(myWindows[aWindowIdx], &anOutX, &anOutY);
 	}
+
+    void InputManager::AddCallback(Callback aCallback, unsigned int aWindowIdx)
+	{
+		myCallbacks.push_back(aCallback);
+		glfwSetKeyCallback(myWindows[aWindowIdx], aCallback);
+	}
+
+    void InputManager::RemoveCallback(Callback aCallback, unsigned int aWindowIdx)
+	{
+		std::erase(myCallbacks, aCallback);
+		glfwSetKeyCallback(myWindows[aWindowIdx], nullptr);
+	}
 }

@@ -1,10 +1,15 @@
 #pragma once
 
 #include <vector>
+#include <functional>
 struct GLFWwindow;
 
 namespace Input
 {
+	// typedef std::function<void(GLFWwindow*, int, int, int, int)> KeyCallback;
+	typedef void(* Callback) (GLFWwindow *, int, int, int, int);
+	// typedef std::function<void(RawInput)> KeyCallback;
+	
     enum class RawInput
     {
         MouseLeft,
@@ -45,9 +50,12 @@ namespace Input
         RawInputState PollRawInput(RawInput anInput, unsigned int aWindowIdx = 0);
         void PollMousePosition(double& anOutX, double& anOutY, unsigned int aWindowIdx = 0);
 
+        void AddCallback(Callback aCallback, unsigned int aWindowIdx = 0);
+        void RemoveCallback(Callback aCallback, unsigned int aWindowIdx = 0);
+
     private:
         static InputManager* ourInstance;
-
         std::vector<GLFWwindow*> myWindows;
+        std::vector<Callback> myCallbacks;
     };
-} // namespace Base
+} // namespace Input

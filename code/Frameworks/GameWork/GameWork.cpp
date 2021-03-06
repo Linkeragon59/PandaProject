@@ -16,6 +16,18 @@ using Input::InputManager;
 using Input::RawInput;
 using Input::RawInputState;
 
+void JumpCallback(GLFWwindow* window, int key, int scancode, int action, int mods) 
+{
+	(void) window;
+	(void) scancode;
+	(void) action;
+	(void) mods;
+    if(key == (int)RawInput::KeySpace)
+    {
+        std::cout << "JUMP" << std::endl;
+    }
+}
+
 namespace GameWork
 {
 	GameWork* GameWork::ourInstance = nullptr;
@@ -69,6 +81,9 @@ namespace GameWork
 
 	void GameWork::Run()
 	{
+		InputManager* inputManager = InputManager::GetInstance();
+		inputManager->AddCallback(JumpCallback);
+
 		while (!glfwWindowShouldClose(myWindow))
 		{
 			int wantedFPS = 60;
