@@ -7,6 +7,8 @@ namespace GameWork
 	class Module
 	{
 	public:
+		virtual ~Module() {};
+
 		virtual const char* GetId() = 0;
 
 	protected:

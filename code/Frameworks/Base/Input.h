@@ -42,8 +42,8 @@ namespace Input
         void AddWindow(GLFWwindow* aWindow) { myWindows.push_back(aWindow); }
         void RemoveWindow(GLFWwindow* aWindow) { std::erase(myWindows, aWindow); }
 
-        RawInputState PollRawInput(RawInput anInput, uint32_t aWindowIdx = 0);
-        void PollMousePosition(double& anOutX, double& anOutY, uint32_t aWindowIdx = 0);
+        RawInputState PollRawInput(RawInput anInput, unsigned int aWindowIdx = 0);
+        void PollMousePosition(double& anOutX, double& anOutY, unsigned int aWindowIdx = 0);
 
     private:
         static InputManager* ourInstance;

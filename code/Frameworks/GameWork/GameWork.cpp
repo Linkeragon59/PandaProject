@@ -9,6 +9,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <cstring>
 
 //using namespace Input;
 using Input::InputManager;
