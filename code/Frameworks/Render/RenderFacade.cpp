@@ -1,24 +1,22 @@
 #include "RenderFacade.h"
-#include "TriangleRenderer.h"
 #include "BasicRenderer.h"
 
 namespace Render
 {
-	TriangleRenderer* Facade::ourTriangleRenderer = nullptr;
 	BasicRenderer* Facade::ourBasicRenderer = nullptr;
 
-	void Facade::RunTriangleRenderer()
+	void Facade::InitBasicRenderer(GLFWwindow* aWindow)
 	{
-		ourTriangleRenderer = new TriangleRenderer();
-		ourTriangleRenderer->Run();
-		delete ourTriangleRenderer;
+		ourBasicRenderer = new BasicRenderer(aWindow);
 	}
 
-	void Facade::RunBasicRenderer()
+	void Facade::UpdateBasicRenderer()
 	{
-		ourBasicRenderer = new BasicRenderer();
-		ourBasicRenderer->Run();
+		ourBasicRenderer->Update();
+	}
+
+	void Facade::FinalizeBasicRenderer()
+	{
 		delete ourBasicRenderer;
 	}
-
 }

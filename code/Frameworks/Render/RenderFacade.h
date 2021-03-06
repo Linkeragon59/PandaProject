@@ -1,18 +1,19 @@
 #pragma once
 
+struct GLFWwindow;
+
 namespace Render
 {
-	class TriangleRenderer;
 	class BasicRenderer;
 
 	class Facade
 	{
 	public:
-		static void RunTriangleRenderer();
-		static void RunBasicRenderer();
+		static void InitBasicRenderer(GLFWwindow* aWindow);
+		static void UpdateBasicRenderer();
+		static void FinalizeBasicRenderer();
 
 	private:
-		static TriangleRenderer* ourTriangleRenderer;
 		static BasicRenderer* ourBasicRenderer;
 	};
 }

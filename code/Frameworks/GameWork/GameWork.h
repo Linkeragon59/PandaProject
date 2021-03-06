@@ -1,26 +1,36 @@
 #pragma once
 
-#include "Input.h"
-#include <iostream>
+#include <vector>
 
 struct GLFWwindow;
 
-class GameWork
+namespace GameWork
 {
-public:
-    GameWork();
-    ~GameWork();
-    
-    static void Create();
-    static void Destroy();
-    static GameWork* GetInstance() { return ourInstance; }
-    
-    void Run();
-    void InitWindow();
-    void Cleanup();
+	class Module;
 
-private:
-    static GameWork* ourInstance;
-    static Input::InputManager* myInputManager;
-    GLFWwindow* myWindow = nullptr;
-};
+	class GameWork
+	{
+	public:
+		GameWork();
+		~GameWork();
+
+		static bool Create();
+		static void Destroy();
+		static GameWork* GetInstance() { return ourInstance; }
+
+		void Run();
+		void InitWindow();
+		void Cleanup();
+
+		bool RegisterModule(Module* aModule);
+		bool UnregisterModule(Module* aModule);
+
+	private:
+		bool Update();
+
+		static GameWork* ourInstance;
+		GLFWwindow* myWindow = nullptr;
+
+		std::vector<Module*> myModules;
+	};
+}

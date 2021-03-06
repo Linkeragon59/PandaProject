@@ -3,6 +3,51 @@
 
 namespace Input
 {
+    namespace
+    {
+        int locRawInputToGlfwInput(RawInput aRawInput)
+        {
+            switch (aRawInput)
+            {
+            case RawInput::MouseLeft:
+                return GLFW_MOUSE_BUTTON_LEFT;
+            case RawInput::MouseRight:
+                return GLFW_MOUSE_BUTTON_RIGHT;
+
+            case RawInput::KeyA:
+                return GLFW_KEY_A;
+            case RawInput::KeyD:
+                return GLFW_KEY_D;
+            case RawInput::KeyI:
+                return GLFW_KEY_I;
+            case RawInput::KeyS:
+                return GLFW_KEY_S;
+            case RawInput::KeyW:
+                return GLFW_KEY_W;
+
+            case RawInput::KeySpace:
+                return GLFW_KEY_SPACE;
+            case RawInput::KeyEscape:
+                return GLFW_KEY_ESCAPE;
+
+            default:
+                return GLFW_KEY_UNKNOWN;
+            }
+        }
+
+        RawInputState locGlfwInputStateToRawInputState(int aGlfwInputState)
+        {
+            if (aGlfwInputState == GLFW_PRESS)
+                return RawInputState::Pressed;
+            else if (aGlfwInputState == GLFW_RELEASE)
+                return RawInputState::Released;
+            else if (aGlfwInputState == GLFW_REPEAT)
+                return RawInputState::Repeated;
+            else
+                return RawInputState::Unknown;
+        }
+    }
+
     InputManager* InputManager::ourInstance = nullptr;
 
 	InputManager::InputManager()
@@ -24,23 +69,26 @@ namespace Input
         ourInstance = nullptr;
     }
 
-    int InputManager::PollMouseInput(GLFWwindow* window, MouseInput input)
+    RawInputState InputManager::PollRawInput(RawInput anInput, uint32_t aWindowIdx)
     {
-            return glfwGetMouseButton(window, input);
+        if (aWindowIdx >= myWindows.size())
+            return RawInputState::Unknown;
+
+        if (anInput <= RawInput::MouseRight)
+            return locGlfwInputStateToRawInputState(glfwGetMouseButton(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
+        else
+            return locGlfwInputStateToRawInputState(glfwGetKey(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
     }
 
-    vec2 InputManager::PollMousePosition(GLFWwindow* aWindow)
-    {
-        double xPosition, yPosition;
-        glfwGetCursorPos(aWindow, &xPosition, &yPosition);
-        vec2 position;
-        position.x = xPosition;
-        position.y = yPosition;
-        return position;
-    }
+	void InputManager::PollMousePosition(double& anOutX, double& anOutY, uint32_t aWindowIdx)
+	{
+        if (aWindowIdx >= myWindows.size())
+        {
+            anOutX = 0;
+            anOutY = 0;
+            return;
+        }
 
-    int InputManager::PollKeyInput(GLFWwindow* window, KeyInput input)
-    {
-            return glfwGetKey(window, input);
-    }
+        glfwGetCursorPos(myWindows[aWindowIdx], &anOutX, &anOutY);
+	}
 }

@@ -1,32 +1,32 @@
 #pragma once
 
+#include <vector>
 struct GLFWwindow;
-
-// We should eventually use the GLM class for this, but I'm
-// not sure yet how to include it safely
-struct vec2
-{
-    double x;
-    double y;
-};
 
 namespace Input
 {
-    enum MouseInput
+    enum class RawInput
     {
-        Button1 = 0,
-        Button2 = 1
+        MouseLeft,
+        MouseRight,
+
+		KeyA,
+		KeyD,
+		KeyI,
+		KeyS,
+		KeyW,
+
+		KeySpace,
+		KeyEscape,
     };
 
-    enum KeyInput
+    enum class RawInputState
     {
-        KeyA = 65,
-        KeyD = 68,
-        KeyI = 73,
-        KeyS = 83,
-        KeyW = 87,
-        KeySpace = 32,
-        KeyEscape = 256
+        Unknown,
+
+        Pressed,
+        Released,
+        Repeated,
     };
 
     class InputManager
@@ -39,11 +39,15 @@ namespace Input
         static void Destroy();
         static InputManager* GetInstance() { return ourInstance; }
 
-        int PollMouseInput(GLFWwindow* window, MouseInput input);
-        vec2 PollMousePosition(GLFWwindow* window);
-        int PollKeyInput(GLFWwindow* window, KeyInput input);
+        void AddWindow(GLFWwindow* aWindow) { myWindows.push_back(aWindow); }
+        void RemoveWindow(GLFWwindow* aWindow) { std::erase(myWindows, aWindow); }
+
+        RawInputState PollRawInput(RawInput anInput, uint32_t aWindowIdx = 0);
+        void PollMousePosition(double& anOutX, double& anOutY, uint32_t aWindowIdx = 0);
 
     private:
         static InputManager* ourInstance;
+
+        std::vector<GLFWwindow*> myWindows;
     };
 } // namespace Base

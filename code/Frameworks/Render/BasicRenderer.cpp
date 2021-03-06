@@ -51,6 +51,8 @@
 #include <chrono>
 #include <thread>
 
+#include "Input.h"
+
 namespace Render
 {
 	namespace
@@ -189,46 +191,25 @@ namespace Render
 		}
 	}
 
-	BasicRenderer::BasicRenderer()
+	BasicRenderer::BasicRenderer(GLFWwindow* aWindow)
 	{
-		InitWindow();
+		myWindow = aWindow;
+
+		glfwSetWindowUserPointer(myWindow, this);
+		glfwSetFramebufferSizeCallback(myWindow, FramebufferResizeCallback);
+
 		InitVulkan();
 	}
 
 	BasicRenderer::~BasicRenderer()
 	{
+		vkDeviceWaitIdle(myLogicalDevice);
 		Cleanup();
 	}
 
-	void BasicRenderer::Run()
+	void BasicRenderer::Update()
 	{
-		while (!glfwWindowShouldClose(myWindow))
-		{
-			int wantedFPS = 60;
-			std::chrono::duration<double, std::milli> oneFrame = std::chrono::milliseconds((long)(1000.0f / wantedFPS));
-
-			auto start = std::chrono::high_resolution_clock::now();
-			glfwPollEvents();
-			DrawFrame();
-			auto end = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<double, std::milli> elapsed = end - start;
-
-			if (elapsed < oneFrame)
-				std::this_thread::sleep_for(oneFrame - elapsed);
-		}
-
-		vkDeviceWaitIdle(myLogicalDevice);
-	}
-
-	void BasicRenderer::InitWindow()
-	{
-		glfwInit();
-
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		myWindow = glfwCreateWindow(locWindowWidth, locWindowHeight, "Vulkan Triangle Tuto", nullptr, nullptr);
-
-		glfwSetWindowUserPointer(myWindow, this);
-		glfwSetFramebufferSizeCallback(myWindow, FramebufferResizeCallback);
+		DrawFrame();
 	}
 
 	void BasicRenderer::InitVulkan()
@@ -383,10 +364,6 @@ namespace Render
 		}
 
 		vkDestroyInstance(myInstance, nullptr);
-
-		glfwDestroyWindow(myWindow);
-
-		glfwTerminate();
 	}
 
 	bool BasicRenderer::CheckValidationLayersSupport(const std::vector<const char*>& someValidationLayers)
@@ -2173,9 +2150,17 @@ namespace Render
 		// A more efficient way to pass a small buffer of data to shaders are push constants.
 
 		static auto startTime = std::chrono::high_resolution_clock::now();
+		static float addTime = 0;
+
+		Input::InputManager* inputManager = Input::InputManager::GetInstance();
+		Input::RawInputState spaceState = inputManager->PollRawInput(Input::RawInput::KeySpace);
+		if (spaceState == Input::RawInputState::Pressed)
+		{
+			addTime += 0.1f;
+		}
 
 		auto currentTime = std::chrono::high_resolution_clock::now();
-		float elapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+		float elapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count() + addTime;
 
 		UniformBufferObject ubo{};
 		ubo.myModel = glm::rotate(glm::mat4(1.0f), elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));

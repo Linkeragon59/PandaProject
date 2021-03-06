@@ -18,13 +18,12 @@ namespace Render
 	class BasicRenderer
 	{
 	public:
-		BasicRenderer();
+		BasicRenderer(GLFWwindow* aWindow);
 		~BasicRenderer();
 
-		void Run();
+		void Update();
 
 	private:
-		void InitWindow();
 		void InitVulkan();
 
 		void DrawFrame();
