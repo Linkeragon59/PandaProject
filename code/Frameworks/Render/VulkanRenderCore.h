@@ -3,7 +3,7 @@
 #include "VulkanHelpers.h"
 #include "VulkanBuffer.h"
 
-#include "VulkanglTFModel.h"
+#include "VulkanglTFModel2.h"
 
 struct GLFWwindow;
 
@@ -17,11 +17,12 @@ namespace Render
 	public:
 		static void CreateInstance();
 		static void DestroyInstance();
-
-		static GLFWwindow* OpenWindow(int aWidth, int aHeight, const char* aTitle);
-		static void CloseWindow(GLFWwindow* aWindow);
-
 		static VulkanRenderCore* GetInstance() { return ourInstance; }
+
+		void Update();
+
+		GLFWwindow* OpenWindow(int aWidth, int aHeight, const char* aTitle);
+		void CloseWindow(GLFWwindow* aWindow);
 
 		VkInstance GetVkInstance() const { return myVkInstance; }
 

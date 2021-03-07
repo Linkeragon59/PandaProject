@@ -73,14 +73,15 @@ namespace Render
 	void Facade::RunVulkanRenderer()
 	{
 		VulkanRenderCore::CreateInstance();
-		GLFWwindow* window = VulkanRenderCore::OpenWindow(800, 600, "Test");
+		GLFWwindow* window = VulkanRenderCore::GetInstance()->OpenWindow(800, 600, "Test");
 
 		while (!glfwWindowShouldClose(window))
 		{
 			glfwPollEvents();
+			VulkanRenderCore::GetInstance()->Update();
 		}
 
-		VulkanRenderCore::CloseWindow(window);
+		VulkanRenderCore::GetInstance()->CloseWindow(window);
 		VulkanRenderCore::DestroyInstance();
 	}
 

@@ -45,6 +45,7 @@ namespace Render
 
 		VmaAllocator myVmaAllocator = VK_NULL_HANDLE;
 
+		// TODO : Remove
 		VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin = false);
 		VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, bool begin = false);
 		void            flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free = true);

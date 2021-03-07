@@ -16,6 +16,10 @@ namespace Render
 
 	VkShaderModule CreateShaderModule(const std::string& aFilename);
 
+	VkCommandBuffer BeginOneTimeCommand(VkCommandPool aCommandPool = VK_NULL_HANDLE);
+	void EndOneTimeCommand(VkCommandBuffer aCommandBuffer, VkQueue aQueue, VkCommandPool aCommandPool = VK_NULL_HANDLE);
+
+	// TODO : Remove
 	// Put an image memory barrier for setting an image layout on the sub resource into the given command buffer
 	void setImageLayout(
 		VkCommandBuffer cmdbuffer,

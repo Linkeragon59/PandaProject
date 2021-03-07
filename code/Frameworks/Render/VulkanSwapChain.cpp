@@ -1,4 +1,4 @@
-#include "VulkanSwapChain.h"
+﻿#include "VulkanSwapChain.h"
 
 #include "VulkanRenderCore.h"
 
@@ -15,6 +15,9 @@ namespace Render
 
 		VK_CHECK_RESULT(glfwCreateWindowSurface(VulkanRenderCore::GetInstance()->GetVkInstance(), myWindow, nullptr, &mySurface), "Failed to create the surface!");
 
+		glfwSetWindowUserPointer(myWindow, this);
+		glfwSetFramebufferSizeCallback(myWindow, FramebufferResizedCallback);
+
 		Setup();
 	}
 
@@ -29,45 +32,35 @@ namespace Render
 	{
 		SetupVkSwapChain();
 		SetupDepthStencil();
-		CreatePipelineCache();
-		SetupRenderPass();
+
+		myRenderPassContainer = new VulkanRenderPassContainer(myColorFormat, myDepthImage.myFormat);
+		myPSOContainer = new VulkanPSOContainer(myRenderPassContainer->GetRenderPass());
+		
+		PrepareUniformBuffers();
+		SetupDescriptorSet();
+
 		SetupCommandBuffers();
 		SetupFramebuffers();
-		PrepareUniformBuffers();
-		SetupDescriptorSetLayout();
-		PreparePipelines();
-		SetupDescriptorPool();
-		SetupDescriptorSet();
-		BuildCommandBuffers();
 
-		Draw();
+		CreateSyncObjects();
+
+		BuildCommandBuffers();
 	}
 
 	void VulkanSwapChain::Cleanup()
 	{
 		vkDeviceWaitIdle(myDevice);
-		
-		myDescriptorSet = VK_NULL_HANDLE;
 
-		vkDestroyDescriptorPool(myDevice, myDescriptorPool, nullptr);
-		myDescriptorPool = VK_NULL_HANDLE;
-
-		vkDestroyPipeline(myDevice, myPhongPipeline, nullptr);
-		myPhongPipeline = VK_NULL_HANDLE;
-		vkDestroyPipeline(myDevice, myToonPipeline, nullptr);
-		myToonPipeline = VK_NULL_HANDLE;
-		if (myWireFramePipeline)
+		for (uint32_t i = 0, e = (uint32_t)myImages.size() - 1; i < e; ++i)
 		{
-			vkDestroyPipeline(myDevice, myWireFramePipeline, nullptr);
-			myWireFramePipeline = VK_NULL_HANDLE;
+			vkDestroyFence(myDevice, myInFlightFrameFences[i], nullptr);
+			vkDestroySemaphore(myDevice, myRenderFinishedSemaphores[i], nullptr);
+			vkDestroySemaphore(myDevice, myImageAvailableSemaphores[i], nullptr);
 		}
-		vkDestroyPipelineLayout(myDevice, myPipelineLayout, nullptr);
-		myPipelineLayout = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorSetLayout(myDevice, myDescriptorSetLayout, nullptr);
-		myDescriptorSetLayout = VK_NULL_HANDLE;
-
-		myUniform.Destroy();
+		myInFlightFrameFences.clear();
+		myRenderFinishedSemaphores.clear();
+		myImageAvailableSemaphores.clear();
+		myImageFences.clear();
 
 		for (auto framebuffer : myFramebuffers)
 			vkDestroyFramebuffer(myDevice, framebuffer, nullptr);
@@ -75,20 +68,51 @@ namespace Render
 
 		myCommandBuffers.clear();
 
-		vkDestroyRenderPass(myDevice, myRenderPass, nullptr);
-		myRenderPass = VK_NULL_HANDLE;
+		myDescriptorSet = VK_NULL_HANDLE;
+		myUniform.Destroy();
 
-		vkDestroyPipelineCache(myDevice, myPipelineCache, nullptr);
-		myPipelineCache = VK_NULL_HANDLE;
+		delete myPSOContainer;
+		myPSOContainer = nullptr;
+
+		delete myRenderPassContainer;
+		myRenderPassContainer = nullptr;
 
 		myDepthImage.Destroy();
-
 		for (auto imageView : myImageViews)
 			vkDestroyImageView(myDevice, imageView, nullptr);
 		myImageViews.clear();
+		myImages.clear();
 
 		vkDestroySwapchainKHR(myDevice, myVkSwapChain, nullptr);
 		myVkSwapChain = VK_NULL_HANDLE;
+	}
+
+	void VulkanSwapChain::Recreate()
+	{
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(myWindow, &width, &height);
+		while (width == 0 || height == 0)
+		{
+			glfwWaitEvents();
+			glfwGetFramebufferSize(myWindow, &width, &height);
+		}
+
+		// TODO: Maybe we don't have to recreate everything?
+		Cleanup();
+		Setup();
+	}
+
+	void VulkanSwapChain::Update()
+	{
+		DrawFrame();
+	}
+
+	void VulkanSwapChain::FramebufferResizedCallback(GLFWwindow* aWindow, int aWidth, int aHeight)
+	{
+		(void)aWidth;
+		(void)aHeight;
+		auto app = reinterpret_cast<VulkanSwapChain*>(glfwGetWindowUserPointer(aWindow));
+		app->myFramebufferResized = true;
 	}
 
 	void VulkanSwapChain::SetupVkSwapChain()
@@ -131,7 +155,7 @@ namespace Render
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 				surfaceFormat = availableFormat;
 		}
-		myFormat = surfaceFormat.format;
+		myColorFormat = surfaceFormat.format;
 
 		uint32_t presentModeCount = 0;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, mySurface, &presentModeCount, nullptr);
@@ -178,7 +202,7 @@ namespace Render
 			viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			viewCreateInfo.image = myImages[i];
 			viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			viewCreateInfo.format = myFormat;
+			viewCreateInfo.format = myColorFormat;
 			viewCreateInfo.components = {
 				VK_COMPONENT_SWIZZLE_R,
 				VK_COMPONENT_SWIZZLE_G,
@@ -212,137 +236,21 @@ namespace Render
 		myDepthImage.CreateImageView(aspects);
 
 		// optional
-		/*TransitionImageLayout(
-			VulkanRenderCore::GetInstance()->GetGraphicsQueue(),
-			myDepthImage,
-			depthFormat,
+		myDepthImage.TransitionLayout(
 			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-		);*/
-	}
-
-	void VulkanSwapChain::CreatePipelineCache()
-	{
-		VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
-		pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-		pipelineCacheCreateInfo.initialDataSize = 0;
-
-		VK_CHECK_RESULT(vkCreatePipelineCache(myDevice, &pipelineCacheCreateInfo, nullptr, &myPipelineCache), "Failed to create the pipeline cache!");
-	}
-
-	void VulkanSwapChain::SetupRenderPass()
-	{
-		std::array<VkAttachmentDescription, 2> attachments;
-		// Color attachment
-		attachments[0] = {};
-		attachments[0].format = myFormat;
-		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		// Depth attachment
-		attachments[1] = {};
-		attachments[1].format = VulkanRenderCore::GetInstance()->GetVulkanDevice()->FindBestDepthFormat();
-		attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-		attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference colorAttachmentRef{};
-		colorAttachmentRef.attachment = 0;
-		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depthAttachmentRef{};
-		depthAttachmentRef.attachment = 1;
-		depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpassDescription{};
-		subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpassDescription.inputAttachmentCount = 0;
-		subpassDescription.pInputAttachments = nullptr;
-		subpassDescription.colorAttachmentCount = 1;
-		subpassDescription.pColorAttachments = &colorAttachmentRef;
-		subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
-		subpassDescription.preserveAttachmentCount = 0;
-		subpassDescription.pPreserveAttachments = nullptr;
-		subpassDescription.pResolveAttachments = nullptr;
-
-		// Subpass dependencies for layout transitions
-		std::array<VkSubpassDependency, 2> dependencies;
-		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependencies[0].dstSubpass = 0;
-		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-		dependencies[1].srcSubpass = 0;
-		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-		VkRenderPassCreateInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-		renderPassInfo.pAttachments = attachments.data();
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpassDescription;
-		renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
-		renderPassInfo.pDependencies = dependencies.data();
-
-		VK_CHECK_RESULT(vkCreateRenderPass(myDevice, &renderPassInfo, nullptr, &myRenderPass), "Failed to create the render pass!");
-	}
-
-	void VulkanSwapChain::SetupCommandBuffers()
-	{
-		myCommandBuffers.resize(myImages.size());
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = VulkanRenderCore::GetInstance()->GetGraphicsCommandPool();
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = static_cast<uint32_t>(myCommandBuffers.size());
-
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
-	}
-
-	void VulkanSwapChain::SetupFramebuffers()
-	{
-		myFramebuffers.resize(myImageViews.size());
-
-		for (size_t i = 0, e = myFramebuffers.size(); i < e; ++i)
-		{
-			std::array<VkImageView, 2> attachments = { myImageViews[i], myDepthImage.myImageView };
-
-			VkFramebufferCreateInfo framebufferInfo{};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = myRenderPass;
-			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-			framebufferInfo.pAttachments = attachments.data();
-			framebufferInfo.width = myExtent.width;
-			framebufferInfo.height = myExtent.height;
-			framebufferInfo.layers = 1;
-
-			VK_CHECK_RESULT(vkCreateFramebuffer(myDevice, &framebufferInfo, nullptr, &myFramebuffers[i]), "Failed to create a framebuffer!");
-		}
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			VulkanRenderCore::GetInstance()->GetGraphicsQueue());
 	}
 
 	void VulkanSwapChain::PrepareUniformBuffers()
 	{
-		myUniform.Create(sizeof(UBOVS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		myUniform.Create(sizeof(VulkanPSOContainer::UBO),
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
 		// Persistent map
 		myUniform.Map();
-		UBOVS ubovs;
+		VulkanPSOContainer::UBO ubovs;
 		float proj[16] = {
 			2.92f, 0.f, 0.f, 0.f,
 			0.f, 1.73f, 0.f, 0.f,
@@ -363,187 +271,15 @@ namespace Render
 		myUniform.SetupDescriptor();
 	}
 
-	void VulkanSwapChain::SetupDescriptorSetLayout()
-	{
-		// Binding 0 : Vertex shader uniform buffer
-		VkDescriptorSetLayoutBinding layoutBinding{};
-		layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		layoutBinding.binding = 0;
-		layoutBinding.descriptorCount = 1;
-
-		std::vector<VkDescriptorSetLayoutBinding> layoutBindings = { layoutBinding };
-
-		VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-		descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorLayoutInfo.bindingCount = (uint32_t)layoutBindings.size();
-		descriptorLayoutInfo.pBindings = layoutBindings.data();
-
-		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(myDevice, &descriptorLayoutInfo, nullptr, &myDescriptorSetLayout), "Failed to create a descriptor set layout");
-	}
-
-	void VulkanSwapChain::PreparePipelines()
-	{
-		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutCreateInfo.setLayoutCount = 1;
-		pipelineLayoutCreateInfo.pSetLayouts = &myDescriptorSetLayout;
-		pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-
-		VK_CHECK_RESULT(vkCreatePipelineLayout(myDevice, &pipelineLayoutCreateInfo, nullptr, &myPipelineLayout), "Failed to create a pipeline layout");
-
-		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
-		inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		inputAssemblyState.primitiveRestartEnable = VK_FALSE;
-
-		VkPipelineRasterizationStateCreateInfo rasterizerState{};
-		rasterizerState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterizerState.depthClampEnable = VK_FALSE;
-		rasterizerState.rasterizerDiscardEnable = VK_FALSE;
-		rasterizerState.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizerState.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizerState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-		rasterizerState.depthBiasEnable = VK_FALSE;
-		rasterizerState.lineWidth = 1.0f;
-
-		VkPipelineColorBlendAttachmentState blendAttachmentState{};
-		blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		blendAttachmentState.blendEnable = VK_FALSE;
-
-		VkPipelineColorBlendStateCreateInfo colorBlendState{};
-		colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		colorBlendState.logicOpEnable = VK_FALSE;
-		colorBlendState.attachmentCount = 1;
-		colorBlendState.pAttachments = &blendAttachmentState;
-
-		VkPipelineDepthStencilStateCreateInfo depthStencilState{};
-		depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		depthStencilState.depthTestEnable = VK_TRUE;
-		depthStencilState.depthWriteEnable = VK_TRUE;
-		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-		depthStencilState.depthBoundsTestEnable = VK_FALSE;
-		depthStencilState.stencilTestEnable = VK_FALSE;
-
-		VkPipelineViewportStateCreateInfo viewportState{};
-		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewportState.viewportCount = 1;
-		viewportState.scissorCount = 1;
-
-		VkPipelineMultisampleStateCreateInfo multisampleState{};
-		multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-		std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_LINE_WIDTH };
-		VkPipelineDynamicStateCreateInfo dynamicState{};
-		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamicState.pDynamicStates = dynamicStateEnables.data();
-		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
-
-		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
-		shaderStages[0] = {};
-		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shaderStages[0].pName = "main";
-		shaderStages[1] = {};
-		shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStages[1].pName = "main";
-
-		VkGraphicsPipelineCreateInfo pipelineInfo{};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = (uint32_t)shaderStages.size();
-		pipelineInfo.pStages = shaderStages.data();
-		pipelineInfo.pVertexInputState = vkglTF::Vertex::getPipelineVertexInputState({ vkglTF::VertexComponent::Position, vkglTF::VertexComponent::Normal, vkglTF::VertexComponent::Color });
-		pipelineInfo.pInputAssemblyState = &inputAssemblyState;
-		pipelineInfo.pTessellationState = nullptr;
-		pipelineInfo.pViewportState = &viewportState;
-		pipelineInfo.pRasterizationState = &rasterizerState;
-		pipelineInfo.pMultisampleState = &multisampleState;
-		pipelineInfo.pDepthStencilState = &depthStencilState;
-		pipelineInfo.pColorBlendState = &colorBlendState;
-		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = myPipelineLayout;
-		pipelineInfo.renderPass = myRenderPass;
-		pipelineInfo.subpass = 0;
-		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-		pipelineInfo.basePipelineIndex = -1;
-
-		// Create the graphics pipeline state objects
-
-		// Phong shading pipeline
-		VkShaderModule phongVert = CreateShaderModule("Frameworks/shaders/phong.vert.spv");
-		shaderStages[0].module = phongVert;
-		VkShaderModule phongFrag = CreateShaderModule("Frameworks/shaders/phong.frag.spv");
-		shaderStages[1].module = phongFrag;
-
-		// We are using this pipeline as the base for the other pipelines (derivatives)
-		pipelineInfo.flags = VK_PIPELINE_CREATE_ALLOW_DERIVATIVES_BIT;
-
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(myDevice, myPipelineCache, 1, &pipelineInfo, nullptr, &myPhongPipeline), "Failed to create the Phong pipeline");
-
-		vkDestroyShaderModule(myDevice, phongVert, nullptr);
-		vkDestroyShaderModule(myDevice, phongFrag, nullptr);
-
-		// Base pipeline will be our first created pipeline
-		pipelineInfo.basePipelineIndex = -1; // It's only allowed to either use a handle or index for the base pipeline
-		pipelineInfo.basePipelineHandle = myPhongPipeline;
-
-		// All pipelines created after the base pipeline will be derivatives
-		pipelineInfo.flags = VK_PIPELINE_CREATE_DERIVATIVE_BIT;
-
-		// Toon shading pipeline
-		VkShaderModule toonVert = CreateShaderModule("Frameworks/shaders/toon.vert.spv");
-		shaderStages[0].module = toonVert;
-		VkShaderModule toonFrag = CreateShaderModule("Frameworks/shaders/toon.frag.spv");
-		shaderStages[1].module = toonFrag;
-
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(myDevice, myPipelineCache, 1, &pipelineInfo, nullptr, &myToonPipeline), "Failed to create the Toon pipeline");
-
-		vkDestroyShaderModule(myDevice, toonVert, nullptr);
-		vkDestroyShaderModule(myDevice, toonFrag, nullptr);
-
-		// Pipeline for wire frame rendering
-		// Non solid rendering is not a mandatory Vulkan feature
-		if (VulkanRenderCore::GetInstance()->GetVulkanDevice()->myEnabledFeatures.fillModeNonSolid)
-		{
-			rasterizerState.polygonMode = VK_POLYGON_MODE_LINE;
-
-			VkShaderModule wireframeVert = CreateShaderModule("Frameworks/shaders/wireframe.vert.spv");
-			shaderStages[0].module = wireframeVert;
-			VkShaderModule wireframeFrag = CreateShaderModule("Frameworks/shaders/wireframe.frag.spv");
-			shaderStages[1].module = wireframeFrag;
-
-			VK_CHECK_RESULT(vkCreateGraphicsPipelines(myDevice, myPipelineCache, 1, &pipelineInfo, nullptr, &myWireFramePipeline), "Failed to create the Wireframe pipeline");
-
-			vkDestroyShaderModule(myDevice, wireframeVert, nullptr);
-			vkDestroyShaderModule(myDevice, wireframeFrag, nullptr);
-		}
-	}
-
-	void VulkanSwapChain::SetupDescriptorPool()
-	{
-		VkDescriptorPoolSize descriptorPoolSize{};
-		descriptorPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorPoolSize.descriptorCount = 1;
-		std::vector<VkDescriptorPoolSize> poolSizes = { descriptorPoolSize };
-
-		VkDescriptorPoolCreateInfo descriptorPoolInfo{};
-		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descriptorPoolInfo.poolSizeCount = (uint32_t)poolSizes.size();
-		descriptorPoolInfo.pPoolSizes = poolSizes.data();
-		descriptorPoolInfo.maxSets = 2;
-
-		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
-	}
-
 	void VulkanSwapChain::SetupDescriptorSet()
 	{
+		std::array<VkDescriptorSetLayout, 1> layouts = { myPSOContainer->GetDescriptorSetLayout() };
+
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
-		descriptorSetAllocateInfo.pSetLayouts = &myDescriptorSetLayout;
-		descriptorSetAllocateInfo.descriptorSetCount = 1;
+		descriptorSetAllocateInfo.descriptorPool = myPSOContainer->GetDescriptorPool();
+		descriptorSetAllocateInfo.pSetLayouts = layouts.data();
+		descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)layouts.size();
 
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(myDevice, &descriptorSetAllocateInfo, &myDescriptorSet), "Failed to create the descriptor pool");
 
@@ -559,6 +295,65 @@ namespace Render
 		vkUpdateDescriptorSets(myDevice, (uint32_t)writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
 	}
 
+	void VulkanSwapChain::SetupCommandBuffers()
+	{
+		myCommandBuffers.resize(myImages.size());
+
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = VulkanRenderCore::GetInstance()->GetGraphicsCommandPool();
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = static_cast<uint32_t>(myCommandBuffers.size());
+
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
+	}
+
+	void VulkanSwapChain::SetupFramebuffers()
+	{
+		myFramebuffers.resize(myImages.size());
+
+		for (size_t i = 0, e = myFramebuffers.size(); i < e; ++i)
+		{
+			std::array<VkImageView, 2> attachments = { myImageViews[i], myDepthImage.myImageView };
+
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebufferInfo.renderPass = myRenderPassContainer->GetRenderPass();
+			framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+			framebufferInfo.pAttachments = attachments.data();
+			framebufferInfo.width = myExtent.width;
+			framebufferInfo.height = myExtent.height;
+			framebufferInfo.layers = 1;
+
+			VK_CHECK_RESULT(vkCreateFramebuffer(myDevice, &framebufferInfo, nullptr, &myFramebuffers[i]), "Failed to create a framebuffer!");
+		}
+	}
+
+	void VulkanSwapChain::CreateSyncObjects()
+	{
+		myImageFences.resize(myImages.size(), VK_NULL_HANDLE);
+
+		const size_t maxInFlightImagesCount = myImages.size() - 1;
+
+		myImageAvailableSemaphores.resize(maxInFlightImagesCount);
+		myRenderFinishedSemaphores.resize(maxInFlightImagesCount);
+		myInFlightFrameFences.resize(maxInFlightImagesCount);
+
+		VkSemaphoreCreateInfo semaphoreInfo{};
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		for (size_t i = 0; i < maxInFlightImagesCount; ++i)
+		{
+			VK_CHECK_RESULT(vkCreateSemaphore(myDevice, &semaphoreInfo, nullptr, &myImageAvailableSemaphores[i]), "Failed to create a semaphore");
+			VK_CHECK_RESULT(vkCreateSemaphore(myDevice, &semaphoreInfo, nullptr, &myRenderFinishedSemaphores[i]), "Failed to create a semaphore");
+			VK_CHECK_RESULT(vkCreateFence(myDevice, &fenceInfo, nullptr, &myInFlightFrameFences[i]), "Failed to create a fence");
+		}
+	}
+
 	void VulkanSwapChain::BuildCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBufferBeginInfo{};
@@ -570,7 +365,7 @@ namespace Render
 
 		VkRenderPassBeginInfo renderPassBeginInfo{};
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassBeginInfo.renderPass = myRenderPass;
+		renderPassBeginInfo.renderPass = myRenderPassContainer->GetRenderPass();
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
 		renderPassBeginInfo.renderArea.extent.width = myExtent.width;
@@ -603,30 +398,30 @@ namespace Render
 			scissor.offset = { 0, 0 };
 			vkCmdSetScissor(myCommandBuffers[i], 0, 1, &scissor);
 
-			vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPipelineLayout, 0, 1, &myDescriptorSet, 0, NULL);
+			vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPSOContainer->GetPipelineLayout(), 0, 1, &myDescriptorSet, 0, NULL);
 			dummyScene->bindBuffers(myCommandBuffers[i]);
 
 			// Left : Phong
 			viewport.width = (float)myExtent.width / 3.0f;
 			vkCmdSetViewport(myCommandBuffers[i], 0, 1, &viewport);
-			vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPhongPipeline);
+			vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPSOContainer->GetPhongPipeline());
 			dummyScene->draw(myCommandBuffers[i]);
 
 			// Center : Toon
 			viewport.x += (float)myExtent.width / 3.0f;
 			vkCmdSetViewport(myCommandBuffers[i], 0, 1, &viewport);
-			vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myToonPipeline);
+			vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPSOContainer->GetToonPipeline());
 			// Line width > 1.0f only if wide lines feature is supported
 			if (VulkanRenderCore::GetInstance()->GetVulkanDevice()->myEnabledFeatures.wideLines)
 				vkCmdSetLineWidth(myCommandBuffers[i], 2.0f);
 			dummyScene->draw(myCommandBuffers[i]);
 
-			if (VulkanRenderCore::GetInstance()->GetVulkanDevice()->myEnabledFeatures.fillModeNonSolid)
+			if (myPSOContainer->GetWireFramePipeline())
 			{
 				// Right : Wireframe
 				viewport.x += (float)myExtent.width / 3.0f;
 				vkCmdSetViewport(myCommandBuffers[i], 0, 1, &viewport);
-				vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myWireFramePipeline);
+				vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPSOContainer->GetWireFramePipeline());
 				dummyScene->draw(myCommandBuffers[i]);
 			}
 
@@ -636,35 +431,65 @@ namespace Render
 		}
 	}
 
-	void VulkanSwapChain::Draw()
+	void VulkanSwapChain::DrawFrame()
 	{
-		uint32_t index = 0;
-		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE, &index);
-		assert(result == VK_SUCCESS);
+		vkWaitForFences(myDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame], VK_TRUE, UINT64_MAX);
 
-		VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		uint32_t imageIndex = 0;
+		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, myImageAvailableSemaphores[myCurrentInFlightFrame], VK_NULL_HANDLE, &imageIndex);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			Recreate();
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		{
+			throw std::runtime_error("Failed to acquire a swapchain image!");
+		}
+
+		if (myImageFences[imageIndex] != VK_NULL_HANDLE)
+			vkWaitForFences(myDevice, 1, &myImageFences[imageIndex], VK_TRUE, UINT64_MAX);
+
+		myImageFences[imageIndex] = myInFlightFrameFences[myCurrentInFlightFrame];
+
+		VkSemaphore waitSemaphores[] = { myImageAvailableSemaphores[myCurrentInFlightFrame] };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		VkSemaphore signalSemaphores[] = { myRenderFinishedSemaphores[myCurrentInFlightFrame] };
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pWaitDstStageMask = &submitPipelineStages;
-
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &myCommandBuffers[index];
+		submitInfo.pCommandBuffers = &myCommandBuffers[imageIndex];
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
 
-		result = vkQueueSubmit(VulkanRenderCore::GetInstance()->GetGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
-		assert(result == VK_SUCCESS);
+		vkResetFences(myDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame]);
+
+		VK_CHECK_RESULT(vkQueueSubmit(VulkanRenderCore::GetInstance()->GetGraphicsQueue(), 1, &submitInfo, myInFlightFrameFences[myCurrentInFlightFrame]),
+			"Failed to submit a command buffer");
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &myVkSwapChain;
-		presentInfo.pImageIndices = &index;
+		presentInfo.pImageIndices = &imageIndex;
 
 		result = vkQueuePresentKHR(VulkanRenderCore::GetInstance()->GetGraphicsQueue(), &presentInfo);
-		assert(result == VK_SUCCESS);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || myFramebufferResized)
+		{
+			myFramebufferResized = false;
+			Recreate();
+		}
+		else if (result != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to present a swapchain image!");
+		}
 
-		/*submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[currentBuffer];
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));*/
+		myCurrentInFlightFrame = (myCurrentInFlightFrame + 1) % ((uint32_t)myImages.size() - 1);
 	}
 }

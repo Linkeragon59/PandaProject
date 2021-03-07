@@ -15,7 +15,7 @@ namespace Render
 {
 	namespace
 	{
-		uint32_t locVulkanApiVersion = VK_API_VERSION_1_0;
+		uint32_t locVulkanApiVersion = VK_API_VERSION_1_2;
 
 #if defined(_WINDOWS) && !defined(NDEBUG)
 		constexpr bool locEnableValidationLayers = true;
@@ -45,35 +45,40 @@ namespace Render
 		glfwTerminate();
 	}
 
+	void VulkanRenderCore::Update()
+	{
+		for (uint32_t i = 0; i < (uint32_t)mySwapChains.size(); ++i)
+		{
+			mySwapChains[i]->Update();
+		}
+	}
+
 	GLFWwindow* VulkanRenderCore::OpenWindow(int aWidth, int aHeight, const char* aTitle)
 	{
-		assert(ourInstance);
-
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		GLFWwindow* window = glfwCreateWindow(aWidth, aHeight, aTitle, nullptr, nullptr);
 
-		ourInstance->LoadDummyScene();
+		LoadDummyScene();
 
 		VulkanSwapChain* swapChain = new VulkanSwapChain(window);
-		ourInstance->mySwapChains.push_back(swapChain);
+		mySwapChains.push_back(swapChain);
 
 		return window;
 	}
 
 	void VulkanRenderCore::CloseWindow(GLFWwindow* aWindow)
 	{
-		assert(ourInstance);
-
-		for (uint32_t i = 0; i < (uint32_t)ourInstance->mySwapChains.size(); ++i)
+		for (uint32_t i = 0; i < (uint32_t)mySwapChains.size(); ++i)
 		{
-			if (ourInstance->mySwapChains[i]->GetWindow() == aWindow)
+			if (mySwapChains[i]->GetWindow() == aWindow)
 			{
-				delete ourInstance->mySwapChains[i];
-				ourInstance->mySwapChains.erase(ourInstance->mySwapChains.begin() + i);
+				delete mySwapChains[i];
+				mySwapChains.erase(mySwapChains.begin() + i);
+				break;
 			}
 		}
 
-		ourInstance->UnloadDummyScene();
+		UnloadDummyScene();
 
 		glfwDestroyWindow(aWindow);
 	}

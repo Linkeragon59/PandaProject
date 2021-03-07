@@ -20,6 +20,8 @@ namespace Render
 			return aDepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT;
 		}
 
+		void TransitionLayout(VkImageLayout anOldLayout, VkImageLayout aNewLayout, VkQueue aQueue, VkCommandPool aCommandPool = VK_NULL_HANDLE);
+
 		void Destroy();
 
 		VkDevice myDevice = VK_NULL_HANDLE;
