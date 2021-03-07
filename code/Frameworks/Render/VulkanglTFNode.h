@@ -24,6 +24,10 @@ namespace VulkanglTF
 {
 	struct Node
 	{
+		~Node();
+
+		void Load(const tinygltf::Model& aModel, uint32_t aNodeIndex, float aScale, std::vector<Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
+
 		void Update();
 
 		glm::mat4 GetLocalMatrix();

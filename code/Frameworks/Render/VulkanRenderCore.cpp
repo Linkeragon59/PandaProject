@@ -5,6 +5,8 @@
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
 
+#include "VulkanglTFModel.h"
+
 #include <GLFW/glfw3.h>
 
 #include <stdexcept>
@@ -230,6 +232,10 @@ namespace Render
 
 		const uint32_t glTFLoadingFlags = vkglTF::FileLoadingFlags::PreTransformVertices | vkglTF::FileLoadingFlags::PreMultiplyVertexColors | vkglTF::FileLoadingFlags::FlipY;
 		myScene->loadFromFile("Frameworks/models/treasure_smooth.gltf", myDevice, myDevice->myGraphicsQueue, glTFLoadingFlags);
+
+		VulkanglTF::Model* model = new VulkanglTF::Model();
+		model->LoadFromFile("Frameworks/models/treasure_smooth.gltf", myDevice->myGraphicsQueue, 1.0f, glTFLoadingFlags);
+		delete model;
 	}
 
 	void VulkanRenderCore::UnloadDummyScene()

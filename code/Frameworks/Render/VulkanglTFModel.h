@@ -2,9 +2,9 @@
 
 #include "VulkanHelpers.h"
 #include "VulkanglTFTexture.h"
+#include "VulkanglTFMaterial.h"
 #include "VulkanglTFNode.h"
-
-#include <string>
+#include "VulkanBuffer.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -17,7 +17,7 @@ namespace Render
 {
 namespace VulkanglTF
 {
-	enum FileLoadingFlags
+	enum class FileLoadingFlags
 	{
 		None = 0x00,
 		PreTransformVertices = 0x01,
@@ -25,65 +25,11 @@ namespace VulkanglTF
 		FlipY = 0x04
 	};
 
-	enum class VertexComponent
+	enum class DescriptorBindingFlags
 	{
-		Position,
-		Normal,
-		UV,
-		Color
-	};
-
-	struct Vertex {
-		glm::vec3 myPosition;
-		glm::vec3 myNormal;
-		glm::vec2 myUV;
-		glm::vec4 myColor;
-		
-		static VkVertexInputBindingDescription GetBindingDescription()
-		{
-			VkVertexInputBindingDescription bindingDescription{};
-			bindingDescription.binding = 0;
-			bindingDescription.stride = sizeof(Vertex);
-			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			return bindingDescription;
-		}
-
-		static VkVertexInputAttributeDescription GetAttributeDescription(VertexComponent aComponent, uint32_t aLocation)
-		{
-			VkVertexInputAttributeDescription description;
-			description.location = aLocation;
-			description.binding = 0;
-			switch (aComponent)
-			{
-			case VertexComponent::Position:
-				description.format = VK_FORMAT_R32G32B32_SFLOAT;
-				description.offset = offsetof(Vertex, myPosition);
-				break;
-			case VertexComponent::Normal:
-				description.format = VK_FORMAT_R32G32B32_SFLOAT;
-				description.offset = offsetof(Vertex, myNormal);
-				break;
-			case VertexComponent::UV:
-				description.format = VK_FORMAT_R32G32_SFLOAT;
-				description.offset = offsetof(Vertex, myUV);
-				break;
-			case VertexComponent::Color:
-				description.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-				description.offset = offsetof(Vertex, myColor);
-				break;
-			}
-			return description;
-		}
-
-		static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions(const std::vector<VertexComponent>& someComponents)
-		{
-			std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-			for (uint32_t i = 0; i < (uint32_t)someComponents.size(); ++i)
-			{
-				attributeDescriptions.push_back(GetAttributeDescription(someComponents[i], i));
-			}
-			return attributeDescriptions;
-		}
+		None = 0x00,
+		ImageBaseColor = 0x01,
+		ImageNormalMap = 0x02
 	};
 
 	class Model
@@ -92,17 +38,47 @@ namespace VulkanglTF
 		Model();
 		~Model();
 
-		bool LoadFromFile(std::string aFilename, VkQueue aTransferQueue, uint32_t someLoadingFlags = FileLoadingFlags::None, float aScale = 1.0f);
+		bool LoadFromFile(std::string aFilename, VkQueue aTransferQueue, float aScale = 1.0f,
+			uint32_t someLoadingFlags = (uint32_t)FileLoadingFlags::None,
+			uint32_t someBindingFlags = (uint32_t)DescriptorBindingFlags::ImageBaseColor);
 
 	private:
 		void LoadTextures(const tinygltf::Model& aModel);
-		Node* LoadNode(const tinygltf::Model& aModel, uint32_t aNodeIndex, float aScale, std::vector<Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
+		void LoadMaterials(tinygltf::Model& aModel);
+		void LoadNodes(const tinygltf::Model& aModel, float aScale, std::vector<Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
+
+		Texture* GetTexture(int anIndex);
+		Material* GetMaterial(int anIndex);
+
+		template<typename Functor>
+		void IterateNodes(Functor aFunctor, bool aParentFirst)
+		{
+			for (Node* node : myNodes)
+				IterateNodeChildren(aFunctor, node, aParentFirst);
+		}
+		template<typename Functor>
+		void IterateNodeChildren(Functor aFunctor, Node* aNode, bool aParentFirst)
+		{
+			if (aParentFirst)
+				aFunctor(aNode);
+			for (Node* childNode : aNode->myChildren)
+				IterateNodeChildren(aFunctor, childNode, aParentFirst);
+			if (!aParentFirst)
+				aFunctor(aNode);
+		}
 
 		VkDevice myDevice = VK_NULL_HANDLE;
 		VkQueue myTransferQueue = VK_NULL_HANDLE;
 
+		// Create a new descriptor pool for each model
+		VkDescriptorPool myDescriptorPool = VK_NULL_HANDLE;
+
 		std::vector<Texture> myTextures;
+		std::vector<Material> myMaterials;
 		std::vector<Node*> myNodes;
+
+		VulkanBuffer myVertexBuffer;
+		VulkanBuffer myIndexBuffer;
 	};
 }
 }
