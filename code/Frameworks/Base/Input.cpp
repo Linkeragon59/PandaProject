@@ -96,7 +96,6 @@ namespace Input
 	{
 		InputCallback callback{anInput, aCallbackFunction};
 		myInputCallbacks.push_back(callback);
-		std::cout << "Callback added" << std::endl;
 	}
 
 	void InputManager::myCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -108,7 +107,7 @@ namespace Input
 
 		for(auto callback : ourInstance->myInputCallbacks)
 		{
-			if(key == (int)callback.myInput)
+			if(key == locRawInputToGlfwInput(callback.myInput))
 			{
 				callback.myCallback();
 			}
