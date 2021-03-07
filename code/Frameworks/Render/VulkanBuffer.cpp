@@ -1,11 +1,13 @@
 #include "VulkanBuffer.h"
+
 #include "VulkanRenderCore.h"
 
 namespace Render
 {
-
 	void VulkanBuffer::Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
 	{
+		myAllocator = VulkanRenderCore::GetInstance()->GetAllocator();
+
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		bufferInfo.size = aSize;
@@ -37,27 +39,23 @@ namespace Render
 		}
 		allocInfo.requiredFlags = someProperties;
 
-		if (vmaCreateBuffer(VulkanRenderCore::GetInstance()->GetAllocator(), &bufferInfo, &allocInfo, &myBuffer, &myAllocation, nullptr) != VK_SUCCESS)
-			throw std::runtime_error("Failed to create a buffer!");
-
-		SetupDescriptor();
+		VK_CHECK_RESULT(vmaCreateBuffer(myAllocator, &bufferInfo, &allocInfo, &myBuffer, &myAllocation, nullptr), "Failed to create a buffer!");
 	}
 
 	void VulkanBuffer::Map()
 	{
-		if (vmaMapMemory(VulkanRenderCore::GetInstance()->GetAllocator(), myAllocation, &myMappedData) != VK_SUCCESS)
-			throw std::runtime_error("Failed to map a buffer allocation!");
+		VK_CHECK_RESULT(vmaMapMemory(myAllocator, myAllocation, &myMappedData), "Failed to map a buffer allocation!");
 	}
 
 	void VulkanBuffer::Unmap()
 	{
-		vmaUnmapMemory(VulkanRenderCore::GetInstance()->GetAllocator(), myAllocation);
+		vmaUnmapMemory(myAllocator, myAllocation);
+		myMappedData = nullptr;
 	}
 
 	void VulkanBuffer::Flush()
 	{
-		if (vmaFlushAllocation(VulkanRenderCore::GetInstance()->GetAllocator(), myAllocation, 0, VK_WHOLE_SIZE) != VK_SUCCESS)
-			throw std::runtime_error("Failed to flush a buffer allocation!");
+		VK_CHECK_RESULT(vmaFlushAllocation(myAllocator, myAllocation, 0, VK_WHOLE_SIZE), "Failed to flush a buffer allocation!");
 	}
 
 	void VulkanBuffer::SetupDescriptor(VkDeviceSize aSize, VkDeviceSize anOffset)
@@ -69,8 +67,18 @@ namespace Render
 
 	void VulkanBuffer::Destroy()
 	{
-		if (myBuffer)
-			vmaDestroyBuffer(VulkanRenderCore::GetInstance()->GetAllocator(), myBuffer, myAllocation);
-	}
+		myDescriptor = {};
 
+		if (myMappedData)
+		{
+			Unmap();
+		}
+
+		if (myBuffer)
+		{
+			vmaDestroyBuffer(myAllocator, myBuffer, myAllocation);
+			myBuffer = VK_NULL_HANDLE;
+			myAllocation = VK_NULL_HANDLE;
+		}
+	}
 }

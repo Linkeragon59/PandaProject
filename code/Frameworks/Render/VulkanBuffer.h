@@ -20,5 +20,7 @@ namespace Render
 		VkDescriptorBufferInfo myDescriptor{};
 
 		void Destroy();
+
+		VmaAllocator myAllocator = VK_NULL_HANDLE;
 	};
 }

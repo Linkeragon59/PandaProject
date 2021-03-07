@@ -1,14 +1,9 @@
 #pragma once
 
-#include "vulkan/vulkan.h"
-#include "vk_mem_alloc.h"
-
-#include <vector>
-#include <optional>
-#include <memory>
+#include "VulkanHelpers.h"
+#include "VulkanBuffer.h"
 
 #include "VulkanglTFModel.h"
-#include "VulkanBuffer.h"
 
 struct GLFWwindow;
 
@@ -37,7 +32,7 @@ namespace Render
 		VkQueue GetGraphicsQueue() const;
 		VkCommandPool GetGraphicsCommandPool() const;
 
-		VkRenderPass GetRenderPass() const { return myRenderPass; }
+		vkglTF::Model* GetDummyScene() const { return myScene; }
 
 	private:
 		static VulkanRenderCore* ourInstance;
@@ -48,50 +43,18 @@ namespace Render
 		void CreateVkInstance();
 		void SetupDebugMessenger();
 		void CreateDevice();
-		void SetupRenderPass();
-		void CreatePipelineCache();
+
+		void LoadDummyScene();
+		void UnloadDummyScene();
 
 		VkInstance myVkInstance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT myDebugMessenger = VK_NULL_HANDLE;
 
 		VulkanDevice* myDevice = nullptr;
 
-		VkRenderPass myRenderPass = VK_NULL_HANDLE;
-
-		VkPipelineCache myPipelineCache = VK_NULL_HANDLE;
-
 		// One SwapChain per window/surface
 		std::vector<VulkanSwapChain*> mySwapChains;
 
-		// Below stuff is per SwapChain
-
-		void PrepareDummyScene();
-		void LoadDummyScene();
-		void PrepareUniformBuffers();
-		void SetupDescriptorSetLayout();
-		void PreparePipelines();
-		void SetupDescriptorPool();
-		void SetupDescriptorSet();
-		void BuildCommandBuffers();
-		void Draw();
-
-		// Same uniform buffer layout as shader
-		struct UBOVS
-		{
-			glm::mat4 myProjection;
-			glm::mat4 myModelView;
-			glm::vec4 myLightPos;
-		};
-		vkglTF::Model myScene;
-		VulkanBuffer myUniform;
-
-		VkPipelineLayout myPipelineLayout = VK_NULL_HANDLE;
-		VkDescriptorPool myDescriptorPool = VK_NULL_HANDLE;
-		VkDescriptorSetLayout myDescriptorSetLayout = VK_NULL_HANDLE;
-		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
-
-		VkPipeline myPhongPipeline = VK_NULL_HANDLE;
-		VkPipeline myToonPipeline = VK_NULL_HANDLE;
-		VkPipeline myWireFramePipeline = VK_NULL_HANDLE;
+		vkglTF::Model* myScene;
 	};
 }

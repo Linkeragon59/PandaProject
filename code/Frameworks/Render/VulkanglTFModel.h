@@ -11,11 +11,9 @@
 #include <stdlib.h>
 #include <string>
 #include <fstream>
-#include <vector>
 
-#include "vulkan/vulkan.h"
-#include "vk_mem_alloc.h"
 #include "VulkanDevice.h"
+#include "VulkanBuffer.h"
 
 #pragma warning(push)
 #pragma warning(disable:4201)
@@ -127,11 +125,8 @@ namespace vkglTF
 		std::string name;
 
 		struct UniformBuffer {
-			VkBuffer buffer;
-			VmaAllocation memory;
-			VkDescriptorBufferInfo descriptor;
+			VulkanBuffer buffer;
 			VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
-			void* mapped;
 		} uniformBuffer;
 
 		struct UniformBlock {
@@ -258,13 +253,11 @@ namespace vkglTF
 
 		struct Vertices {
 			int count;
-			VkBuffer buffer;
-			VmaAllocation memory;
+			VulkanBuffer buffer;
 		} vertices;
 		struct Indices {
 			int count;
-			VkBuffer buffer;
-			VmaAllocation memory;
+			VulkanBuffer buffer;
 		} indices;
 
 		std::vector<Node*> nodes;

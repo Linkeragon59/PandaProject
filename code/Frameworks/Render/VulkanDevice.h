@@ -1,10 +1,6 @@
 #pragma once
 
-#include "vulkan/vulkan.h"
-#include "vk_mem_alloc.h"
-
-#include <vector>
-#include <string>
+#include "VulkanHelpers.h"
 #include <optional>
 
 namespace Render
@@ -27,7 +23,6 @@ namespace Render
 
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures);
 		VkFormat FindBestDepthFormat();
-		bool HasStencilAspect(VkFormat aDepthFormat);
 
 		VkPhysicalDevice myPhysicalDevice = VK_NULL_HANDLE;
 		VkPhysicalDeviceProperties myProperties{};

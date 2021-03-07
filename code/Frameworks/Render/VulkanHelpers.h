@@ -5,19 +5,14 @@
 
 #include <vector>
 #include <string>
+#include <stdexcept>
+
+#define VK_CHECK_RESULT(X, Msg) if (X != VK_SUCCESS) { throw std::runtime_error(Msg); }
 
 namespace Render
 {
 	bool CheckInstanceLayersSupport(const std::vector<const char*>& someLayers);
 	bool CheckInstanceExtensionsSupport(const std::vector<const char*>& someExtensions);
-
-	VkCommandBuffer BeginOneShotCommand();
-	void EndOneShotCommand(VkQueue aQueue, VkCommandBuffer aCommandBuffer);
-
-	void TransitionImageLayout(VkQueue aQueue, VkImage anImage, VkFormat aFormat, VkImageLayout anOldLayout, VkImageLayout aNewLayout);
-
-	void CreateImage(uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkImage& anOutImage, VmaAllocation& anOutImageAlloc);
-	void CreateBuffer(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties, VkBuffer& anOutBuffer, VmaAllocation& anOutBufferAlloc);
 
 	VkShaderModule CreateShaderModule(const std::string& aFilename);
 
