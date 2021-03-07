@@ -30,12 +30,10 @@ namespace Input
         Repeated,
     };
 
-	typedef std::function<void()> CallbackFunction;
-	
 	struct InputCallback
 	{
 		RawInput myInput;
-		CallbackFunction myCallback;
+		std::function<void()> myCallback;
 	};
 
     class InputManager
@@ -54,13 +52,14 @@ namespace Input
         RawInputState PollRawInput(RawInput anInput, unsigned int aWindowIdx = 0);
         void PollMousePosition(double& anOutX, double& anOutY, unsigned int aWindowIdx = 0);
 
-        void AddCallback(RawInput anInput, CallbackFunction aCallback);
-        void RemoveCallback(RawInput anInput, CallbackFunction aCallback);
+        void AddCallback(RawInput anInput, std::function<void()> aCallback);
+        void RemoveCallback(RawInput anInput, std::function<void()> aCallback);
 
 		void SetupCallback(unsigned int aWindowIdx = 0);
 
     private:
-		static void myCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+		static void myKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+		static void myMouseCallback(GLFWwindow* window, int button, int action, int mods);
         static InputManager* ourInstance;
         std::vector<GLFWwindow*> myWindows;
         std::vector<InputCallback> myInputCallbacks;

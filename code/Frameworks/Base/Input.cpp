@@ -92,13 +92,13 @@ namespace Input
         glfwGetCursorPos(myWindows[aWindowIdx], &anOutX, &anOutY);
 	}
 
-    void InputManager::AddCallback(RawInput anInput, CallbackFunction aCallbackFunction)
+    void InputManager::AddCallback(RawInput anInput, std::function<void()> aCallbackFunction)
 	{
 		InputCallback callback{anInput, aCallbackFunction};
 		myInputCallbacks.push_back(callback);
 	}
 
-	void InputManager::myCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+	void InputManager::myKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
 		(void) window;
 		(void) scancode;
@@ -114,8 +114,24 @@ namespace Input
 		}
 	}
 
+	void InputManager::myMouseCallback(GLFWwindow* window, int button, int action, int mods)
+	{
+		(void) window;
+		(void) action;
+		(void) mods;
+
+		for(auto callback : ourInstance->myInputCallbacks)
+		{
+			if(button == locRawInputToGlfwInput(callback.myInput))
+			{
+				callback.myCallback();
+			}
+		}
+	}
+
 	void InputManager::SetupCallback(unsigned int aWindowIdx)
 	{
-		glfwSetKeyCallback(myWindows[aWindowIdx], InputManager::myCallback);
+		glfwSetKeyCallback(myWindows[aWindowIdx], InputManager::myKeyCallback);
+		glfwSetMouseButtonCallback(myWindows[aWindowIdx], InputManager::myMouseCallback);
 	}
 }

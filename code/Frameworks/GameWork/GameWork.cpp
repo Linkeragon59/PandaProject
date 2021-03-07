@@ -21,6 +21,11 @@ void JumpCallback()
 	std::cout << "JUMP" << std::endl;
 }
 
+void ShootCallback()
+{
+	std::cout << "SHOOT" << std::endl;
+}
+
 namespace GameWork
 {
 	GameWork* GameWork::ourInstance = nullptr;
@@ -77,6 +82,7 @@ namespace GameWork
 		InputManager* inputManager = InputManager::GetInstance();
 		inputManager->SetupCallback();
 		inputManager->AddCallback(RawInput::KeySpace, JumpCallback);
+		inputManager->AddCallback(RawInput::MouseLeft, ShootCallback);
 
 		while (!glfwWindowShouldClose(myWindow))
 		{
