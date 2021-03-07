@@ -58,8 +58,8 @@ namespace Input
 		void SetupCallback(unsigned int aWindowIdx = 0);
 
     private:
-		static void myKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-		static void myMouseCallback(GLFWwindow* window, int button, int action, int mods);
+		static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+		static void MouseCallback(GLFWwindow* window, int button, int action, int mods);
         static InputManager* ourInstance;
         std::vector<GLFWwindow*> myWindows;
         std::vector<InputCallback> myInputCallbacks;

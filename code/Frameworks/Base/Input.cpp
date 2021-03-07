@@ -98,7 +98,7 @@ namespace Input
 		myInputCallbacks.push_back(callback);
 	}
 
-	void InputManager::myKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+	void InputManager::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
 		(void) window;
 		(void) scancode;
@@ -114,7 +114,7 @@ namespace Input
 		}
 	}
 
-	void InputManager::myMouseCallback(GLFWwindow* window, int button, int action, int mods)
+	void InputManager::MouseCallback(GLFWwindow* window, int button, int action, int mods)
 	{
 		(void) window;
 		(void) action;
@@ -131,7 +131,7 @@ namespace Input
 
 	void InputManager::SetupCallback(unsigned int aWindowIdx)
 	{
-		glfwSetKeyCallback(myWindows[aWindowIdx], InputManager::myKeyCallback);
-		glfwSetMouseButtonCallback(myWindows[aWindowIdx], InputManager::myMouseCallback);
+		glfwSetKeyCallback(myWindows[aWindowIdx], InputManager::KeyCallback);
+		glfwSetMouseButtonCallback(myWindows[aWindowIdx], InputManager::MouseCallback);
 	}
 }
