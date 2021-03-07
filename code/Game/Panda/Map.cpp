@@ -33,12 +33,10 @@ biomeType getBiome(std::vector<double> habitatVars)
     }
 }
 
-// Constructor
 Map::Map()
 {
     // Reserve memory
     myHabitatVars.reserve(locNumberHabitatVars);
-    // Create habitat variables and store in vector
     for(int i = 0; i < locNumberHabitatVars; i++)
     {
         myHabitatVars.push_back(
@@ -46,14 +44,12 @@ Map::Map()
         );
     }
 
-    // Set map limits
     myXmin = locXmin;
     myXmax = locXmax;
     myYmin = locYmin;
     myYmax = locYmax;
 }
 
-// Destructor
 Map::~Map()
 {
 }
@@ -79,9 +75,7 @@ biomeType Map::BiomePt(double x, double y)
         habitatVars.at(i) = myHabitatVars.at(i).FractalNoisePt(x, y);
     }
 
-    // Get biome from habitat variables
-    biomeType biome = getBiome(habitatVars);
-    return biome;
+    return getBiome(habitatVars);
 }
 
 // Print map (for testing purposes only...)
