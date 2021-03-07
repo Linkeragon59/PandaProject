@@ -5,11 +5,7 @@
 struct GLFWwindow;
 
 namespace Input
-{
-	// typedef std::function<void(GLFWwindow*, int, int, int, int)> KeyCallback;
-	typedef void(* Callback) (GLFWwindow *, int, int, int, int);
-	// typedef std::function<void(RawInput)> KeyCallback;
-	
+{	
     enum class RawInput
     {
         MouseLeft,
@@ -34,6 +30,14 @@ namespace Input
         Repeated,
     };
 
+	typedef std::function<void()> CallbackFunction;
+	
+	struct InputCallback
+	{
+		RawInput myInput;
+		CallbackFunction myCallback;
+	};
+
     class InputManager
     {
     public:
@@ -50,12 +54,15 @@ namespace Input
         RawInputState PollRawInput(RawInput anInput, unsigned int aWindowIdx = 0);
         void PollMousePosition(double& anOutX, double& anOutY, unsigned int aWindowIdx = 0);
 
-        void AddCallback(Callback aCallback, unsigned int aWindowIdx = 0);
-        void RemoveCallback(Callback aCallback, unsigned int aWindowIdx = 0);
+        void AddCallback(RawInput anInput, CallbackFunction aCallback);
+        void RemoveCallback(RawInput anInput, CallbackFunction aCallback);
+
+		void SetupCallback(unsigned int aWindowIdx = 0);
 
     private:
+		static void myCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
         static InputManager* ourInstance;
         std::vector<GLFWwindow*> myWindows;
-        std::vector<Callback> myCallbacks;
+        std::vector<InputCallback> myInputCallbacks;
     };
 } // namespace Input

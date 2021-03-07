@@ -16,16 +16,9 @@ using Input::InputManager;
 using Input::RawInput;
 using Input::RawInputState;
 
-void JumpCallback(GLFWwindow* window, int key, int scancode, int action, int mods) 
+void JumpCallback() 
 {
-	(void) window;
-	(void) scancode;
-	(void) action;
-	(void) mods;
-    if(key == (int)RawInput::KeySpace)
-    {
-        std::cout << "JUMP" << std::endl;
-    }
+	std::cout << "JUMP" << std::endl;
 }
 
 namespace GameWork
@@ -82,7 +75,8 @@ namespace GameWork
 	void GameWork::Run()
 	{
 		InputManager* inputManager = InputManager::GetInstance();
-		inputManager->AddCallback(JumpCallback);
+		inputManager->SetupCallback();
+		inputManager->AddCallback(RawInput::KeySpace, JumpCallback);
 
 		while (!glfwWindowShouldClose(myWindow))
 		{
