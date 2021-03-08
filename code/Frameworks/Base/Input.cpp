@@ -98,6 +98,12 @@ namespace Input
 		myInputCallbacks.push_back(callback);
 	}
 
+	void InputManager::SetupCallback(unsigned int aWindowIdx)
+	{
+		glfwSetKeyCallback(myWindows[aWindowIdx], InputManager::KeyCallback);
+		glfwSetMouseButtonCallback(myWindows[aWindowIdx], InputManager::MouseCallback);
+	}
+
 	void InputManager::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
 		(void) window;
@@ -127,11 +133,5 @@ namespace Input
 				callback.myCallback();
 			}
 		}
-	}
-
-	void InputManager::SetupCallback(unsigned int aWindowIdx)
-	{
-		glfwSetKeyCallback(myWindows[aWindowIdx], InputManager::KeyCallback);
-		glfwSetMouseButtonCallback(myWindows[aWindowIdx], InputManager::MouseCallback);
 	}
 }
