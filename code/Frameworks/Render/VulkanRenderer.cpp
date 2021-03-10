@@ -4,6 +4,7 @@
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
 
+#include "VulkanCamera.h"
 #include "VulkanModel.h"
 
 namespace Render
@@ -24,20 +25,13 @@ namespace Render
 	void VulkanRenderer::CreateInstance()
 	{
 		assert(!ourInstance);
-
-		ourInstance = new VulkanRenderer();
-
-		ourInstance->LoadPandaModel();
+		new VulkanRenderer();
 	}
 
 	void VulkanRenderer::DestroyInstance()
 	{
 		assert(ourInstance);
-
-		ourInstance->UnloadPandaModel();
-
 		delete ourInstance;
-		ourInstance = nullptr;
 	}
 
 	void VulkanRenderer::OnWindowOpened(GLFWwindow* aWindow)
@@ -100,10 +94,26 @@ namespace Render
 			SetupDebugMessenger();
 
 		CreateDevice();
+
+		ourInstance = this;
+
+		VulkanCamera::SetupDescriptorSetLayout();
+		myCamera = new VulkanCamera();
+		VulkanModel::SetupDescriptorSetLayout();
+		myPandaModel = new VulkanModel();
 	}
 
 	VulkanRenderer::~VulkanRenderer()
 	{
+		delete myCamera;
+		myCamera = nullptr;
+		VulkanCamera::DestroyDescriptorSetLayout();
+		delete myPandaModel;
+		myPandaModel = nullptr;
+		VulkanModel::DestroyDescriptorSetLayout();
+
+		ourInstance = nullptr;
+
 		delete myDevice;
 
 		if (locEnableValidationLayers)
@@ -206,17 +216,6 @@ namespace Render
 			extensions,
 			VK_QUEUE_GRAPHICS_BIT);
 		myDevice->SetupVmaAllocator(myVkInstance, locVulkanApiVersion);
-	}
-
-	void VulkanRenderer::LoadPandaModel()
-	{
-		myPandaModel = new VulkanModel();
-	}
-
-	void VulkanRenderer::UnloadPandaModel()
-	{
-		delete myPandaModel;
-		myPandaModel = nullptr;
 	}
 
 }

@@ -9,6 +9,8 @@ namespace Render
 {
 	struct VulkanDevice;
 	class VulkanSwapChain;
+
+	class VulkanCamera;
 	class VulkanModel;
 
 	class VulkanRenderer
@@ -32,6 +34,7 @@ namespace Render
 		VkQueue GetGraphicsQueue() const;
 		VkCommandPool GetGraphicsCommandPool() const;
 
+		VulkanCamera* GetCamera() const { return myCamera; }
 		VulkanModel* GetPandaModel() const { return myPandaModel; }
 
 	private:
@@ -44,9 +47,6 @@ namespace Render
 		void SetupDebugMessenger();
 		void CreateDevice();
 
-		void LoadPandaModel();
-		void UnloadPandaModel();
-
 		VkInstance myVkInstance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT myDebugMessenger = VK_NULL_HANDLE;
 
@@ -55,6 +55,7 @@ namespace Render
 		// One SwapChain per window/surface
 		std::vector<VulkanSwapChain*> mySwapChains;
 
-		VulkanModel* myPandaModel;
+		VulkanCamera* myCamera = nullptr;
+		VulkanModel* myPandaModel = nullptr;
 	};
 }

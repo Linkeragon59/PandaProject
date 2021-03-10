@@ -6,6 +6,8 @@ namespace Render
 {
 	struct VulkanBuffer
 	{
+		~VulkanBuffer();
+
 		void Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties);
 		VkBuffer myBuffer = VK_NULL_HANDLE;
 		VmaAllocation myAllocation = VK_NULL_HANDLE;

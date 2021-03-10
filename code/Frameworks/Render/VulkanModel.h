@@ -46,10 +46,38 @@ namespace Render
 			}
 		};
 
+		static void SetupDescriptorSetLayout();
+		static void DestroyDescriptorSetLayout();
+		static VkDescriptorSetLayout GetDescriptorSetLayout() { return ourDescriptorSetLayout; }
+
+		VkDescriptorSet GetDescriptorSet() const { return myDescriptorSet; }
+		VkBuffer GetVertexBuffer() const { return myVertexBuffer.myBuffer; }
+		VkBuffer GetIndexBuffer() const { return myIndexBuffer.myBuffer; }
+		uint32_t GetIndexCount() const { return myIndexCount; }
+
 	private:
+		static VkDescriptorSetLayout ourDescriptorSetLayout;
+
+		void SetupDescriptorPool();
+
+		void PrepareUniformBuffers();
+		void SetupDescriptoSet();
+
+		VkDevice myDevice = VK_NULL_HANDLE;
+
+		VkDescriptorPool myDescriptorPool = VK_NULL_HANDLE;
+
 		VulkanBuffer myVertexBuffer;
 		VulkanBuffer myIndexBuffer;
+		uint32_t myIndexCount = 0;
 
 		VulkanImage myTexture;
+
+		struct UBO
+		{
+			glm::mat4 myModel;
+		};
+		VulkanBuffer myUBO;
+		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
 }

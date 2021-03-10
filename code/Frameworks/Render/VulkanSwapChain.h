@@ -10,7 +10,6 @@ namespace Render
 {
 	class VulkanRenderPassContainer;
 	class VulkanPSOContainer;
-	class VulkanCamera;
 
 	class VulkanSwapChain
 	{
@@ -55,7 +54,6 @@ namespace Render
 
 		VulkanRenderPassContainer* myRenderPassContainer = nullptr;
 		VulkanPSOContainer* myPSOContainer = nullptr;
-		VulkanCamera* myCamera = nullptr;
 
 		// One per swapchain image
 		std::vector<VkCommandBuffer> myCommandBuffers;

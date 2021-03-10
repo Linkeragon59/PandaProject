@@ -4,6 +4,12 @@
 
 namespace Render
 {
+
+	VulkanImage::~VulkanImage()
+	{
+		assert(!myImage);
+	}
+
 	void VulkanImage::Create(uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
 	{
 		myDevice = VulkanRenderer::GetInstance()->GetDevice();
@@ -81,6 +87,13 @@ namespace Render
 		VK_CHECK_RESULT(vkCreateSampler(myDevice, &samplerInfo, nullptr, &myImageSampler), "Failed to create a sampler!");
 	}
 
+	void VulkanImage::SetupDescriptor(VkImageLayout aLayout)
+	{
+		myDescriptor.sampler = myImageSampler;
+		myDescriptor.imageView = myImageView;
+		myDescriptor.imageLayout = aLayout;
+	}
+
 	void VulkanImage::TransitionLayout(VkImageLayout anOldLayout, VkImageLayout aNewLayout, VkQueue aQueue, VkCommandPool aCommandPool)
 	{
 		VkCommandBuffer commandBuffer = BeginOneTimeCommand(aCommandPool);
@@ -155,6 +168,8 @@ namespace Render
 
 	void VulkanImage::Destroy()
 	{
+		myDescriptor = {};
+
 		if (myImageSampler)
 		{
 			vkDestroySampler(myDevice, myImageSampler, nullptr);

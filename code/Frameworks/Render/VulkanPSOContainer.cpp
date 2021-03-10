@@ -2,6 +2,8 @@
 
 #include "VulkanRenderer.h"
 #include "VulkanDevice.h"
+
+#include "VulkanCamera.h"
 #include "VulkanModel.h"
 
 namespace Render
@@ -10,8 +12,6 @@ namespace Render
 		: myRenderPass(aRenderPass)
 	{
 		myDevice = VulkanRenderer::GetInstance()->GetDevice();
-
-		SetupDescriptorSetLayout();
 
 		CreatePipelineCache();
 		PreparePipelines();
@@ -30,35 +30,6 @@ namespace Render
 
 		vkDestroyPipelineCache(myDevice, myPipelineCache, nullptr);
 		myPipelineCache = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorSetLayout(myDevice, myDescriptorSetLayout, nullptr);
-		myDescriptorSetLayout = VK_NULL_HANDLE;
-	}
-
-	void VulkanPSOContainer::SetupDescriptorSetLayout()
-	{
-		// Binding 0 : Vertex shader uniform buffer
-		VkDescriptorSetLayoutBinding ubolayoutBinding{};
-		ubolayoutBinding.binding = 0;
-		ubolayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		ubolayoutBinding.descriptorCount = 1;
-		ubolayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-		// Binding 1 : Fragment shader sampler
-		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		samplerLayoutBinding.binding = 1;
-		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerLayoutBinding.descriptorCount = 1;
-		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		std::array<VkDescriptorSetLayoutBinding, 2> layoutBindings = { ubolayoutBinding, samplerLayoutBinding };
-
-		VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-		descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorLayoutInfo.bindingCount = (uint32_t)layoutBindings.size();
-		descriptorLayoutInfo.pBindings = layoutBindings.data();
-
-		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(myDevice, &descriptorLayoutInfo, nullptr, &myDescriptorSetLayout), "Failed to create the descriptor set layout");
 	}
 
 	void VulkanPSOContainer::CreatePipelineCache()
@@ -72,10 +43,15 @@ namespace Render
 
 	void VulkanPSOContainer::PreparePipelines()
 	{
+		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
+			VulkanCamera::GetDescriptorSetLayout(),
+			VulkanModel::GetDescriptorSetLayout()
+		};
+
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutCreateInfo.setLayoutCount = 1;
-		pipelineLayoutCreateInfo.pSetLayouts = &myDescriptorSetLayout;
+		pipelineLayoutCreateInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
+		pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
 		pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 
 		VK_CHECK_RESULT(vkCreatePipelineLayout(myDevice, &pipelineLayoutCreateInfo, nullptr, &myPipelineLayout), "Failed to create the pipeline layout");
@@ -172,9 +148,9 @@ namespace Render
 		// Create the graphics pipeline state objects
 
 		// Default shading pipeline
-		VkShaderModule defaultVert = CreateShaderModule("Frameworks/shaders/basicRenderer_vert.spv");
+		VkShaderModule defaultVert = CreateShaderModule("Frameworks/shaders/vulkanRendererDefault.vert.spv");
 		shaderStages[0].module = defaultVert;
-		VkShaderModule defaultFrag = CreateShaderModule("Frameworks/shaders/basicRenderer_frag.spv");
+		VkShaderModule defaultFrag = CreateShaderModule("Frameworks/shaders/vulkanRendererDefault.frag.spv");
 		shaderStages[1].module = defaultFrag;
 
 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(myDevice, myPipelineCache, 1, &pipelineInfo, nullptr, &myDefaultPipeline), "Failed to create the default pipeline");

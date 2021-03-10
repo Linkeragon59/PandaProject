@@ -11,6 +11,8 @@ namespace Render
 			return aDepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT;
 		}
 
+		~VulkanImage();
+
 		void Create(uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties);
 		VkImage myImage = VK_NULL_HANDLE;
 		VmaAllocation myAllocation = VK_NULL_HANDLE;
@@ -21,6 +23,9 @@ namespace Render
 
 		void CreateImageSampler();
 		VkSampler myImageSampler = VK_NULL_HANDLE;
+
+		void SetupDescriptor(VkImageLayout aLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VkDescriptorImageInfo myDescriptor;
 
 		void TransitionLayout(VkImageLayout anOldLayout, VkImageLayout aNewLayout, VkQueue aQueue, VkCommandPool aCommandPool = VK_NULL_HANDLE);
 

@@ -4,6 +4,12 @@
 
 namespace Render
 {
+
+	VulkanBuffer::~VulkanBuffer()
+	{
+		assert(!myBuffer);
+	}
+
 	void VulkanBuffer::Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
 	{
 		myAllocator = VulkanRenderer::GetInstance()->GetAllocator();

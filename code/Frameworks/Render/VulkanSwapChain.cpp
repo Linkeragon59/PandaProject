@@ -36,7 +36,6 @@ namespace Render
 
 		myRenderPassContainer = new VulkanRenderPassContainer(myColorFormat, myDepthImage.myFormat);
 		myPSOContainer = new VulkanPSOContainer(myRenderPassContainer->GetRenderPass());
-		myCamera = new VulkanCamera(myPSOContainer->GetDescriptorSetLayout());
 
 		SetupCommandBuffers();
 		SetupFramebuffers();
@@ -66,9 +65,6 @@ namespace Render
 		myFramebuffers.clear();
 
 		myCommandBuffers.clear();
-
-		delete myCamera;
-		myCamera = nullptr;
 
 		delete myPSOContainer;
 		myPSOContainer = nullptr;
@@ -319,6 +315,7 @@ namespace Render
 		renderPassBeginInfo.clearValueCount = (uint32_t)clearValues.size();
 		renderPassBeginInfo.pClearValues = clearValues.data();
 
+		VulkanCamera* camera = VulkanRenderer::GetInstance()->GetCamera();
 		VulkanModel* pandaModel = VulkanRenderer::GetInstance()->GetPandaModel();
 		(void)pandaModel;
 
@@ -345,13 +342,18 @@ namespace Render
 			scissor.offset = { 0, 0 };
 			vkCmdSetScissor(myCommandBuffers[i], 0, 1, &scissor);
 
-			std::array<VkDescriptorSet, 1> descriptorSets = { myCamera->GetDescriptorSet() };
-			vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPSOContainer->GetPipelineLayout(), 0, (uint32_t)descriptorSets.size(), descriptorSets.data(), 0, NULL);
-			//pandaModel->BindBuffers(myCommandBuffers[i]);
-
 			vkCmdSetViewport(myCommandBuffers[i], 0, 1, &viewport);
 			vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPSOContainer->GetDefaultPipeline());
-			//pandaModel->Draw(myCommandBuffers[i]);
+
+			std::array<VkDescriptorSet, 2> descriptorSets = { camera->GetDescriptorSet(), pandaModel->GetDescriptorSet() };
+			vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPSOContainer->GetPipelineLayout(), 0, (uint32_t)descriptorSets.size(), descriptorSets.data(), 0, NULL);
+
+			vkCmdBindIndexBuffer(myCommandBuffers[i], pandaModel->GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+			std::array<VkBuffer, 1> modelVertexBuffers = { pandaModel->GetVertexBuffer() };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(myCommandBuffers[i], 0, (uint32_t)modelVertexBuffers.size(), modelVertexBuffers.data(), offsets);
+			
+			vkCmdDrawIndexed(myCommandBuffers[i], pandaModel->GetIndexCount(), 1, 0, 0, 0);
 
 			vkCmdEndRenderPass(myCommandBuffers[i]);
 
