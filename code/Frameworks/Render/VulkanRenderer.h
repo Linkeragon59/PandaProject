@@ -35,7 +35,8 @@ namespace Render
 		VkCommandPool GetGraphicsCommandPool() const;
 
 		VulkanCamera* GetCamera() const { return myCamera; }
-		VulkanModel* GetPandaModel() const { return myPandaModel; }
+		VulkanModel* GetPandaModel(uint32_t anIndex) const { return myPandaModels[anIndex]; }
+		uint32_t GetPandaModelsCount() const { return (uint32_t)myPandaModels.size(); }
 
 	private:
 		static VulkanRenderer* ourInstance;
@@ -56,6 +57,6 @@ namespace Render
 		std::vector<VulkanSwapChain*> mySwapChains;
 
 		VulkanCamera* myCamera = nullptr;
-		VulkanModel* myPandaModel = nullptr;
+		std::vector<VulkanModel*> myPandaModels;
 	};
 }

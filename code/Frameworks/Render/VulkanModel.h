@@ -9,7 +9,7 @@ namespace Render
 	class VulkanModel
 	{
 	public:
-		VulkanModel();
+		VulkanModel(const glm::vec3& aPosition);
 		~VulkanModel();
 
 		struct Vertex
@@ -55,6 +55,8 @@ namespace Render
 		VkBuffer GetIndexBuffer() const { return myIndexBuffer.myBuffer; }
 		uint32_t GetIndexCount() const { return myIndexCount; }
 
+		void Update();
+
 	private:
 		static VkDescriptorSetLayout ourDescriptorSetLayout;
 
@@ -77,6 +79,7 @@ namespace Render
 		{
 			glm::mat4 myModel;
 		};
+		glm::vec3 myPosition;
 		VulkanBuffer myUBO;
 		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};

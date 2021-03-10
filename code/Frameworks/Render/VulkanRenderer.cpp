@@ -55,6 +55,9 @@ namespace Render
 
 	void VulkanRenderer::Update()
 	{
+		myCamera->Update();
+		for (VulkanModel* model : myPandaModels)
+			model->Update();
 		for (uint32_t i = 0; i < (uint32_t)mySwapChains.size(); ++i)
 		{
 			mySwapChains[i]->Update();
@@ -100,7 +103,8 @@ namespace Render
 		VulkanCamera::SetupDescriptorSetLayout();
 		myCamera = new VulkanCamera();
 		VulkanModel::SetupDescriptorSetLayout();
-		myPandaModel = new VulkanModel();
+		myPandaModels.push_back(new VulkanModel(glm::vec3(0.f)));
+		myPandaModels.push_back(new VulkanModel(glm::vec3(0.f, 1.f, 1.f)));
 	}
 
 	VulkanRenderer::~VulkanRenderer()
@@ -108,8 +112,9 @@ namespace Render
 		delete myCamera;
 		myCamera = nullptr;
 		VulkanCamera::DestroyDescriptorSetLayout();
-		delete myPandaModel;
-		myPandaModel = nullptr;
+		for (VulkanModel* model : myPandaModels)
+			delete model;
+		myPandaModels.clear();
 		VulkanModel::DestroyDescriptorSetLayout();
 
 		ourInstance = nullptr;

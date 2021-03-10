@@ -17,6 +17,8 @@ namespace Render
 		static void DestroyDescriptorSetLayout();
 		static VkDescriptorSetLayout GetDescriptorSetLayout() { return ourDescriptorSetLayout; }
 
+		void Update();
+
 	private:
 		static VkDescriptorSetLayout ourDescriptorSetLayout;
 		
@@ -35,6 +37,8 @@ namespace Render
 			glm::mat4 myView;
 			glm::mat4 myProj;
 		};
+		glm::vec3 myPosition;
+		glm::vec3 myDirection;
 		VulkanBuffer myUBO;
 		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};

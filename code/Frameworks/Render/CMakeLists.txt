@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.6.2)
 
 file(GLOB Headers *.h)
 file(GLOB Sources *.cpp)
-add_library(Render STATIC ${Headers} ${Sources})
+file(GLOB Natvis *.natvis)
+add_library(Render STATIC ${Headers} ${Sources} ${Natvis})
 
 target_link_libraries(Render Base)
 

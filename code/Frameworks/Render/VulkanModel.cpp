@@ -2,6 +2,9 @@
 
 #include "VulkanRenderer.h"
 
+#include "Input.h"
+
+#include <chrono>
 #include <stb_image.h>
 
 namespace Render
@@ -72,7 +75,33 @@ namespace Render
 		ourDescriptorSetLayout = VK_NULL_HANDLE;
 	}
 
-	VulkanModel::VulkanModel()
+	void VulkanModel::Update()
+	{
+		// Using a UBO this way is not the most efficient way to pass frequently changing values to the shader.
+		// A more efficient way to pass a small buffer of data to shaders are push constants.
+		static auto startTime = std::chrono::high_resolution_clock::now();
+		static float addTime = 0;
+
+		Input::InputManager* inputManager = Input::InputManager::GetInstance();
+		Input::RawInputState spaceState = inputManager->PollRawInput(Input::RawInput::KeySpace);
+		if (spaceState == Input::RawInputState::Pressed)
+		{
+			addTime += 0.1f;
+		}
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float elapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count() + addTime;
+		if (myPosition.y != 0.f)
+			elapsedTime *= -1.0f;
+
+		UBO ubo{};
+		ubo.myModel = glm::rotate(glm::translate(glm::mat4(1.0f), myPosition), elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		memcpy(myUBO.myMappedData, &ubo, sizeof(ubo));
+	}
+
+	VulkanModel::VulkanModel(const glm::vec3& aPosition)
+		: myPosition(aPosition)
 	{
 		myDevice = VulkanRenderer::GetInstance()->GetDevice();
 
@@ -204,16 +233,15 @@ namespace Render
 		myUBO.Create(sizeof(UBO),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		myUBO.SetupDescriptor();
 
 		// Persistent map
 		myUBO.Map();
 
 		UBO ubo{};
-		ubo.myModel = glm::mat4(1.0f);
+		ubo.myModel = glm::translate(glm::mat4(1.0f), myPosition);
 
 		memcpy(myUBO.myMappedData, &ubo, sizeof(ubo));
-
-		myUBO.SetupDescriptor();
 	}
 
 	void VulkanModel::SetupDescriptoSet()

@@ -2,6 +2,8 @@
 
 #include "VulkanRenderer.h"
 
+#include "Input.h"
+
 namespace Render
 {
 	VkDescriptorSetLayout VulkanCamera::ourDescriptorSetLayout = VK_NULL_HANDLE;
@@ -30,6 +32,22 @@ namespace Render
 	{
 		vkDestroyDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), ourDescriptorSetLayout, nullptr);
 		ourDescriptorSetLayout = VK_NULL_HANDLE;
+	}
+
+	void VulkanCamera::Update()
+	{
+		Input::InputManager* inputManager = Input::InputManager::GetInstance();
+		if (inputManager->PollRawInput(Input::RawInput::KeyW) == Input::RawInputState::Pressed)
+			myPosition += myDirection * 0.1f;
+		else if (inputManager->PollRawInput(Input::RawInput::KeyS) == Input::RawInputState::Pressed)
+			myPosition -= myDirection * 0.1f;
+
+		UBO ubo{};
+		ubo.myView = glm::lookAt(myPosition, myPosition + myDirection, glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.myProj = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 10.0f);
+		ubo.myProj[1][1] *= -1; // adapt calculation for Vulkan
+
+		memcpy(myUBO.myMappedData, &ubo, sizeof(ubo));
 	}
 
 	VulkanCamera::VulkanCamera()
@@ -70,18 +88,15 @@ namespace Render
 		myUBO.Create(sizeof(UBO),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		myUBO.SetupDescriptor();
 
 		// Persistent map
 		myUBO.Map();
 
-		UBO ubo{};
-		ubo.myView = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.myProj = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 10.0f);
-		ubo.myProj[1][1] *= -1; // adapt calculation for Vulkan
+		myPosition = glm::vec3(-5.0f, 0.0f, 4.0f);
+		myDirection = glm::normalize(glm::vec3(1.0f, 0.0f, -0.7f));
 
-		memcpy(myUBO.myMappedData, &ubo, sizeof(ubo));
-
-		myUBO.SetupDescriptor();
+		Update();
 	}
 
 	void VulkanCamera::SetupDescriptorSet()
