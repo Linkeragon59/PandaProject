@@ -8,38 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#ifdef __linux__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-compare"
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#endif
 #include <stb_image.h>
-#ifdef __linux__
-#pragma GCC diagnostic pop
-#endif
-
-#if USE_VMA
-#if defined(_WINDOWS)
-#pragma warning(push)
-#pragma warning(disable:4100)
-#pragma warning(disable:4127)
-#pragma warning(disable:4324)
-#elif defined(__linux__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#pragma GCC diagnostic ignored "-Wtype-limits"
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#endif
-#endif
-#define VMA_IMPLEMENTATION
-#include "vk_mem_alloc.h"
-#if defined(_WINDOWS)
-#pragma warning(pop)
-#elif defined(__linux__)
-#pragma GCC diagnostic pop
-#endif
 
 #include <stdexcept>
 #include <assert.h>

@@ -1,5 +1,6 @@
 #include "RenderFacade.h"
 #include "BasicRenderer.h"
+#include "VulkanRenderer.h"
 
 namespace Render
 {
@@ -19,4 +20,22 @@ namespace Render
 	{
 		delete ourBasicRenderer;
 	}
+
+	void Facade::InitVulkanRenderer(GLFWwindow* aWindow)
+	{
+		VulkanRenderer::CreateInstance();
+		VulkanRenderer::GetInstance()->OnWindowOpened(aWindow);
+	}
+
+	void Facade::UpdateVulkanRenderer()
+	{
+		VulkanRenderer::GetInstance()->Update();
+	}
+
+	void Facade::FinalizeVulkanRenderer(GLFWwindow* aWindow)
+	{
+		VulkanRenderer::GetInstance()->OnWindowClosed(aWindow);
+		VulkanRenderer::DestroyInstance();
+	}
+
 }
