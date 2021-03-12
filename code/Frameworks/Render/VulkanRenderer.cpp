@@ -14,7 +14,7 @@ namespace Render
 {
 	namespace
 	{
-		uint32_t locVulkanApiVersion = VK_API_VERSION_1_2;
+		uint32_t locVulkanApiVersion = VK_API_VERSION_1_0;
 
 #if defined(_WINDOWS) && !defined(NDEBUG)
 		constexpr bool locEnableValidationLayers = true;

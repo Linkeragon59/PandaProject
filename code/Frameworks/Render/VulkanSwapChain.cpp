@@ -387,7 +387,7 @@ namespace Render
 
 		VulkanCamera* camera = VulkanRenderer::GetInstance()->GetCamera();
 
-		for (int32_t i = 0; i < myCommandBuffers.size(); ++i)
+		for (uint32_t i = 0; i < (uint32_t)myCommandBuffers.size(); ++i)
 		{
 			// Set target frame buffer
 			renderPassBeginInfo.framebuffer = myFramebuffers[i];
