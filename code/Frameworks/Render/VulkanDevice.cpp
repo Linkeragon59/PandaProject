@@ -1,5 +1,7 @@
 #include "VulkanDevice.h"
 
+#include "VulkanHelpers.h"
+
 namespace Render
 {
 	VulkanDevice::VulkanDevice(VkPhysicalDevice aPhysicalDevice)

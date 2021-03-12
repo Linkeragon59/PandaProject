@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6.2)
+cmake_minimum_required(VERSION 3.16)
 
 file(GLOB Headers *.h)
 file(GLOB Sources *.cpp)
@@ -16,6 +16,8 @@ target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/stb)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/tinyobjloader)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/VulkanSDK/1.2.162.1/include)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/VulkanMemoryAllocator)
+
+target_precompile_headers(Render PRIVATE RenderPrecompile.h)
 
 if ( CMAKE_SYSTEM_NAME MATCHES "Linux" )
 	target_link_directories(Render PUBLIC ${CMAKE_SOURCE_DIR}/code/Extern/VulkanSDK/1.2.162.1/lib/linux)

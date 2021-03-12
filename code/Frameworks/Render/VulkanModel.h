@@ -1,6 +1,5 @@
 #pragma once
 
-#include "VulkanHelpers.h"
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
 

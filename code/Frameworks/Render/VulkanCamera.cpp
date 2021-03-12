@@ -1,5 +1,6 @@
 #include "VulkanCamera.h"
 
+#include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 
 #include "Input.h"

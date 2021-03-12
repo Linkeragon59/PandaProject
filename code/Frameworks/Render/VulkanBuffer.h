@@ -1,7 +1,5 @@
 #pragma once
 
-#include "VulkanHelpers.h"
-
 namespace Render
 {
 	struct VulkanBuffer

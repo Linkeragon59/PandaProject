@@ -1,5 +1,6 @@
 #include "VulkanPSOContainer.h"
 
+#include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 #include "VulkanDevice.h"
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "VulkanHelpers.h"
-
 namespace Render
 {
 	void PopulateValidationLayers(std::vector<const char*>& anOutLayerList);

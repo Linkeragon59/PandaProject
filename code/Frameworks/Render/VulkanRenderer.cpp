@@ -1,11 +1,14 @@
 #include "VulkanRenderer.h"
 
+#include "VulkanHelpers.h"
 #include "VulkanDebugMessenger.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
 
 #include "VulkanCamera.h"
 #include "VulkanModel.h"
+
+#include <GLFW/glfw3.h>
 
 namespace Render
 {

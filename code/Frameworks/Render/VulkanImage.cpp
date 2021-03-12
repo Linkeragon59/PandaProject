@@ -1,5 +1,6 @@
 #include "VulkanImage.h"
 
+#include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 
 namespace Render

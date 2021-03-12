@@ -1,14 +1,11 @@
 #pragma once
 
-#include "VulkanHelpers.h"
-
 #include "VulkanImage.h"
 
 struct GLFWwindow;
 
 namespace Render
 {
-	class VulkanRenderPassContainer;
 	class VulkanPSOContainer;
 
 	class VulkanSwapChain
@@ -32,6 +29,8 @@ namespace Render
 		void SetupVkSwapChain();
 		void SetupDepthStencil();
 
+		void SetupRenderPass();
+
 		void SetupCommandBuffers();
 		void SetupFramebuffers();
 		void CreateSyncObjects();
@@ -52,7 +51,7 @@ namespace Render
 		VkExtent2D myExtent{ 0, 0 };
 		VulkanImage myDepthImage;
 
-		VulkanRenderPassContainer* myRenderPassContainer = nullptr;
+		VkRenderPass myRenderPass = VK_NULL_HANDLE;
 		VulkanPSOContainer* myPSOContainer = nullptr;
 
 		// One per swapchain image

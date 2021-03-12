@@ -1,8 +1,5 @@
 #pragma once
 
-#include "VulkanHelpers.h"
-#include "VulkanBuffer.h"
-
 struct GLFWwindow;
 
 namespace Render
