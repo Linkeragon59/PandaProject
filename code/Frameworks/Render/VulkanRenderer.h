@@ -1,5 +1,7 @@
 #pragma once
 
+#include "VulkanImage.h"
+
 struct GLFWwindow;
 
 namespace Render
@@ -9,6 +11,7 @@ namespace Render
 
 	class VulkanCamera;
 	class VulkanModel;
+	class glTFModel;
 
 	class VulkanRenderer
 	{
@@ -31,9 +34,12 @@ namespace Render
 		VkQueue GetGraphicsQueue() const;
 		VkCommandPool GetGraphicsCommandPool() const;
 
+		const VkDescriptorImageInfo* GetEmptyTextureDescriptor() const { return &myEmptyTexture.myDescriptor; }
+
 		VulkanCamera* GetCamera() const { return myCamera; }
 		VulkanModel* GetPandaModel(uint32_t anIndex) const { return myPandaModels[anIndex]; }
 		uint32_t GetPandaModelsCount() const { return (uint32_t)myPandaModels.size(); }
+		glTFModel* GetglTFModel() const { return myglTFModel; }
 
 	private:
 		static VulkanRenderer* ourInstance;
@@ -45,6 +51,8 @@ namespace Render
 		void SetupDebugMessenger();
 		void CreateDevice();
 
+		void SetupEmptyTexture();
+
 		VkInstance myVkInstance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT myDebugMessenger = VK_NULL_HANDLE;
 
@@ -53,7 +61,10 @@ namespace Render
 		// One SwapChain per window/surface
 		std::vector<VulkanSwapChain*> mySwapChains;
 
+		VulkanImage myEmptyTexture;
+
 		VulkanCamera* myCamera = nullptr;
 		std::vector<VulkanModel*> myPandaModels;
+		glTFModel* myglTFModel = nullptr;
 	};
 }

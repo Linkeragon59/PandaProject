@@ -2,6 +2,7 @@
 
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
+#include "VulkanPSOContainer.h"
 
 #include <stb_image.h>
 
@@ -12,7 +13,7 @@ namespace Render
 {
 	namespace
 	{
-		const std::vector<VulkanModel::Vertex> locVertices =
+		const std::vector<VulkanPSOContainer::Vertex> locVertices =
 		{
 			{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.5f}},
 			{{0.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.5f, 0.0f}},
@@ -41,41 +42,6 @@ namespace Render
 		const std::string locTestTexture = "Frameworks/textures/panda.jpg";
 	}
 
-	VkDescriptorSetLayout VulkanModel::ourDescriptorSetLayout = VK_NULL_HANDLE;
-
-	void VulkanModel::SetupDescriptorSetLayout()
-	{
-		// Binding 0 : Vertex shader uniform buffer
-		VkDescriptorSetLayoutBinding uboModelBinding{};
-		uboModelBinding.binding = 0;
-		uboModelBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboModelBinding.descriptorCount = 1;
-		uboModelBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-		// Binding 1 : Fragment shader sampler
-		VkDescriptorSetLayoutBinding samplerBinding{};
-		samplerBinding.binding = 1;
-		samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerBinding.descriptorCount = 1;
-		samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboModelBinding, samplerBinding };
-
-		VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-		descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorLayoutInfo.bindingCount = (uint32_t)bindings.size();
-		descriptorLayoutInfo.pBindings = bindings.data();
-		VK_CHECK_RESULT(
-			vkCreateDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &ourDescriptorSetLayout),
-			"Failed to create the per object descriptor set layout");
-	}
-
-	void VulkanModel::DestroyDescriptorSetLayout()
-	{
-		vkDestroyDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), ourDescriptorSetLayout, nullptr);
-		ourDescriptorSetLayout = VK_NULL_HANDLE;
-	}
-
 	void VulkanModel::Update()
 	{
 		// Using a UBO this way is not the most efficient way to pass frequently changing values to the shader.
@@ -95,10 +61,22 @@ namespace Render
 		if (myPosition.y != 0.f)
 			elapsedTime *= -1.0f;
 
-		UBO ubo{};
-		ubo.myModel = glm::rotate(glm::translate(glm::mat4(1.0f), myPosition), elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		VulkanPSOContainer::PerObjectUBO ubo{};
+		ubo.myMatrix = glm::rotate(glm::translate(glm::mat4(1.0f), myPosition), elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 		memcpy(myUBO.myMappedData, &ubo, sizeof(ubo));
+	}
+
+	void VulkanModel::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout)
+	{
+		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &myDescriptorSet, 0, NULL);
+
+		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT32);
+		std::array<VkBuffer, 1> modelVertexBuffers = { myVertexBuffer.myBuffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(aCommandBuffer, 0, (uint32_t)modelVertexBuffers.size(), modelVertexBuffers.data(), offsets);
+
+		vkCmdDrawIndexed(aCommandBuffer, myIndexCount, 1, 0, 0, 0);
 	}
 
 	VulkanModel::VulkanModel(const glm::vec3& aPosition)
@@ -106,7 +84,7 @@ namespace Render
 	{
 		myDevice = VulkanRenderer::GetInstance()->GetDevice();
 
-		VkDeviceSize vertexBufferSize = sizeof(Vertex) * locVertices.size();
+		VkDeviceSize vertexBufferSize = sizeof(VulkanPSOContainer::Vertex) * locVertices.size();
 		VkDeviceSize indexBufferSize = sizeof(uint32_t) * locIndices.size();
 		int texWidth, texHeight, texChannels;
 		stbi_uc* pixels = stbi_load(locTestTexture.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -231,7 +209,7 @@ namespace Render
 
 	void VulkanModel::PrepareUniformBuffers()
 	{
-		myUBO.Create(sizeof(UBO),
+		myUBO.Create(sizeof(VulkanPSOContainer::PerObjectUBO),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myUBO.SetupDescriptor();
@@ -239,15 +217,15 @@ namespace Render
 		// Persistent map
 		myUBO.Map();
 
-		UBO ubo{};
-		ubo.myModel = glm::translate(glm::mat4(1.0f), myPosition);
+		VulkanPSOContainer::PerObjectUBO ubo{};
+		ubo.myMatrix = glm::translate(glm::mat4(1.0f), myPosition);
 
 		memcpy(myUBO.myMappedData, &ubo, sizeof(ubo));
 	}
 
 	void VulkanModel::SetupDescriptoSet()
 	{
-		std::array<VkDescriptorSetLayout, 1> layouts = { ourDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 1> layouts = { VulkanPSOContainer::ourPerObjectDescriptorSetLayout };
 
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

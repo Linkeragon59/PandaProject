@@ -17,3 +17,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #pragma warning(pop)
+
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#include <tiny_gltf.h>

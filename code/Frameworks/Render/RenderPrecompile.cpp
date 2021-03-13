@@ -4,8 +4,11 @@
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #endif
 
+#define TINYGLTF_IMPLEMENTATION
+#define TINYGLTF_NO_STB_IMAGE_WRITE
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include <tiny_gltf.h>
+//#include <stb_image.h>
 
 #ifdef __linux__
 #pragma GCC diagnostic pop

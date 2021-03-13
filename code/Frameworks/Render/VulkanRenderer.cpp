@@ -4,9 +4,11 @@
 #include "VulkanDebugMessenger.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
+#include "VulkanPSOContainer.h"
 
 #include "VulkanCamera.h"
 #include "VulkanModel.h"
+#include "glTFModel.h"
 
 #include <GLFW/glfw3.h>
 
@@ -61,6 +63,8 @@ namespace Render
 		myCamera->Update();
 		for (VulkanModel* model : myPandaModels)
 			model->Update();
+		myglTFModel->Update();
+
 		for (uint32_t i = 0; i < (uint32_t)mySwapChains.size(); ++i)
 		{
 			mySwapChains[i]->Update();
@@ -103,22 +107,33 @@ namespace Render
 
 		ourInstance = this;
 
-		VulkanCamera::SetupDescriptorSetLayout();
+		SetupEmptyTexture();
+
+		VulkanPSOContainer::SetupDescriptorSetLayouts();
+
 		myCamera = new VulkanCamera();
-		VulkanModel::SetupDescriptorSetLayout();
 		myPandaModels.push_back(new VulkanModel(glm::vec3(0.f)));
 		myPandaModels.push_back(new VulkanModel(glm::vec3(0.f, 1.f, 1.f)));
+		myglTFModel = new glTFModel();
+		//myglTFModel->LoadFromFile("Frameworks/models/treasure_smooth.gltf", myDevice->myGraphicsQueue, 1.0f);
+		//myglTFModel->LoadFromFile("Frameworks/models/RiggedFigure/RiggedFigure.gltf", myDevice->myGraphicsQueue, 1.0f);
+		myglTFModel->LoadFromFile("Frameworks/models/Avocado/Avocado.gltf", myDevice->myGraphicsQueue, 50.0f);
+		//myglTFModel->LoadFromFile("Frameworks/models/CesiumMan/CesiumMan.gltf", myDevice->myGraphicsQueue, 50.0f);
 	}
 
 	VulkanRenderer::~VulkanRenderer()
 	{
 		delete myCamera;
 		myCamera = nullptr;
-		VulkanCamera::DestroyDescriptorSetLayout();
 		for (VulkanModel* model : myPandaModels)
 			delete model;
 		myPandaModels.clear();
-		VulkanModel::DestroyDescriptorSetLayout();
+		delete myglTFModel;
+		myglTFModel = nullptr;
+
+		VulkanPSOContainer::DestroyDescriptorSetLayouts();
+
+		myEmptyTexture.Destroy();
 
 		ourInstance = nullptr;
 
@@ -226,4 +241,48 @@ namespace Render
 		myDevice->SetupVmaAllocator(myVkInstance, locVulkanApiVersion);
 	}
 
+	void VulkanRenderer::SetupEmptyTexture()
+	{
+		myEmptyTexture.Create(1, 1,
+			VK_FORMAT_R8G8B8A8_SRGB,
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		myEmptyTexture.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VulkanRenderer::GetInstance()->GetGraphicsQueue());
+
+		VulkanBuffer textureStaging;
+		textureStaging.Create(4,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		textureStaging.Map();
+		{
+			uint8_t empty[4] = { 0xff, 0x14, 0x93, 0xff };
+			memcpy(textureStaging.myMappedData, empty, 4);
+		}
+		textureStaging.Unmap();
+
+		VkCommandBuffer commandBuffer = BeginOneTimeCommand();
+		{
+			VkBufferImageCopy imageCopyRegion{};
+			imageCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageCopyRegion.imageSubresource.mipLevel = 0;
+			imageCopyRegion.imageSubresource.baseArrayLayer = 0;
+			imageCopyRegion.imageSubresource.layerCount = 1;
+			imageCopyRegion.imageExtent = { 1, 1, 1 };
+			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myEmptyTexture.myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
+		}
+		EndOneTimeCommand(commandBuffer, VulkanRenderer::GetInstance()->GetGraphicsQueue());
+
+		textureStaging.Destroy();
+
+		myEmptyTexture.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VulkanRenderer::GetInstance()->GetGraphicsQueue());
+		myEmptyTexture.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		myEmptyTexture.CreateImageSampler();
+		myEmptyTexture.SetupDescriptor();
+	}
 }

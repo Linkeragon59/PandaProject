@@ -2,39 +2,12 @@
 
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
+#include "VulkanPSOContainer.h"
 
 #include "Input.h"
 
 namespace Render
 {
-	VkDescriptorSetLayout VulkanCamera::ourDescriptorSetLayout = VK_NULL_HANDLE;
-
-	void VulkanCamera::SetupDescriptorSetLayout()
-	{
-		// Binding 0 : Vertex shader uniform buffer
-		VkDescriptorSetLayoutBinding uboProjBinding{};
-		uboProjBinding.binding = 0;
-		uboProjBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		uboProjBinding.descriptorCount = 1;
-		uboProjBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-		std::array<VkDescriptorSetLayoutBinding, 1> bindings = { uboProjBinding };
-
-		VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-		descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descriptorLayoutInfo.bindingCount = (uint32_t)bindings.size();
-		descriptorLayoutInfo.pBindings = bindings.data();
-		VK_CHECK_RESULT(
-			vkCreateDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &ourDescriptorSetLayout),
-			"Failed to create the per object descriptor set layout");
-	}
-
-	void VulkanCamera::DestroyDescriptorSetLayout()
-	{
-		vkDestroyDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), ourDescriptorSetLayout, nullptr);
-		ourDescriptorSetLayout = VK_NULL_HANDLE;
-	}
-
 	void VulkanCamera::Update()
 	{
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
@@ -43,7 +16,7 @@ namespace Render
 		else if (inputManager->PollRawInput(Input::RawInput::KeyS) == Input::RawInputState::Pressed)
 			myPosition -= myDirection * 0.1f;
 
-		UBO ubo{};
+		VulkanPSOContainer::PerFrameUBO ubo{};
 		ubo.myView = glm::lookAt(myPosition, myPosition + myDirection, glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.myProj = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 10.0f);
 		ubo.myProj[1][1] *= -1; // adapt calculation for Vulkan
@@ -86,7 +59,7 @@ namespace Render
 
 	void VulkanCamera::PrepareUniformBuffers()
 	{
-		myUBO.Create(sizeof(UBO),
+		myUBO.Create(sizeof(VulkanPSOContainer::PerFrameUBO),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myUBO.SetupDescriptor();
@@ -102,7 +75,7 @@ namespace Render
 
 	void VulkanCamera::SetupDescriptorSet()
 	{
-		std::array<VkDescriptorSetLayout, 1> layouts = { ourDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 1> layouts = { VulkanPSOContainer::ourPerFrameDescriptorSetLayout };
 
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

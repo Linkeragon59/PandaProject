@@ -9,6 +9,66 @@
 
 namespace Render
 {
+	VkDescriptorSetLayout VulkanPSOContainer::ourPerFrameDescriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorSetLayout VulkanPSOContainer::ourPerObjectDescriptorSetLayout = VK_NULL_HANDLE;
+
+	void VulkanPSOContainer::SetupDescriptorSetLayouts()
+	{
+		// Per Frame
+		
+		// Binding 0 : Vertex shader uniform buffer
+		VkDescriptorSetLayoutBinding uboFrameBinding{};
+		uboFrameBinding.binding = 0;
+		uboFrameBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboFrameBinding.descriptorCount = 1;
+		uboFrameBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+		std::array<VkDescriptorSetLayoutBinding, 1> frameBindings = { uboFrameBinding };
+
+		VkDescriptorSetLayoutCreateInfo frameDescriptorLayoutInfo{};
+		frameDescriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		frameDescriptorLayoutInfo.bindingCount = (uint32_t)frameBindings.size();
+		frameDescriptorLayoutInfo.pBindings = frameBindings.data();
+		VK_CHECK_RESULT(
+			vkCreateDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), &frameDescriptorLayoutInfo, nullptr, &ourPerFrameDescriptorSetLayout),
+			"Failed to create the per frame descriptor set layout");
+
+		// Per Object
+
+		// Binding 0 : Vertex shader uniform buffer
+		VkDescriptorSetLayoutBinding uboObjectBinding{};
+		uboObjectBinding.binding = 0;
+		uboObjectBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		uboObjectBinding.descriptorCount = 1;
+		uboObjectBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+		// Binding 1 : Fragment shader sampler
+		VkDescriptorSetLayoutBinding samplerBinding{};
+		samplerBinding.binding = 1;
+		samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerBinding.descriptorCount = 1;
+		samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		std::array<VkDescriptorSetLayoutBinding, 2> objectbindings = { uboObjectBinding, samplerBinding };
+
+		VkDescriptorSetLayoutCreateInfo objectDescriptorLayoutInfo{};
+		objectDescriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		objectDescriptorLayoutInfo.bindingCount = (uint32_t)objectbindings.size();
+		objectDescriptorLayoutInfo.pBindings = objectbindings.data();
+		VK_CHECK_RESULT(
+			vkCreateDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), &objectDescriptorLayoutInfo, nullptr, &ourPerObjectDescriptorSetLayout),
+			"Failed to create the per object descriptor set layout");
+	}
+
+	void VulkanPSOContainer::DestroyDescriptorSetLayouts()
+	{
+		vkDestroyDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), ourPerFrameDescriptorSetLayout, nullptr);
+		ourPerFrameDescriptorSetLayout = VK_NULL_HANDLE;
+
+		vkDestroyDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), ourPerObjectDescriptorSetLayout, nullptr);
+		ourPerObjectDescriptorSetLayout = VK_NULL_HANDLE;
+	}
+
 	VulkanPSOContainer::VulkanPSOContainer(VkRenderPass aRenderPass)
 		: myRenderPass(aRenderPass)
 	{
@@ -45,8 +105,8 @@ namespace Render
 	void VulkanPSOContainer::PreparePipelines()
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
-			VulkanCamera::GetDescriptorSetLayout(),
-			VulkanModel::GetDescriptorSetLayout()
+			ourPerFrameDescriptorSetLayout,
+			ourPerObjectDescriptorSetLayout
 		};
 
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
@@ -67,8 +127,8 @@ namespace Render
 		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		shaderStages[1].pName = "main";
 
-		auto bindingDescription = VulkanModel::Vertex::GetBindingDescription();
-		auto attributeDescriptions = VulkanModel::Vertex::GetAttributeDescriptions();
+		auto bindingDescription = Vertex::GetBindingDescription();
+		auto attributeDescriptions = Vertex::GetAttributeDescriptions();
 
 		VkPipelineVertexInputStateCreateInfo vertexInputStateInfo{};
 		vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
