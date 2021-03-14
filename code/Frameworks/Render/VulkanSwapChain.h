@@ -6,7 +6,11 @@ struct GLFWwindow;
 
 namespace Render
 {
-	class VulkanPSOContainer;
+	class DummyVulkanPSO;
+	namespace glTF
+	{
+		class VulkanPSO;
+	}
 
 	class VulkanSwapChain
 	{
@@ -52,7 +56,8 @@ namespace Render
 		VulkanImage myDepthImage;
 
 		VkRenderPass myRenderPass = VK_NULL_HANDLE;
-		VulkanPSOContainer* myPSOContainer = nullptr;
+		DummyVulkanPSO* myDummyPSO = nullptr;
+		glTF::VulkanPSO* myglTFPSO = nullptr;
 
 		// One per swapchain image
 		std::vector<VkCommandBuffer> myCommandBuffers;

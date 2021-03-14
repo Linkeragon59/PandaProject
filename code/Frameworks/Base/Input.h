@@ -10,6 +10,9 @@ namespace Input
     {
         MouseLeft,
         MouseRight,
+        MouseMiddle,
+
+        MouseEnd = MouseMiddle,
 
 		KeyA,
 		KeyD,
@@ -36,6 +39,11 @@ namespace Input
 		std::function<void()> myCallback;
 	};
 
+    struct ScrollInputCallback
+    {
+        std::function<void(double, double)> myCallback;
+    };
+
     class InputManager
     {
     public:
@@ -55,13 +63,18 @@ namespace Input
         void AddCallback(RawInput anInput, std::function<void()> aCallback);
         void RemoveCallback(RawInput anInput, std::function<void()> aCallback);
 
+        void AddScrollInputCallback(std::function<void(double, double)> aCallback);
+
 		void SetupCallback(unsigned int aWindowIdx = 0);
 
     private:
 		static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 		static void MouseCallback(GLFWwindow* window, int button, int action, int mods);
+        static void ScrollCallback(GLFWwindow* window, double x, double y);
+
         static InputManager* ourInstance;
         std::vector<GLFWwindow*> myWindows;
         std::vector<InputCallback> myInputCallbacks;
+        std::vector<ScrollInputCallback> myScrollInputCallbacks;
     };
 } // namespace Input

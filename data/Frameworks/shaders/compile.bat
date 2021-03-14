@@ -9,4 +9,7 @@ set GLSLC_EXE=%CODE_PATH%/Extern/VulkanSDK/1.2.162.1/bin/win64/glslc.exe
 %GLSLC_EXE% vulkanRendererDefault.vert -o vulkanRendererDefault.vert.spv
 %GLSLC_EXE% vulkanRendererDefault.frag -o vulkanRendererDefault.frag.spv
 
+%GLSLC_EXE% glTFDefault.vert -o glTFDefault.vert.spv
+%GLSLC_EXE% glTFDefault.frag -o glTFDefault.frag.spv
+
 pause

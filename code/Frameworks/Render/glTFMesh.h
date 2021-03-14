@@ -1,10 +1,12 @@
 #pragma once
 
-#include "VulkanPSOContainer.h"
+#include "glTFVulkanPSO.h"
 
 namespace Render
 {
-	struct glTFPrimitive
+namespace glTF
+{
+	struct Primitive
 	{
 		uint32_t myFirstVertex = 0;
 		uint32_t myVertexCount = 0;
@@ -12,20 +14,15 @@ namespace Render
 		uint32_t myIndexCount = 0;
 
 		int myMaterial = -1;
-
-		void SetupDescriptor(VkDescriptorPool aDescriptorPool, const VkDescriptorBufferInfo* aUBODescriptor, const VkDescriptorImageInfo* aTextureDescriptor);
-		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
 
-	struct glTFMesh
+	struct Mesh
 	{
-		glTFMesh();
-		~glTFMesh();
-
-		void Load(const tinygltf::Model& aModel, const tinygltf::Mesh& aMesh, std::vector<VulkanPSOContainer::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
+		void Load(const tinygltf::Model& aModel, uint32_t aMeshIndex, std::vector<VulkanPSO::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
 
 		std::string myName;
 
-		std::vector<glTFPrimitive*> myPrimitives;
+		std::vector<Primitive> myPrimitives;
 	};
+}
 }

@@ -4,7 +4,9 @@
 #include "VulkanRenderer.h"
 #include "VulkanDevice.h"
 
-#include "VulkanPSOContainer.h"
+#include "DummyVulkanPSO.h"
+#include "glTFVulkanPSO.h"
+
 #include "VulkanCamera.h"
 #include "VulkanModel.h"
 #include "glTFModel.h"
@@ -40,7 +42,8 @@ namespace Render
 
 		SetupRenderPass();
 
-		myPSOContainer = new VulkanPSOContainer(myRenderPass);
+		myDummyPSO = new DummyVulkanPSO(myRenderPass);
+		myglTFPSO = new glTF::VulkanPSO(myRenderPass);
 
 		SetupCommandBuffers();
 		SetupFramebuffers();
@@ -71,8 +74,11 @@ namespace Render
 
 		myCommandBuffers.clear();
 
-		delete myPSOContainer;
-		myPSOContainer = nullptr;
+		delete myDummyPSO;
+		myDummyPSO = nullptr;
+
+		delete myglTFPSO;
+		myglTFPSO = nullptr;
 
 		vkDestroyRenderPass(myDevice, myRenderPass, nullptr);
 		myRenderPass = VK_NULL_HANDLE;
@@ -412,20 +418,29 @@ namespace Render
 			vkCmdSetScissor(myCommandBuffers[i], 0, 1, &scissor);
 
 			vkCmdSetViewport(myCommandBuffers[i], 0, 1, &viewport);
-			vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPSOContainer->GetDefaultPipeline());
 
-			std::array<VkDescriptorSet, 1> perFrameDescriptorSets = { camera->GetDescriptorSet() };
-			vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myPSOContainer->GetPipelineLayout(),
-				0, (uint32_t)perFrameDescriptorSets.size(), perFrameDescriptorSets.data(), 0, NULL);
+			// Draw objects with the Dummy Pipeline
+			vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myDummyPSO->GetPipeline());
+
+			std::array<VkDescriptorSet, 1> dummyPerFrameDescriptorSets = { camera->GetDummyDescriptorSet() };
+			vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myDummyPSO->GetPipelineLayout(),
+				0, (uint32_t)dummyPerFrameDescriptorSets.size(), dummyPerFrameDescriptorSets.data(), 0, NULL);
 
 			for (uint32_t j = 0; j < VulkanRenderer::GetInstance()->GetPandaModelsCount(); ++j)
 			{
 				VulkanModel* pandaModel = VulkanRenderer::GetInstance()->GetPandaModel(j);
-				pandaModel->Draw(myCommandBuffers[i], myPSOContainer->GetPipelineLayout());
+				pandaModel->Draw(myCommandBuffers[i], myDummyPSO->GetPipelineLayout());
 			}
 
-			if (glTFModel* model = VulkanRenderer::GetInstance()->GetglTFModel())
-				model->Draw(myCommandBuffers[i], myPSOContainer->GetPipelineLayout());
+			// Draw objects with the glTF Pipeline
+			vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myglTFPSO->GetPipeline());
+
+			std::array<VkDescriptorSet, 1> glTFPerFrameDescriptorSets = { camera->GetglTFDescriptorSet() };
+			vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myglTFPSO->GetPipelineLayout(),
+				0, (uint32_t)glTFPerFrameDescriptorSets.size(), glTFPerFrameDescriptorSets.data(), 0, NULL);
+
+			if (glTF::Model* model = VulkanRenderer::GetInstance()->GetglTFModel())
+				model->Draw(myCommandBuffers[i], myglTFPSO->GetPipelineLayout());
 
 			vkCmdEndRenderPass(myCommandBuffers[i]);
 

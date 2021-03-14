@@ -1,24 +1,32 @@
 #include "glTFTexture.h"
 
+#include "glTFVulkanPSO.h"
+
+#include "VulkanRenderer.h"
 #include "VulkanHelpers.h"
 #include "VulkanBuffer.h"
 
 namespace Render
 {
-	glTFTexture::~glTFTexture()
+namespace glTF
+{
+	Image::~Image()
 	{
 		myImage.Destroy();
+		myDescriptorSet = VK_NULL_HANDLE;
 	}
 
-	void glTFTexture::Load(const tinygltf::Image& anImage, VkQueue aTransferQueue)
+	void Image::Load(const tinygltf::Model& aModel, uint32_t anImageIndex, VkQueue aTransferQueue)
 	{
-		// TODO: check anImage.component, if equal to 3 and the Vulkan device doesn't support RGB only, modify the buffer
-		assert(anImage.component == 4);
-		const unsigned char* buffer = &anImage.image[0];
-		VkDeviceSize bufferSize = anImage.image.size();
+		const tinygltf::Image& gltfImage = aModel.images[anImageIndex];
 
-		uint32_t width = anImage.width;
-		uint32_t height = anImage.height;
+		// TODO: check anImage.component, if equal to 3 and the Vulkan device doesn't support RGB only, modify the buffer
+		assert(gltfImage.component == 4);
+		const unsigned char* buffer = &gltfImage.image[0];
+		VkDeviceSize bufferSize = gltfImage.image.size();
+
+		uint32_t width = gltfImage.width;
+		uint32_t height = gltfImage.height;
 		// TODO : generate MipMaps
 		//uint32_t mipsLevels = static_cast<uint32_t>(floor(log2(std::max(width, height))) + 1.0);
 
@@ -59,4 +67,32 @@ namespace Render
 		myImage.CreateImageSampler();
 		myImage.SetupDescriptor();
 	}
+
+	void Image::SetupDescriptorSet(VkDescriptorPool aDescriptorPool)
+	{
+		VkDevice device = VulkanRenderer::GetInstance()->GetDevice();
+
+		std::array<VkDescriptorSetLayout, 1> layouts = { glTF::VulkanPSO::ourPerImageDescriptorSetLayout };
+
+		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
+		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descriptorSetAllocateInfo.descriptorPool = aDescriptorPool;
+		descriptorSetAllocateInfo.pSetLayouts = layouts.data();
+		descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)layouts.size();
+
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &myDescriptorSet), "Failed to create the skin descriptor set");
+
+		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+		// Binding 0 : Fragment shader sampler
+		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet = myDescriptorSet;
+		descriptorWrites[0].dstBinding = 0;
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[0].pImageInfo = &myImage.myDescriptor;
+
+		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	}
+}
 }

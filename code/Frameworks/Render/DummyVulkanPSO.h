@@ -2,7 +2,7 @@
 
 namespace Render
 {
-	class VulkanPSOContainer
+	class DummyVulkanPSO
 	{
 	public:
 		struct Vertex
@@ -56,22 +56,19 @@ namespace Render
 		static void DestroyDescriptorSetLayouts();
 
 	public:
-		VulkanPSOContainer(VkRenderPass aRenderPass);
-		~VulkanPSOContainer();
+		DummyVulkanPSO(VkRenderPass aRenderPass);
+		~DummyVulkanPSO();
 
 		VkPipelineLayout GetPipelineLayout() const { return myPipelineLayout; }
-		VkPipeline GetDefaultPipeline() const { return myDefaultPipeline; }
+		VkPipeline GetPipeline() const { return myPipeline; }
 
 	private:
-		void CreatePipelineCache();
-		void PreparePipelines();
+		void PreparePipeline();
 
 		VkDevice myDevice = VK_NULL_HANDLE;
 		VkRenderPass myRenderPass = VK_NULL_HANDLE;
 
-		VkPipelineCache myPipelineCache = VK_NULL_HANDLE;
-
 		VkPipelineLayout myPipelineLayout = VK_NULL_HANDLE;
-		VkPipeline myDefaultPipeline = VK_NULL_HANDLE;
+		VkPipeline myPipeline = VK_NULL_HANDLE;
 	};
 }

@@ -13,6 +13,8 @@ namespace Input
                 return GLFW_MOUSE_BUTTON_LEFT;
             case RawInput::MouseRight:
                 return GLFW_MOUSE_BUTTON_RIGHT;
+			case RawInput::MouseMiddle:
+				return GLFW_MOUSE_BUTTON_MIDDLE;
 
             case RawInput::KeyA:
                 return GLFW_KEY_A;
@@ -74,7 +76,7 @@ namespace Input
         if (aWindowIdx >= myWindows.size())
             return RawInputState::Unknown;
 
-        if (anInput <= RawInput::MouseRight)
+        if (anInput <= RawInput::MouseEnd)
             return locGlfwInputStateToRawInputState(glfwGetMouseButton(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
         else
             return locGlfwInputStateToRawInputState(glfwGetKey(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
@@ -98,10 +100,17 @@ namespace Input
 		myInputCallbacks.push_back(callback);
 	}
 
+	void InputManager::AddScrollInputCallback(std::function<void(double, double)> aCallback)
+	{
+		ScrollInputCallback callback{ aCallback };
+		myScrollInputCallbacks.push_back(callback);
+	}
+
 	void InputManager::SetupCallback(unsigned int aWindowIdx)
 	{
 		glfwSetKeyCallback(myWindows[aWindowIdx], InputManager::KeyCallback);
 		glfwSetMouseButtonCallback(myWindows[aWindowIdx], InputManager::MouseCallback);
+		glfwSetScrollCallback(myWindows[aWindowIdx], InputManager::ScrollCallback);
 	}
 
 	void InputManager::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -134,4 +143,15 @@ namespace Input
 			}
 		}
 	}
+
+	void InputManager::ScrollCallback(GLFWwindow* window, double x, double y)
+	{
+        (void)window;
+        (void)x;
+        for (auto callback : ourInstance->myScrollInputCallbacks)
+        {
+            callback.myCallback(x, y);
+        }
+	}
+
 }

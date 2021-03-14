@@ -2,30 +2,39 @@
 
 namespace Render
 {
-	struct glTFAnimationChannel
+namespace glTF
+{
+	class Model;
+	struct Node;
+
+	struct AnimationChannel
 	{
-		enum class Type { TRANSLATION, ROTATION, SCALE };
-		Type myType;
+		enum class Path { TRANSLATION, ROTATION, SCALE };
+		Path myPath;
 		uint32_t mySamplerIndex = 0;
-		uint32_t myNodeIndex = 0;
+		Node* myNode;
 	};
 
-	struct glTFAnimationSampler
+	struct AnimationSampler
 	{
-		std::vector<float> myTimes;
-		std::vector<glm::vec4> myValues;
+		std::vector<float> myInputTimes;
+		std::vector<glm::vec4> myOutputValues;
 	};
 
-	struct glTFAnimation
+	struct Animation
 	{
+		void Load(Model* aContainer, const tinygltf::Model& aModel, uint32_t anAnimationIndex);
+
+		void Update(float aDeltaTime);
+
 		std::string myName;
 
-		std::vector<glTFAnimationSampler> mySamplers;
-		std::vector<glTFAnimationChannel> myChannels;
+		std::vector<AnimationSampler> mySamplers;
+		std::vector<AnimationChannel> myChannels;
 
 		float myStartTime = std::numeric_limits<float>::max();
 		float myEndTime = std::numeric_limits<float>::min();
-
-		void Load(const tinygltf::Model& aModel, uint32_t anAnimationIndex);
+		float myCurrentTime = 0.0f;
 	};
+}
 }

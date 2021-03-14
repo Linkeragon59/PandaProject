@@ -23,14 +23,14 @@ void PandaModule::OnRegister()
 
 void PandaModule::OnUpdate()
 {
-	Input::InputManager* inputManager = Input::InputManager::GetInstance();
+	/*Input::InputManager* inputManager = Input::InputManager::GetInstance();
 	Input::RawInputState mouseLeftState = inputManager->PollRawInput(Input::RawInput::MouseLeft);
 	if (mouseLeftState == Input::RawInputState::Pressed)
 	{
 		// Test Perlin and Map classes
 		Map map;
 		map.Print();
-	}
+	}*/
 }
 
 void PandaModule::OnUnregister()

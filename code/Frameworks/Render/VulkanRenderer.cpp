@@ -4,7 +4,9 @@
 #include "VulkanDebugMessenger.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
-#include "VulkanPSOContainer.h"
+
+#include "DummyVulkanPSO.h"
+#include "glTFVulkanPSO.h"
 
 #include "VulkanCamera.h"
 #include "VulkanModel.h"
@@ -109,16 +111,21 @@ namespace Render
 
 		SetupEmptyTexture();
 
-		VulkanPSOContainer::SetupDescriptorSetLayouts();
+		DummyVulkanPSO::SetupDescriptorSetLayouts();
+		glTF::VulkanPSO::SetupDescriptorSetLayouts();
 
 		myCamera = new VulkanCamera();
-		myPandaModels.push_back(new VulkanModel(glm::vec3(0.f)));
-		myPandaModels.push_back(new VulkanModel(glm::vec3(0.f, 1.f, 1.f)));
-		myglTFModel = new glTFModel();
+		myCamera->SetPosition(glm::vec3(0.0f, 0.75f, -2.0f));
+		myCamera->SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+		myCamera->SetPerspective(800.0f / 600.0f, 60.0f, 0.1f, 256.0f);
+
+		myPandaModels.push_back(new VulkanModel(glm::vec3(1.0f, 1.0f, -1.0f)));
+		myPandaModels.push_back(new VulkanModel(glm::vec3(-1.0f, 1.0f, -1.0f)));
+		myglTFModel = new glTF::Model();
 		//myglTFModel->LoadFromFile("Frameworks/models/treasure_smooth.gltf", myDevice->myGraphicsQueue, 1.0f);
 		//myglTFModel->LoadFromFile("Frameworks/models/RiggedFigure/RiggedFigure.gltf", myDevice->myGraphicsQueue, 1.0f);
-		myglTFModel->LoadFromFile("Frameworks/models/Avocado/Avocado.gltf", myDevice->myGraphicsQueue, 50.0f);
-		//myglTFModel->LoadFromFile("Frameworks/models/CesiumMan/CesiumMan.gltf", myDevice->myGraphicsQueue, 50.0f);
+		//myglTFModel->LoadFromFile("Frameworks/models/Avocado/Avocado.gltf", myDevice->myGraphicsQueue, 50.0f);
+		myglTFModel->LoadFromFile("Frameworks/models/CesiumMan/CesiumMan.gltf", myDevice->myGraphicsQueue, 1.0f);
 	}
 
 	VulkanRenderer::~VulkanRenderer()
@@ -131,7 +138,8 @@ namespace Render
 		delete myglTFModel;
 		myglTFModel = nullptr;
 
-		VulkanPSOContainer::DestroyDescriptorSetLayouts();
+		DummyVulkanPSO::DestroyDescriptorSetLayouts();
+		glTF::VulkanPSO::DestroyDescriptorSetLayouts();
 
 		myEmptyTexture.Destroy();
 

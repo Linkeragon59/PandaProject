@@ -11,7 +11,11 @@ namespace Render
 
 	class VulkanCamera;
 	class VulkanModel;
-	class glTFModel;
+
+	namespace glTF
+	{
+		class Model;
+	}
 
 	class VulkanRenderer
 	{
@@ -39,7 +43,7 @@ namespace Render
 		VulkanCamera* GetCamera() const { return myCamera; }
 		VulkanModel* GetPandaModel(uint32_t anIndex) const { return myPandaModels[anIndex]; }
 		uint32_t GetPandaModelsCount() const { return (uint32_t)myPandaModels.size(); }
-		glTFModel* GetglTFModel() const { return myglTFModel; }
+		glTF::Model* GetglTFModel() const { return myglTFModel; }
 
 	private:
 		static VulkanRenderer* ourInstance;
@@ -65,6 +69,6 @@ namespace Render
 
 		VulkanCamera* myCamera = nullptr;
 		std::vector<VulkanModel*> myPandaModels;
-		glTFModel* myglTFModel = nullptr;
+		glTF::Model* myglTFModel = nullptr;
 	};
 }

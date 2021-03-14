@@ -1,21 +1,18 @@
-#include "VulkanPSOContainer.h"
+#include "DummyVulkanPSO.h"
 
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 #include "VulkanDevice.h"
 
-#include "VulkanCamera.h"
-#include "VulkanModel.h"
-
 namespace Render
 {
-	VkDescriptorSetLayout VulkanPSOContainer::ourPerFrameDescriptorSetLayout = VK_NULL_HANDLE;
-	VkDescriptorSetLayout VulkanPSOContainer::ourPerObjectDescriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorSetLayout DummyVulkanPSO::ourPerFrameDescriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorSetLayout DummyVulkanPSO::ourPerObjectDescriptorSetLayout = VK_NULL_HANDLE;
 
-	void VulkanPSOContainer::SetupDescriptorSetLayouts()
+	void DummyVulkanPSO::SetupDescriptorSetLayouts()
 	{
 		// Per Frame
-		
+
 		// Binding 0 : Vertex shader uniform buffer
 		VkDescriptorSetLayoutBinding uboFrameBinding{};
 		uboFrameBinding.binding = 0;
@@ -49,18 +46,18 @@ namespace Render
 		samplerBinding.descriptorCount = 1;
 		samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 2> objectbindings = { uboObjectBinding, samplerBinding };
+		std::array<VkDescriptorSetLayoutBinding, 2> objectBindings = { uboObjectBinding, samplerBinding };
 
 		VkDescriptorSetLayoutCreateInfo objectDescriptorLayoutInfo{};
 		objectDescriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		objectDescriptorLayoutInfo.bindingCount = (uint32_t)objectbindings.size();
-		objectDescriptorLayoutInfo.pBindings = objectbindings.data();
+		objectDescriptorLayoutInfo.bindingCount = (uint32_t)objectBindings.size();
+		objectDescriptorLayoutInfo.pBindings = objectBindings.data();
 		VK_CHECK_RESULT(
 			vkCreateDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), &objectDescriptorLayoutInfo, nullptr, &ourPerObjectDescriptorSetLayout),
 			"Failed to create the per object descriptor set layout");
 	}
 
-	void VulkanPSOContainer::DestroyDescriptorSetLayouts()
+	void DummyVulkanPSO::DestroyDescriptorSetLayouts()
 	{
 		vkDestroyDescriptorSetLayout(VulkanRenderer::GetInstance()->GetDevice(), ourPerFrameDescriptorSetLayout, nullptr);
 		ourPerFrameDescriptorSetLayout = VK_NULL_HANDLE;
@@ -69,40 +66,23 @@ namespace Render
 		ourPerObjectDescriptorSetLayout = VK_NULL_HANDLE;
 	}
 
-	VulkanPSOContainer::VulkanPSOContainer(VkRenderPass aRenderPass)
+	DummyVulkanPSO::DummyVulkanPSO(VkRenderPass aRenderPass)
 		: myRenderPass(aRenderPass)
 	{
 		myDevice = VulkanRenderer::GetInstance()->GetDevice();
-
-		CreatePipelineCache();
-		PreparePipelines();
+		PreparePipeline();
 	}
 
-	VulkanPSOContainer::~VulkanPSOContainer()
+	DummyVulkanPSO::~DummyVulkanPSO()
 	{
-		if (myDefaultPipeline)
-		{
-			vkDestroyPipeline(myDevice, myDefaultPipeline, nullptr);
-			myDefaultPipeline = VK_NULL_HANDLE;
-		}
+		vkDestroyPipeline(myDevice, myPipeline, nullptr);
+		myPipeline = VK_NULL_HANDLE;
 
 		vkDestroyPipelineLayout(myDevice, myPipelineLayout, nullptr);
 		myPipelineLayout = VK_NULL_HANDLE;
-
-		vkDestroyPipelineCache(myDevice, myPipelineCache, nullptr);
-		myPipelineCache = VK_NULL_HANDLE;
 	}
 
-	void VulkanPSOContainer::CreatePipelineCache()
-	{
-		VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
-		pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-		pipelineCacheCreateInfo.initialDataSize = 0;
-
-		VK_CHECK_RESULT(vkCreatePipelineCache(myDevice, &pipelineCacheCreateInfo, nullptr, &myPipelineCache), "Failed to create the pipeline cache!");
-	}
-
-	void VulkanPSOContainer::PreparePipelines()
+	void DummyVulkanPSO::PreparePipeline()
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
 			ourPerFrameDescriptorSetLayout,
@@ -117,14 +97,20 @@ namespace Render
 
 		VK_CHECK_RESULT(vkCreatePipelineLayout(myDevice, &pipelineLayoutCreateInfo, nullptr, &myPipelineLayout), "Failed to create the pipeline layout");
 
+		// Default shading pipeline
+		VkShaderModule defaultVert = CreateShaderModule("Frameworks/shaders/vulkanRendererDefault.vert.spv");
+		VkShaderModule defaultFrag = CreateShaderModule("Frameworks/shaders/vulkanRendererDefault.frag.spv");
+
 		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
 		shaderStages[0] = {};
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+		shaderStages[0].module = defaultVert;
 		shaderStages[0].pName = "main";
 		shaderStages[1] = {};
 		shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		shaderStages[1].module = defaultFrag;
 		shaderStages[1].pName = "main";
 
 		auto bindingDescription = Vertex::GetBindingDescription();
@@ -132,8 +118,6 @@ namespace Render
 
 		VkPipelineVertexInputStateCreateInfo vertexInputStateInfo{};
 		vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputStateInfo.pNext = nullptr;
-		vertexInputStateInfo.flags = 0;
 		vertexInputStateInfo.vertexBindingDescriptionCount = 1;
 		vertexInputStateInfo.pVertexBindingDescriptions = &bindingDescription;
 		vertexInputStateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
@@ -206,15 +190,7 @@ namespace Render
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
 
-		// Create the graphics pipeline state objects
-
-		// Default shading pipeline
-		VkShaderModule defaultVert = CreateShaderModule("Frameworks/shaders/vulkanRendererDefault.vert.spv");
-		shaderStages[0].module = defaultVert;
-		VkShaderModule defaultFrag = CreateShaderModule("Frameworks/shaders/vulkanRendererDefault.frag.spv");
-		shaderStages[1].module = defaultFrag;
-
-		VK_CHECK_RESULT(vkCreateGraphicsPipelines(myDevice, myPipelineCache, 1, &pipelineInfo, nullptr, &myDefaultPipeline), "Failed to create the default pipeline");
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(myDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &myPipeline), "Failed to create the default pipeline");
 
 		vkDestroyShaderModule(myDevice, defaultVert, nullptr);
 		vkDestroyShaderModule(myDevice, defaultFrag, nullptr);

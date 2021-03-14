@@ -4,12 +4,23 @@
 
 namespace Render
 {
-	struct glTFTexture
+namespace glTF
+{
+	struct Image
 	{
-		~glTFTexture();
+		~Image();
 
-		void Load(const tinygltf::Image& anImage, VkQueue aTransferQueue);
+		void Load(const tinygltf::Model& aModel, uint32_t anImageIndex, VkQueue aTransferQueue);
 
 		VulkanImage myImage;
+
+		void SetupDescriptorSet(VkDescriptorPool aDescriptorPool);
+		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
+
+	struct Texture
+	{
+		uint32_t myImageIndex;
+	};
+}
 }

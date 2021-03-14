@@ -2,7 +2,8 @@
 
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
-#include "VulkanPSOContainer.h"
+
+#include "DummyVulkanPSO.h"
 
 #include <stb_image.h>
 
@@ -13,7 +14,7 @@ namespace Render
 {
 	namespace
 	{
-		const std::vector<VulkanPSOContainer::Vertex> locVertices =
+		const std::vector<DummyVulkanPSO::Vertex> locVertices =
 		{
 			{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.5f}},
 			{{0.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.5f, 0.0f}},
@@ -58,10 +59,10 @@ namespace Render
 
 		auto currentTime = std::chrono::high_resolution_clock::now();
 		float elapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count() + addTime;
-		if (myPosition.y != 0.f)
+		if (myPosition.x < 0.f)
 			elapsedTime *= -1.0f;
 
-		VulkanPSOContainer::PerObjectUBO ubo{};
+		DummyVulkanPSO::PerObjectUBO ubo{};
 		ubo.myMatrix = glm::rotate(glm::translate(glm::mat4(1.0f), myPosition), elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 		memcpy(myUBO.myMappedData, &ubo, sizeof(ubo));
@@ -84,7 +85,7 @@ namespace Render
 	{
 		myDevice = VulkanRenderer::GetInstance()->GetDevice();
 
-		VkDeviceSize vertexBufferSize = sizeof(VulkanPSOContainer::Vertex) * locVertices.size();
+		VkDeviceSize vertexBufferSize = sizeof(DummyVulkanPSO::Vertex) * locVertices.size();
 		VkDeviceSize indexBufferSize = sizeof(uint32_t) * locIndices.size();
 		int texWidth, texHeight, texChannels;
 		stbi_uc* pixels = stbi_load(locTestTexture.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -209,7 +210,7 @@ namespace Render
 
 	void VulkanModel::PrepareUniformBuffers()
 	{
-		myUBO.Create(sizeof(VulkanPSOContainer::PerObjectUBO),
+		myUBO.Create(sizeof(DummyVulkanPSO::PerObjectUBO),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myUBO.SetupDescriptor();
@@ -217,7 +218,7 @@ namespace Render
 		// Persistent map
 		myUBO.Map();
 
-		VulkanPSOContainer::PerObjectUBO ubo{};
+		DummyVulkanPSO::PerObjectUBO ubo{};
 		ubo.myMatrix = glm::translate(glm::mat4(1.0f), myPosition);
 
 		memcpy(myUBO.myMappedData, &ubo, sizeof(ubo));
@@ -225,7 +226,7 @@ namespace Render
 
 	void VulkanModel::SetupDescriptoSet()
 	{
-		std::array<VkDescriptorSetLayout, 1> layouts = { VulkanPSOContainer::ourPerObjectDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 1> layouts = { DummyVulkanPSO::ourPerObjectDescriptorSetLayout };
 
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

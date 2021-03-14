@@ -2,9 +2,11 @@
 
 namespace Render
 {
-	struct glTFMaterial
+namespace glTF
+{
+	struct Material
 	{
-		void Load(const tinygltf::Model& aModel, tinygltf::Material& aMaterial);
+		void Load(const tinygltf::Model& aModel, uint32_t aMaterialIndex);
 
 		int myBaseColorTexture = -1;
 		glm::vec4 myBaseColorFactor = glm::vec4(1.0f);
@@ -25,5 +27,8 @@ namespace Render
 		};
 		AlphaMode myAlphaMode = AlphaMode::ALPHAMODE_OPAQUE;
 		float myAlphaCutoff = 1.0f;
+
+
 	};
+}
 }
