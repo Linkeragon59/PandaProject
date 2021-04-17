@@ -6,8 +6,6 @@
 #include "glTFSkin.h"
 #include "glTFTexture.h"
 
-#include "glTFVulkanPSO.h"
-
 #include "VulkanBuffer.h"
 
 namespace Render
@@ -27,9 +25,12 @@ namespace glTF
 
 		Node* GetNodeByIndex(uint32_t anIndex);
 		const Image* GetImage(uint32_t anIndex) { return &myImages[anIndex]; }
+		const Image* GetEmptyImage() { return &myImages.back(); }
 		const Texture* GetTexture(uint32_t anIndex) { return &myTextures[anIndex]; }
 		const Material* GetMaterial(uint32_t anIndex) { return &myMaterials[anIndex]; }
+		const Material* GetEmptyMaterial() { return &myMaterials.back(); }
 		const Skin* GetSkin(uint32_t anIndex) { return &mySkins[anIndex]; }
+		const Skin* GetEmptySkin() { return &mySkins.back(); }
 
 	private:
 		void LoadImages(const tinygltf::Model& aModel);
@@ -38,7 +39,7 @@ namespace glTF
 		void LoadSkins(const tinygltf::Model& aModel);
 		void LoadAnimations(const tinygltf::Model& aModel);
 
-		void LoadNodes(const tinygltf::Model& aModel, float aScale, std::vector<VulkanPSO::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
+		void LoadNodes(const tinygltf::Model& aModel, float aScale, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
 
 		template<typename Functor>
 		void IterateNodes(Functor aFunctor, bool aParentFirst = true)
@@ -63,8 +64,8 @@ namespace glTF
 		VkDevice myDevice = VK_NULL_HANDLE;
 		VkQueue myTransferQueue = VK_NULL_HANDLE;
 
-		VulkanBuffer myVertexBuffer;
-		VulkanBuffer myIndexBuffer;
+		Render::Vulkan::Buffer myVertexBuffer;
+		Render::Vulkan::Buffer myIndexBuffer;
 
 		// Each model has its descriptor pool
 		VkDescriptorPool myDescriptorPool = VK_NULL_HANDLE;

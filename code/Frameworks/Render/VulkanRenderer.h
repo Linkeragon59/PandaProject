@@ -6,23 +6,24 @@ struct GLFWwindow;
 
 namespace Render
 {
-	struct VulkanDevice;
-	class VulkanSwapChain;
+namespace glTF
+{
+	class Model;
+}
+namespace Vulkan
+{
+	struct Device;
+	class SwapChain;
 
-	class VulkanCamera;
-	class VulkanModel;
+	class Camera;
+	class DummyModel;
 
-	namespace glTF
-	{
-		class Model;
-	}
-
-	class VulkanRenderer
+	class Renderer
 	{
 	public:
 		static void CreateInstance();
 		static void DestroyInstance();
-		static VulkanRenderer* GetInstance() { return ourInstance; }
+		static Renderer* GetInstance() { return ourInstance; }
 
 		void OnWindowOpened(GLFWwindow* aWindow);
 		void OnWindowClosed(GLFWwindow* aWindow);
@@ -31,25 +32,22 @@ namespace Render
 
 		VkInstance GetVkInstance() const { return myVkInstance; }
 
-		VulkanDevice* GetVulkanDevice() const { return myDevice; }
+		Device* GetVulkanDevice() const { return myDevice; }
 		VkPhysicalDevice GetPhysicalDevice() const;
 		VkDevice GetDevice() const;
 		VmaAllocator GetAllocator() const;
 		VkQueue GetGraphicsQueue() const;
 		VkCommandPool GetGraphicsCommandPool() const;
 
-		const VkDescriptorImageInfo* GetEmptyTextureDescriptor() const { return &myEmptyTexture.myDescriptor; }
+		const VkDescriptorImageInfo* GetMissingTextureDescriptor() const { return &myMissingTexture.myDescriptor; }
 
-		VulkanCamera* GetCamera() const { return myCamera; }
-		VulkanModel* GetPandaModel(uint32_t anIndex) const { return myPandaModels[anIndex]; }
-		uint32_t GetPandaModelsCount() const { return (uint32_t)myPandaModels.size(); }
-		glTF::Model* GetglTFModel() const { return myglTFModel; }
+		Camera* GetCamera() const { return myCamera; }
 
 	private:
-		static VulkanRenderer* ourInstance;
+		static Renderer* ourInstance;
 
-		VulkanRenderer();
-		~VulkanRenderer();
+		Renderer();
+		~Renderer();
 
 		void CreateVkInstance();
 		void SetupDebugMessenger();
@@ -60,15 +58,14 @@ namespace Render
 		VkInstance myVkInstance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT myDebugMessenger = VK_NULL_HANDLE;
 
-		VulkanDevice* myDevice = nullptr;
+		Device* myDevice = nullptr;
 
 		// One SwapChain per window/surface
-		std::vector<VulkanSwapChain*> mySwapChains;
+		std::vector<SwapChain*> mySwapChains;
 
-		VulkanImage myEmptyTexture;
+		Image myMissingTexture;
 
-		VulkanCamera* myCamera = nullptr;
-		std::vector<VulkanModel*> myPandaModels;
-		glTF::Model* myglTFModel = nullptr;
+		Camera* myCamera = nullptr;
 	};
+}
 }

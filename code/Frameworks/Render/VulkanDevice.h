@@ -4,11 +4,13 @@
 
 namespace Render
 {
+namespace Vulkan
+{
 	// Wrapper for Physical and Logical device
-	struct VulkanDevice
+	struct Device
 	{
-		explicit VulkanDevice(VkPhysicalDevice aPhysicalDevice);
-		~VulkanDevice();
+		explicit Device(VkPhysicalDevice aPhysicalDevice);
+		~Device();
 
 		void SetupLogicalDevice(
 			const VkPhysicalDeviceFeatures& someEnabledFeatures,
@@ -44,4 +46,5 @@ namespace Render
 
 		VmaAllocator myVmaAllocator = VK_NULL_HANDLE;
 	};
+}
 }

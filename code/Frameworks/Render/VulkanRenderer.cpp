@@ -5,16 +5,13 @@
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
 
-#include "DummyVulkanPSO.h"
-#include "glTFVulkanPSO.h"
-
 #include "VulkanCamera.h"
-#include "VulkanModel.h"
-#include "glTFModel.h"
 
 #include <GLFW/glfw3.h>
 
 namespace Render
+{
+namespace Vulkan
 {
 	namespace
 	{
@@ -27,27 +24,27 @@ namespace Render
 #endif
 	}
 
-	VulkanRenderer* VulkanRenderer::ourInstance = nullptr;
+	Renderer* Renderer::ourInstance = nullptr;
 
-	void VulkanRenderer::CreateInstance()
+	void Renderer::CreateInstance()
 	{
 		assert(!ourInstance);
-		new VulkanRenderer();
+		new Renderer();
 	}
 
-	void VulkanRenderer::DestroyInstance()
+	void Renderer::DestroyInstance()
 	{
 		assert(ourInstance);
 		delete ourInstance;
 	}
 
-	void VulkanRenderer::OnWindowOpened(GLFWwindow* aWindow)
+	void Renderer::OnWindowOpened(GLFWwindow* aWindow)
 	{
-		VulkanSwapChain* swapChain = new VulkanSwapChain(aWindow);
+		SwapChain* swapChain = new SwapChain(aWindow);
 		mySwapChains.push_back(swapChain);
 	}
 
-	void VulkanRenderer::OnWindowClosed(GLFWwindow* aWindow)
+	void Renderer::OnWindowClosed(GLFWwindow* aWindow)
 	{
 		for (uint32_t i = 0; i < (uint32_t)mySwapChains.size(); ++i)
 		{
@@ -60,12 +57,9 @@ namespace Render
 		}
 	}
 
-	void VulkanRenderer::Update()
+	void Renderer::Update()
 	{
 		myCamera->Update();
-		for (VulkanModel* model : myPandaModels)
-			model->Update();
-		myglTFModel->Update();
 
 		for (uint32_t i = 0; i < (uint32_t)mySwapChains.size(); ++i)
 		{
@@ -73,32 +67,32 @@ namespace Render
 		}
 	}
 
-	VkPhysicalDevice VulkanRenderer::GetPhysicalDevice() const
+	VkPhysicalDevice Renderer::GetPhysicalDevice() const
 	{
 		return myDevice->myPhysicalDevice;
 	}
 
-	VkDevice VulkanRenderer::GetDevice() const
+	VkDevice Renderer::GetDevice() const
 	{
 		return myDevice->myLogicalDevice;
 	}
 
-	VmaAllocator VulkanRenderer::GetAllocator() const
+	VmaAllocator Renderer::GetAllocator() const
 	{
 		return myDevice->myVmaAllocator;
 	}
 
-	VkQueue VulkanRenderer::GetGraphicsQueue() const
+	VkQueue Renderer::GetGraphicsQueue() const
 	{
 		return myDevice->myGraphicsQueue;
 	}
 
-	VkCommandPool VulkanRenderer::GetGraphicsCommandPool() const
+	VkCommandPool Renderer::GetGraphicsCommandPool() const
 	{
 		return myDevice->myGraphicsCommandPool;
 	}
 
-	VulkanRenderer::VulkanRenderer()
+	Renderer::Renderer()
 	{
 		CreateVkInstance();
 
@@ -111,37 +105,22 @@ namespace Render
 
 		SetupEmptyTexture();
 
-		DummyVulkanPSO::SetupDescriptorSetLayouts();
-		glTF::VulkanPSO::SetupDescriptorSetLayouts();
+		DeferredPipeline::SetupDescriptorSetLayouts();
 
-		myCamera = new VulkanCamera();
+		myCamera = new Camera();
 		myCamera->SetPosition(glm::vec3(0.0f, 0.75f, -2.0f));
 		myCamera->SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 		myCamera->SetPerspective(800.0f / 600.0f, 60.0f, 0.1f, 256.0f);
-
-		myPandaModels.push_back(new VulkanModel(glm::vec3(1.0f, 1.0f, -1.0f)));
-		myPandaModels.push_back(new VulkanModel(glm::vec3(-1.0f, 1.0f, -1.0f)));
-		myglTFModel = new glTF::Model();
-		//myglTFModel->LoadFromFile("Frameworks/models/treasure_smooth.gltf", myDevice->myGraphicsQueue, 1.0f);
-		//myglTFModel->LoadFromFile("Frameworks/models/RiggedFigure/RiggedFigure.gltf", myDevice->myGraphicsQueue, 1.0f);
-		//myglTFModel->LoadFromFile("Frameworks/models/Avocado/Avocado.gltf", myDevice->myGraphicsQueue, 50.0f);
-		myglTFModel->LoadFromFile("Frameworks/models/CesiumMan/CesiumMan.gltf", myDevice->myGraphicsQueue, 1.0f);
 	}
 
-	VulkanRenderer::~VulkanRenderer()
+	Renderer::~Renderer()
 	{
 		delete myCamera;
 		myCamera = nullptr;
-		for (VulkanModel* model : myPandaModels)
-			delete model;
-		myPandaModels.clear();
-		delete myglTFModel;
-		myglTFModel = nullptr;
 
-		DummyVulkanPSO::DestroyDescriptorSetLayouts();
-		glTF::VulkanPSO::DestroyDescriptorSetLayouts();
+		DeferredPipeline::DestroyDescriptorSetLayouts();
 
-		myEmptyTexture.Destroy();
+		myMissingTexture.Destroy();
 
 		ourInstance = nullptr;
 
@@ -153,7 +132,7 @@ namespace Render
 		vkDestroyInstance(myVkInstance, nullptr);
 	}
 
-	void VulkanRenderer::CreateVkInstance()
+	void Renderer::CreateVkInstance()
 	{
 		std::vector<const char*> layers;
 		if (locEnableValidationLayers)
@@ -198,7 +177,7 @@ namespace Render
 		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &myVkInstance), "Failed to create Vulkan instance!");
 	}
 
-	void VulkanRenderer::SetupDebugMessenger()
+	void Renderer::SetupDebugMessenger()
 	{
 		VkDebugUtilsMessengerCreateInfoEXT createInfo;
 		FillDebugMessengerCreateInfo(createInfo);
@@ -206,7 +185,7 @@ namespace Render
 		VK_CHECK_RESULT(CreateDebugMessenger(myVkInstance, &createInfo, nullptr, &myDebugMessenger), "Couldn't create a debug messenger!");
 	}
 
-	void VulkanRenderer::CreateDevice()
+	void Renderer::CreateDevice()
 	{
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(myVkInstance, &deviceCount, nullptr);
@@ -218,7 +197,7 @@ namespace Render
 
 		// TODO: Select the physical device based on requirements.
 		// For now, just take the first one.
-		myDevice = new VulkanDevice(devices[0]);
+		myDevice = new Device(devices[0]);
 
 		// Choose Device features to enable
 		VkPhysicalDeviceFeatures enabledFeatures{};
@@ -249,19 +228,19 @@ namespace Render
 		myDevice->SetupVmaAllocator(myVkInstance, locVulkanApiVersion);
 	}
 
-	void VulkanRenderer::SetupEmptyTexture()
+	void Renderer::SetupEmptyTexture()
 	{
-		myEmptyTexture.Create(1, 1,
+		myMissingTexture.Create(1, 1,
 			VK_FORMAT_R8G8B8A8_SRGB,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		myEmptyTexture.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
+		myMissingTexture.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VulkanRenderer::GetInstance()->GetGraphicsQueue());
+			Renderer::GetInstance()->GetGraphicsQueue());
 
-		VulkanBuffer textureStaging;
+		Buffer textureStaging;
 		textureStaging.Create(4,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
@@ -280,17 +259,18 @@ namespace Render
 			imageCopyRegion.imageSubresource.baseArrayLayer = 0;
 			imageCopyRegion.imageSubresource.layerCount = 1;
 			imageCopyRegion.imageExtent = { 1, 1, 1 };
-			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myEmptyTexture.myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
+			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myMissingTexture.myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
 		}
-		EndOneTimeCommand(commandBuffer, VulkanRenderer::GetInstance()->GetGraphicsQueue());
+		EndOneTimeCommand(commandBuffer, Renderer::GetInstance()->GetGraphicsQueue());
 
 		textureStaging.Destroy();
 
-		myEmptyTexture.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		myMissingTexture.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			VulkanRenderer::GetInstance()->GetGraphicsQueue());
-		myEmptyTexture.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		myEmptyTexture.CreateImageSampler();
-		myEmptyTexture.SetupDescriptor();
+			Renderer::GetInstance()->GetGraphicsQueue());
+		myMissingTexture.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		myMissingTexture.CreateImageSampler();
+		myMissingTexture.SetupDescriptor();
 	}
+}
 }

@@ -4,45 +4,30 @@
 
 namespace Render
 {
-	class VulkanCamera
+namespace Vulkan
+{
+	class Camera
 	{
 	public:
-		VulkanCamera();
-		~VulkanCamera();
+		Camera();
+		~Camera();
 
 		void Update();
 
-		VkDescriptorSet GetDummyDescriptorSet() const { return myDummyDescriptorSet; }
-		VkDescriptorSet GetglTFDescriptorSet() const { return myglTFDescriptorSet; }
-
-	private:		
-		void SetupDescriptorPool();
-
-		void PrepareUniformBuffers();
-		void SetupDummyDescriptorSet();
-		void SetupglTFDescriptorSet();
-
-		VkDevice myDevice = VK_NULL_HANDLE;
-
-		VkDescriptorPool myDescriptorPool = VK_NULL_HANDLE;
-
-		VulkanBuffer myDummyUBO;
-		VkDescriptorSet myDummyDescriptorSet = VK_NULL_HANDLE;
-		
-		VulkanBuffer myglTFUBO;
-		VkDescriptorSet myglTFDescriptorSet = VK_NULL_HANDLE;
-
-	public:
 		void SetPosition(const glm::vec3& aPosition);
 		void Translate(const glm::vec3& aPositionDelta);
 		void SetRotation(const glm::vec3& aRotation);
 		void Rotate(const glm::vec3& aRotationDelta);
-		void UpdateViewMatrix();
+		void GetPosition(glm::vec3& anOutPosition) const;
+		void GetViewMatrix(glm::mat4& anOutMatrix) const;
 
 		void SetPerspective(float anAspectRatio, float aFov, float aZNear, float aZFar);
-		void UpdatePerspectiveMatrix();
+		void GetPerspectiveMatrix(glm::mat4& anOutMatrix) const;
 
 	private:
+		void UpdateViewMatrix();
+		void UpdatePerspectiveMatrix();
+
 		glm::vec3 myPosition = glm::vec3();
 		glm::vec3 myRotation = glm::vec3();
 
@@ -54,4 +39,5 @@ namespace Render
 		glm::mat4 myView;
 		glm::mat4 myPerspective;
 	};
+}
 }

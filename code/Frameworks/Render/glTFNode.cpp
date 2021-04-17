@@ -19,7 +19,7 @@ namespace glTF
 		myDescriptorSet = VK_NULL_HANDLE;
 	}
 
-	void Node::Load(const tinygltf::Model& aModel, uint32_t aNodeIndex, float aScale, std::vector<VulkanPSO::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices)
+	void Node::Load(const tinygltf::Model& aModel, uint32_t aNodeIndex, float aScale, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices)
 	{
 		const tinygltf::Node& gltfNode = aModel.nodes[aNodeIndex];
 		myIndex = aNodeIndex;
@@ -51,7 +51,7 @@ namespace glTF
 			myMesh.Load(aModel, gltfNode.mesh, someOutVertices, someOutIndices);
 
 		myUBO.Create(
-			sizeof(glTF::VulkanPSO::PerObjectUBO),
+			sizeof(Render::Vulkan::DeferredPipeline::ModelData),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myUBO.SetupDescriptor();
@@ -60,9 +60,9 @@ namespace glTF
 
 	void Node::SetupDescriptorSet(VkDescriptorPool aDescriptorPool)
 	{
-		VkDevice device = VulkanRenderer::GetInstance()->GetDevice();
+		VkDevice device = Render::Vulkan::Renderer::GetInstance()->GetDevice();
 
-		std::array<VkDescriptorSetLayout, 1> layouts = { glTF::VulkanPSO::ourPerObjectDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 1> layouts = { Render::Vulkan::DeferredPipeline::ourDescriptorSetLayoutPerObject };
 
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -128,27 +128,46 @@ namespace glTF
 			vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 1, 1, &myDescriptorSet, 0, NULL);
 
 			// Bind the skin SSBO
+			const Skin* skin = nullptr;
 			if (mySkinIndex > -1)
 			{
-				vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &aContainer->GetSkin(mySkinIndex)->myDescriptorSet, 0, NULL);
+				skin = aContainer->GetSkin(mySkinIndex);
 			}
+			if (!skin)
+			{
+				skin = aContainer->GetEmptySkin();
+			}
+			vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 4, 1, &skin->myDescriptorSet, 0, NULL);
 
 			for (const Primitive& primitive : myMesh.myPrimitives)
 			{
 				// Bind the material's image sampler
+				const Image* image = nullptr;
+				const Material* material = nullptr;
 				if (primitive.myMaterial > -1)
 				{
-					const Material* material = aContainer->GetMaterial(primitive.myMaterial);
+					material = aContainer->GetMaterial(primitive.myMaterial);
 					assert(material);
 
 					if (material->myBaseColorTexture > -1)
 					{
 						const Texture* texture = aContainer->GetTexture(material->myBaseColorTexture);
 						assert(texture);
-						vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 3, 1, &aContainer->GetImage(texture->myImageIndex)->myDescriptorSet, 0, NULL);
+						image = aContainer->GetImage(texture->myImageIndex);
+						assert(image);
 					}
 				}
-				
+				if (!image)
+				{
+					image = aContainer->GetEmptyImage();
+				}
+				if (!material)
+				{
+					material = aContainer->GetEmptyMaterial();
+				}
+				vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 2, 1, &image->myDescriptorSet, 0, NULL);
+				vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, 3, 1, &material->myDescriptorSet, 0, NULL);
+
 				vkCmdDrawIndexed(aCommandBuffer, primitive.myIndexCount, 1, primitive.myFirstIndex, 0, 0);
 			}
 		}

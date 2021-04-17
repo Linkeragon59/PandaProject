@@ -2,6 +2,8 @@
 
 namespace Render
 {
+namespace Vulkan
+{
 	void PopulateValidationLayers(std::vector<const char*>& anOutLayerList);
 	void PopulateDebugExtensions(std::vector<const char*>& anOutExtensionList);
 
@@ -23,4 +25,5 @@ namespace Render
 		void* aUserData);
 
 	void FillDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& someOutInfo);
+}
 }

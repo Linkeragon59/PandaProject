@@ -1,12 +1,18 @@
 #pragma once
 
+#include "VulkanBuffer.h"
+
 namespace Render
 {
 namespace glTF
 {
 	struct Material
 	{
+		~Material();
+
 		void Load(const tinygltf::Model& aModel, uint32_t aMaterialIndex);
+		void LoadEmpty();
+		void Load();
 
 		int myBaseColorTexture = -1;
 		glm::vec4 myBaseColorFactor = glm::vec4(1.0f);
@@ -28,7 +34,9 @@ namespace glTF
 		AlphaMode myAlphaMode = AlphaMode::ALPHAMODE_OPAQUE;
 		float myAlphaCutoff = 1.0f;
 
-
+		void SetupDescriptorSet(VkDescriptorPool aDescriptorPool);
+		Render::Vulkan::Buffer mySSBO;
+		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
 }
 }

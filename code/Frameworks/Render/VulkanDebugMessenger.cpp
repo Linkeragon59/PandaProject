@@ -4,6 +4,8 @@
 
 namespace Render
 {
+namespace Vulkan
+{
 	void PopulateValidationLayers(std::vector<const char*>& anOutLayerList)
 	{
 		anOutLayerList.push_back("VK_LAYER_KHRONOS_validation");
@@ -64,4 +66,5 @@ namespace Render
 			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 		someOutInfo.pfnUserCallback = DebugMessengerCallback;
 	}
+}
 }

@@ -1,22 +1,19 @@
 #pragma once
 
 #include "VulkanImage.h"
+#include "VulkanDeferredPipeline.h"
 
 struct GLFWwindow;
 
 namespace Render
 {
-	class DummyVulkanPSO;
-	namespace glTF
-	{
-		class VulkanPSO;
-	}
-
-	class VulkanSwapChain
+namespace Vulkan
+{
+	class SwapChain
 	{
 	public:
-		VulkanSwapChain(GLFWwindow* aWindow);
-		~VulkanSwapChain();
+		SwapChain(GLFWwindow* aWindow);
+		~SwapChain();
 
 		void Setup();
 		void Cleanup();
@@ -32,8 +29,6 @@ namespace Render
 
 		void SetupVkSwapChain();
 		void SetupDepthStencil();
-
-		void SetupRenderPass();
 
 		void SetupCommandBuffers();
 		void SetupFramebuffers();
@@ -53,11 +48,9 @@ namespace Render
 		std::vector<VkImageView> myImageViews;
 		VkFormat myColorFormat = VK_FORMAT_UNDEFINED;
 		VkExtent2D myExtent{ 0, 0 };
-		VulkanImage myDepthImage;
+		Image myDepthImage;
 
-		VkRenderPass myRenderPass = VK_NULL_HANDLE;
-		DummyVulkanPSO* myDummyPSO = nullptr;
-		glTF::VulkanPSO* myglTFPSO = nullptr;
+		DeferredPipeline myDeferredPipeline;
 
 		// One per swapchain image
 		std::vector<VkCommandBuffer> myCommandBuffers;
@@ -70,4 +63,5 @@ namespace Render
 		std::vector<VkFence> myInFlightFrameFences;
 		uint32_t myCurrentInFlightFrame = 0;
 	};
+}
 }

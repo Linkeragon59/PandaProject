@@ -6,6 +6,8 @@
 
 namespace Render
 {
+namespace Vulkan
+{
 	namespace
 	{
 		std::vector<char> locReadFile(const std::string& aFilename)
@@ -87,7 +89,7 @@ namespace Render
 		createInfo.codeSize = shaderCode.size();
 		createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
 
-		VK_CHECK_RESULT(vkCreateShaderModule(VulkanRenderer::GetInstance()->GetDevice(), &createInfo, nullptr, &shaderModule), "Failed to create a module shader!");
+		VK_CHECK_RESULT(vkCreateShaderModule(Renderer::GetInstance()->GetDevice(), &createInfo, nullptr, &shaderModule), "Failed to create a module shader!");
 
 		return shaderModule;
 	}
@@ -95,7 +97,7 @@ namespace Render
 	VkCommandBuffer BeginOneTimeCommand(VkCommandPool aCommandPool)
 	{
 		if (aCommandPool == VK_NULL_HANDLE)
-			aCommandPool = VulkanRenderer::GetInstance()->GetGraphicsCommandPool();
+			aCommandPool = Renderer::GetInstance()->GetGraphicsCommandPool();
 
 		VkCommandBuffer commandBuffer;
 
@@ -105,7 +107,7 @@ namespace Render
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = 1;
 
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(VulkanRenderer::GetInstance()->GetDevice(), &allocInfo, &commandBuffer), "Failed to alloc a one time command buffer");
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(Renderer::GetInstance()->GetDevice(), &allocInfo, &commandBuffer), "Failed to alloc a one time command buffer");
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -121,7 +123,7 @@ namespace Render
 	void EndOneTimeCommand(VkCommandBuffer aCommandBuffer, VkQueue aQueue, VkCommandPool aCommandPool /*= VK_NULL_HANDLE*/)
 	{
 		if (aCommandPool == VK_NULL_HANDLE)
-			aCommandPool = VulkanRenderer::GetInstance()->GetGraphicsCommandPool();
+			aCommandPool = Renderer::GetInstance()->GetGraphicsCommandPool();
 
 		VK_CHECK_RESULT(vkEndCommandBuffer(aCommandBuffer), "Failed to end a one time command buffer");
 
@@ -133,6 +135,7 @@ namespace Render
 		vkQueueSubmit(aQueue, 1, &submitInfo, VK_NULL_HANDLE);
 		vkQueueWaitIdle(aQueue);
 
-		vkFreeCommandBuffers(VulkanRenderer::GetInstance()->GetDevice(), aCommandPool, 1, &aCommandBuffer);
+		vkFreeCommandBuffers(Renderer::GetInstance()->GetDevice(), aCommandPool, 1, &aCommandBuffer);
 	}
+}
 }

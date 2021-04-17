@@ -3,13 +3,20 @@
 set CODE_PATH=%~dp0/../../../code
 set GLSLC_EXE=%CODE_PATH%/Extern/VulkanSDK/1.2.162.1/bin/win64/glslc.exe
 
-%GLSLC_EXE% basicRenderer.vert -o basicRenderer_vert.spv
-%GLSLC_EXE% basicRenderer.frag -o basicRenderer_frag.spv
+echo ----------------------
+echo --- Vertex Shaders ---
+echo ----------------------
+for %%f in (*.vert) do (
+	echo %%~nf
+	%GLSLC_EXE% %%~nf.vert -o %%~nf_vert.spv
+)
 
-%GLSLC_EXE% vulkanRendererDefault.vert -o vulkanRendererDefault.vert.spv
-%GLSLC_EXE% vulkanRendererDefault.frag -o vulkanRendererDefault.frag.spv
-
-%GLSLC_EXE% glTFDefault.vert -o glTFDefault.vert.spv
-%GLSLC_EXE% glTFDefault.frag -o glTFDefault.frag.spv
+echo ------------------------
+echo --- Fragment Shaders ---
+echo ------------------------
+for %%f in (*.frag) do (
+	echo %%~nf
+	%GLSLC_EXE% %%~nf.frag -o %%~nf_frag.spv
+)
 
 pause

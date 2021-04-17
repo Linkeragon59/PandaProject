@@ -4,7 +4,9 @@
 
 namespace Render
 {
-	VulkanDevice::VulkanDevice(VkPhysicalDevice aPhysicalDevice)
+namespace Vulkan
+{
+	Device::Device(VkPhysicalDevice aPhysicalDevice)
 		: myPhysicalDevice(aPhysicalDevice)
 	{
 		assert(myPhysicalDevice);
@@ -28,7 +30,7 @@ namespace Render
 		}
 	}
 
-	VulkanDevice::~VulkanDevice()
+	Device::~Device()
 	{
 		if (myLogicalDevice)
 		{
@@ -42,7 +44,7 @@ namespace Render
 		}
 	}
 
-	void VulkanDevice::SetupLogicalDevice(
+	void Device::SetupLogicalDevice(
 		const VkPhysicalDeviceFeatures& someEnabledFeatures,
 		const std::vector<const char*>& someEnabledLayers,
 		const std::vector<const char*>& someEnabledExtensions,
@@ -126,7 +128,7 @@ namespace Render
 		}
 	}
 
-	void VulkanDevice::SetupVmaAllocator(VkInstance anInstance, uint32_t aVulkanApiVersion)
+	void Device::SetupVmaAllocator(VkInstance anInstance, uint32_t aVulkanApiVersion)
 	{
 		VmaAllocatorCreateInfo allocatorInfo{};
 		allocatorInfo.instance = anInstance;
@@ -137,7 +139,7 @@ namespace Render
 		VK_CHECK_RESULT(vmaCreateAllocator(&allocatorInfo, &myVmaAllocator), "Could not create the vma allocator");
 	}
 
-	uint32_t VulkanDevice::GetQueueFamilyIndex(VkQueueFlagBits someQueueTypes) const
+	uint32_t Device::GetQueueFamilyIndex(VkQueueFlagBits someQueueTypes) const
 	{
 		if ((someQueueTypes & VK_QUEUE_COMPUTE_BIT) && !(someQueueTypes & VK_QUEUE_GRAPHICS_BIT))
 		{
@@ -173,7 +175,7 @@ namespace Render
 		throw std::runtime_error("Couldn't find a matching queue family index");
 	}
 
-	VkFormat VulkanDevice::FindSupportedFormat(const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures)
+	VkFormat Device::FindSupportedFormat(const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures)
 	{
 		for (VkFormat format : someCandidateFormats)
 		{
@@ -189,7 +191,7 @@ namespace Render
 		throw std::runtime_error("Couldn't find an available format!");
 	}
 
-	VkFormat VulkanDevice::FindBestDepthFormat()
+	VkFormat Device::FindBestDepthFormat()
 	{
 		// Start with the highest precision packed format
 		std::vector<VkFormat> depthFormats = {
@@ -202,4 +204,5 @@ namespace Render
 
 		return FindSupportedFormat(depthFormats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	}
+}
 }

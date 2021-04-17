@@ -1,13 +1,10 @@
 #include "glTFMesh.h"
 
-#include "VulkanHelpers.h"
-#include "VulkanRenderer.h"
-
 namespace Render
 {
 namespace glTF
 {
-	void Mesh::Load(const tinygltf::Model& aModel, uint32_t aMeshIndex, std::vector<VulkanPSO::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices)
+	void Mesh::Load(const tinygltf::Model& aModel, uint32_t aMeshIndex, std::vector<Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices)
 	{
 		const tinygltf::Mesh& gltfMesh = aModel.meshes[aMeshIndex];
 
@@ -85,9 +82,11 @@ namespace glTF
 
 				for (size_t v = 0; v < vertexCount; ++v)
 				{
-					VulkanPSO::Vertex vert{};
-					vert.myPos = glm::make_vec3(&bufferPositions[v * 3]);
-					vert.myColor = glm::vec4(1.0f);					
+					Vertex vert{};
+					vert.myPosition = glm::make_vec3(&bufferPositions[v * 3]);
+					vert.myNormal = bufferNormals ? glm::normalize(glm::make_vec3(&bufferNormals[v * 3])) : glm::vec3(0.0f);
+					vert.myUV = bufferTexCoord ? glm::make_vec2(&bufferTexCoord[v * 2]) : glm::vec2(0.0f);
+					vert.myColor = glm::vec4(1.0f);
 					if (bufferColors)
 					{
 						if (numColorComponents == 3)
@@ -95,10 +94,9 @@ namespace glTF
 						else if (numColorComponents == 4)
 							vert.myColor = glm::make_vec4(&bufferColors[v * 4]);
 					}
-					vert.myTexCoord = bufferTexCoord ? glm::make_vec2(&bufferTexCoord[v * 2]) : glm::vec2(0.0f);
-					vert.myNormal = bufferNormals ? glm::normalize(glm::make_vec3(&bufferNormals[v * 3])) : glm::vec3(0.0f);
-					vert.myJointIndices = hasSkin ? glm::vec4(glm::make_vec4(&bufferJointIndices[v * 4])) : glm::vec4(0.0f);
-					vert.myJointWeights = hasSkin ? glm::make_vec4(&bufferJointWeights[v * 4]) : glm::vec4(0.0f);
+					vert.myJoint = hasSkin ? glm::vec4(glm::make_vec4(&bufferJointIndices[v * 4])) : glm::vec4(0.0f);
+					vert.myWeight = hasSkin ? glm::make_vec4(&bufferJointWeights[v * 4]) : glm::vec4(1.0f);
+					//vert.myTangent
 					someOutVertices.push_back(vert);
 				}
 			}

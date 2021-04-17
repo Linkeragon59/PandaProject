@@ -9,7 +9,7 @@ namespace glTF
 {
 	Model::Model()
 	{
-		myDevice = VulkanRenderer::GetInstance()->GetDevice();
+		myDevice = Render::Vulkan::Renderer::GetInstance()->GetDevice();
 	}
 
 	Model::~Model()
@@ -40,7 +40,7 @@ namespace glTF
 		LoadTextures(gltfModel);
 		LoadMaterials(gltfModel);
 
-		std::vector<VulkanPSO::Vertex> vertexBuffer;
+		std::vector<Mesh::Vertex> vertexBuffer;
 		std::vector<uint32_t> indexBuffer;
 		LoadNodes(gltfModel, aScale, vertexBuffer, indexBuffer);
 
@@ -61,11 +61,11 @@ namespace glTF
 		SetupDescriptorPool();
 		SetupDescriptorSets();
 
-		size_t vertexBufferSize = vertexBuffer.size() * sizeof(VulkanPSO::Vertex);
+		size_t vertexBufferSize = vertexBuffer.size() * sizeof(Mesh::Vertex);
 		size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
 		assert((vertexBufferSize > 0) && (indexBufferSize > 0));
 
-		VulkanBuffer vertexStagingBuffer, indexStagingBuffer;
+		Render::Vulkan::Buffer vertexStagingBuffer, indexStagingBuffer;
 
 		vertexStagingBuffer.Create(vertexBufferSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -89,7 +89,7 @@ namespace glTF
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		VkCommandBuffer commandBuffer = BeginOneTimeCommand();
+		VkCommandBuffer commandBuffer = Render::Vulkan::BeginOneTimeCommand();
 		{
 			VkBufferCopy copyRegion = {};
 
@@ -99,7 +99,7 @@ namespace glTF
 			copyRegion.size = indexBufferSize;
 			vkCmdCopyBuffer(commandBuffer, indexStagingBuffer.myBuffer, myIndexBuffer.myBuffer, 1, &copyRegion);
 		}
-		EndOneTimeCommand(commandBuffer, myTransferQueue);
+		Render::Vulkan::EndOneTimeCommand(commandBuffer, myTransferQueue);
 
 		vertexStagingBuffer.Destroy();
 		indexStagingBuffer.Destroy();
@@ -109,7 +109,7 @@ namespace glTF
 
 	void Model::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout)
 	{
-		// All vertices and indices are stored in single buffers, so we only need to bind once
+		// All vertices and indices are stored in a single buffer, so we only need to bind once
 		VkDeviceSize offsets[1] = { 0 };
 		vkCmdBindVertexBuffers(aCommandBuffer, 0, 1, &myVertexBuffer.myBuffer, offsets);
 		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT32);
@@ -132,9 +132,10 @@ namespace glTF
 
 	void Model::LoadImages(const tinygltf::Model& aModel)
 	{
-		myImages.resize(aModel.images.size());
+		myImages.resize(aModel.images.size() + 1);
 		for (uint32_t i = 0; i < (uint32_t)aModel.images.size(); i++)
 			myImages[i].Load(aModel, i, myTransferQueue);
+		myImages.back().LoadEmpty(myTransferQueue); // Add an empty image at the end
 	}
 
 	void Model::LoadTextures(const tinygltf::Model& aModel)
@@ -146,16 +147,18 @@ namespace glTF
 
 	void Model::LoadMaterials(tinygltf::Model& aModel)
 	{
-		myMaterials.resize(aModel.materials.size());
+		myMaterials.resize(aModel.materials.size() + 1);
 		for (uint32_t i = 0; i < (uint32_t)aModel.materials.size(); i++)
 			myMaterials[i].Load(aModel, i);
+		myMaterials.back().LoadEmpty(); // Add an empty material at the end
 	}
 
 	void Model::LoadSkins(const tinygltf::Model& aModel)
 	{
-		mySkins.resize(aModel.skins.size());
+		mySkins.resize(aModel.skins.size() + 1);
 		for (uint32_t i = 0; i < (uint32_t)aModel.skins.size(); i++)
 			mySkins[i].Load(this, aModel, i);
+		mySkins.back().LoadEmpty(); // Add an empty skin at the end
 	}
 
 	void Model::LoadAnimations(const tinygltf::Model& aModel)
@@ -165,7 +168,7 @@ namespace glTF
 			myAnimations[i].Load(this, aModel, i);
 	}
 
-	void Model::LoadNodes(const tinygltf::Model& aModel, float aScale, std::vector<VulkanPSO::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices)
+	void Model::LoadNodes(const tinygltf::Model& aModel, float aScale, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices)
 	{
 		const tinygltf::Scene& scene = aModel.scenes[aModel.defaultScene > -1 ? aModel.defaultScene : 0];
 		myNodes.resize(scene.nodes.size());
@@ -192,6 +195,13 @@ namespace glTF
 			samplerSize.descriptorCount = (uint32_t)myImages.size();
 			poolSizes.push_back(samplerSize);
 		}
+		if (myMaterials.size() > 0)
+		{
+			VkDescriptorPoolSize storageSize;
+			storageSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			storageSize.descriptorCount = (uint32_t)myMaterials.size();
+			poolSizes.push_back(storageSize);
+		}
 		if (mySkins.size() > 0)
 		{
 			VkDescriptorPoolSize storageSize;
@@ -204,7 +214,7 @@ namespace glTF
 		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		descriptorPoolInfo.poolSizeCount = (uint32_t)poolSizes.size();
 		descriptorPoolInfo.pPoolSizes = poolSizes.data();
-		descriptorPoolInfo.maxSets = myNodeCount + (uint32_t)myImages.size() + (uint32_t)mySkins.size();
+		descriptorPoolInfo.maxSets = myNodeCount + (uint32_t)myImages.size() + (uint32_t)myMaterials.size() + (uint32_t)mySkins.size();
 
 		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
 	}
@@ -216,6 +226,9 @@ namespace glTF
 
 		for (Image& image : myImages)
 			image.SetupDescriptorSet(myDescriptorPool);
+
+		for (Material& material : myMaterials)
+			material.SetupDescriptorSet(myDescriptorPool);
 
 		for (Skin& skin : mySkins)
 			skin.SetupDescriptorSet(myDescriptorPool);

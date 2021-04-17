@@ -1,6 +1,6 @@
 #pragma once
 
-#include "glTFVulkanPSO.h"
+#include "VulkanDeferredPipeline.h"
 
 namespace Render
 {
@@ -18,10 +18,11 @@ namespace glTF
 
 	struct Mesh
 	{
-		void Load(const tinygltf::Model& aModel, uint32_t aMeshIndex, std::vector<VulkanPSO::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
+		typedef Render::Vulkan::DeferredPipeline::Vertex Vertex;
+
+		void Load(const tinygltf::Model& aModel, uint32_t aMeshIndex, std::vector<Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
 
 		std::string myName;
-
 		std::vector<Primitive> myPrimitives;
 	};
 }

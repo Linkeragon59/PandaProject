@@ -1,41 +1,22 @@
 #include "RenderFacade.h"
-#include "BasicRenderer.h"
 #include "VulkanRenderer.h"
 
 namespace Render
 {
-	BasicRenderer* Facade::ourBasicRenderer = nullptr;
-
-	void Facade::InitBasicRenderer(GLFWwindow* aWindow)
-	{
-		ourBasicRenderer = new BasicRenderer(aWindow);
-	}
-
-	void Facade::UpdateBasicRenderer()
-	{
-		ourBasicRenderer->Update();
-	}
-
-	void Facade::FinalizeBasicRenderer()
-	{
-		delete ourBasicRenderer;
-	}
-
 	void Facade::InitVulkanRenderer(GLFWwindow* aWindow)
 	{
-		VulkanRenderer::CreateInstance();
-		VulkanRenderer::GetInstance()->OnWindowOpened(aWindow);
+		Vulkan::Renderer::CreateInstance();
+		Vulkan::Renderer::GetInstance()->OnWindowOpened(aWindow);
 	}
 
 	void Facade::UpdateVulkanRenderer()
 	{
-		VulkanRenderer::GetInstance()->Update();
+		Vulkan::Renderer::GetInstance()->Update();
 	}
 
 	void Facade::FinalizeVulkanRenderer(GLFWwindow* aWindow)
 	{
-		VulkanRenderer::GetInstance()->OnWindowClosed(aWindow);
-		VulkanRenderer::DestroyInstance();
+		Vulkan::Renderer::GetInstance()->OnWindowClosed(aWindow);
+		Vulkan::Renderer::DestroyInstance();
 	}
-
 }

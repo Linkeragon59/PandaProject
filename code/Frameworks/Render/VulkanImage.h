@@ -2,14 +2,16 @@
 
 namespace Render
 {
-	struct VulkanImage
+namespace Vulkan
+{
+	struct Image
 	{
 		static bool DepthFormatHasStencilAspect(VkFormat aDepthFormat)
 		{
 			return aDepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT;
 		}
 
-		~VulkanImage();
+		~Image();
 
 		void Create(uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties);
 		VkImage myImage = VK_NULL_HANDLE;
@@ -32,4 +34,5 @@ namespace Render
 		VkDevice myDevice = VK_NULL_HANDLE;
 		VmaAllocator myAllocator = VK_NULL_HANDLE;
 	};
+}
 }

@@ -2,9 +2,11 @@
 
 namespace Render
 {
-	struct VulkanBuffer
+namespace Vulkan
+{
+	struct Buffer
 	{
-		~VulkanBuffer();
+		~Buffer();
 
 		void Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties);
 		VkBuffer myBuffer = VK_NULL_HANDLE;
@@ -22,4 +24,5 @@ namespace Render
 
 		VmaAllocator myAllocator = VK_NULL_HANDLE;
 	};
+}
 }

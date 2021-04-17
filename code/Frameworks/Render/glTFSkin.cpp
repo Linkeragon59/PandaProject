@@ -2,7 +2,6 @@
 
 #include "glTFModel.h"
 #include "glTFNode.h"
-#include "glTFVulkanPSO.h"
 
 #include "VulkanRenderer.h"
 #include "VulkanHelpers.h"
@@ -15,7 +14,6 @@ namespace glTF
 	Skin::~Skin()
 	{
 		mySSBO.Destroy();
-		myDescriptorSet = VK_NULL_HANDLE;
 	}
 
 	void Skin::Load(Model* aContainer, const tinygltf::Model& aModel, uint32_t aSkinIndex)
@@ -55,11 +53,23 @@ namespace glTF
 		assert(myJoints.size() == myInverseBindMatrices.size());
 	}
 
+	void Skin::LoadEmpty()
+	{
+		VkDeviceSize ssboSize = 1 * sizeof(glm::mat4);
+		glm::mat4 identity(1.0f);
+		mySSBO.Create(ssboSize,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		mySSBO.SetupDescriptor();
+		mySSBO.Map();
+		memcpy(mySSBO.myMappedData, &identity, ssboSize);
+	}
+
 	void Skin::SetupDescriptorSet(VkDescriptorPool aDescriptorPool)
 	{
-		VkDevice device = VulkanRenderer::GetInstance()->GetDevice();
+		VkDevice device = Render::Vulkan::Renderer::GetInstance()->GetDevice();
 
-		std::array<VkDescriptorSetLayout, 1> layouts = { glTF::VulkanPSO::ourPerSkinDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 1> layouts = { Render::Vulkan::DeferredPipeline::ourDescriptorSetLayoutPerSkin };
 
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

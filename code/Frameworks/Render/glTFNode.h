@@ -2,8 +2,6 @@
 
 #include "glTFMesh.h"
 
-#include "glTFVulkanPSO.h"
-
 #include "VulkanBuffer.h"
 
 namespace Render
@@ -16,7 +14,7 @@ namespace glTF
 	{
 		~Node();
 
-		void Load(const tinygltf::Model& aModel, uint32_t aNodeIndex, float aScale, std::vector<VulkanPSO::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
+		void Load(const tinygltf::Model& aModel, uint32_t aNodeIndex, float aScale, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
 
 		void SetupDescriptorSet(VkDescriptorPool aDescriptorPool);
 
@@ -41,7 +39,7 @@ namespace glTF
 		glm::vec3 myScale{ 1.0f };
 		glm::mat4 myMatrix = glm::mat4(1.0f);
 		
-		VulkanBuffer myUBO;
+		Render::Vulkan::Buffer myUBO;
 		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
 }

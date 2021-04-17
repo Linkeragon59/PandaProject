@@ -11,8 +11,6 @@
 #include <thread>
 #include <cstring>
 
-bool testVulkanRenderer = true;
-
 //using namespace Input;
 using Input::InputManager;
 using Input::RawInput;
@@ -56,10 +54,7 @@ namespace GameWork
 
 		try
 		{
-			if (testVulkanRenderer)
-				Render::Facade::InitVulkanRenderer(ourInstance->myWindow);
-			else
-				Render::Facade::InitBasicRenderer(ourInstance->myWindow);
+			Render::Facade::InitVulkanRenderer(ourInstance->myWindow);
 		}
 		catch (const std::exception& e)
 		{
@@ -72,10 +67,7 @@ namespace GameWork
 
 	void GameWork::Destroy()
 	{
-		if (testVulkanRenderer)
-			Render::Facade::FinalizeVulkanRenderer(ourInstance->myWindow);
-		else
-			Render::Facade::FinalizeBasicRenderer();
+		Render::Facade::FinalizeVulkanRenderer(ourInstance->myWindow);
 
 		InputManager::GetInstance()->RemoveWindow(ourInstance->myWindow);
 		InputManager::Destroy();
@@ -106,8 +98,8 @@ namespace GameWork
 			auto end = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double, std::milli> elapsed = end - start;
 
-			if (elapsed < oneFrame)
-				std::this_thread::sleep_for(oneFrame - elapsed);
+			//if (elapsed < oneFrame)
+			//	std::this_thread::sleep_for(oneFrame - elapsed);
 		}
 	}
 
@@ -186,10 +178,7 @@ namespace GameWork
 		// Update Render
 		try
 		{
-			if (testVulkanRenderer)
-				Render::Facade::UpdateVulkanRenderer();
-			else
-				Render::Facade::UpdateBasicRenderer();
+			Render::Facade::UpdateVulkanRenderer();
 		}
 		catch (const std::exception& e)
 		{

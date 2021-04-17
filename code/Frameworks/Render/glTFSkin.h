@@ -14,6 +14,7 @@ namespace glTF
 		~Skin();
 
 		void Load(Model* aContainer, const tinygltf::Model& aModel, uint32_t aSkinIndex);
+		void LoadEmpty();
 
 		void SetupDescriptorSet(VkDescriptorPool aDescriptorPool);
 
@@ -23,7 +24,7 @@ namespace glTF
 		std::vector<Node*> myJoints;
 		std::vector<glm::mat4> myInverseBindMatrices;
 
-		VulkanBuffer mySSBO;
+		Render::Vulkan::Buffer mySSBO;
 		VkDescriptorSet myDescriptorSet;
 	};
 }

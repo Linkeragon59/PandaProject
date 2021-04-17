@@ -1,9 +1,19 @@
 #include "glTFMaterial.h"
 
+#include "VulkanRenderer.h"
+#include "VulkanHelpers.h"
+#include "VulkanDeferredPipeline.h"
+
 namespace Render
 {
 namespace glTF
 {
+
+	Material::~Material()
+	{
+		mySSBO.Destroy();
+	}
+
 	void Material::Load(const tinygltf::Model& aModel, uint32_t aMaterialIndex)
 	{
 		const tinygltf::Material& gltfMaterial = aModel.materials[aMaterialIndex];
@@ -56,6 +66,53 @@ namespace glTF
 		{
 			myAlphaCutoff = static_cast<float>(gltfMaterial.additionalValues.at("alphaCutoff").Factor());
 		}
+
+		Load();
+	}
+
+	void Material::LoadEmpty()
+	{
+		Load();
+	}
+
+	void Material::Load()
+	{
+		// Store material info in a shader storage buffer object (SSBO)
+		VkDeviceSize ssboSize = sizeof(glm::vec4);
+		mySSBO.Create(ssboSize,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		mySSBO.SetupDescriptor();
+		mySSBO.Map();
+		memcpy(mySSBO.myMappedData, &myBaseColorFactor, ssboSize);
+		mySSBO.Unmap();
+	}
+
+	void Material::SetupDescriptorSet(VkDescriptorPool aDescriptorPool)
+	{
+		VkDevice device = Render::Vulkan::Renderer::GetInstance()->GetDevice();
+
+		std::array<VkDescriptorSetLayout, 1> layouts = { Render::Vulkan::DeferredPipeline::ourDescriptorSetLayoutPerMaterial };
+
+		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
+		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descriptorSetAllocateInfo.descriptorPool = aDescriptorPool;
+		descriptorSetAllocateInfo.pSetLayouts = layouts.data();
+		descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)layouts.size();
+
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &myDescriptorSet), "Failed to create the material descriptor set");
+
+		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+		// Binding 0 : Material
+		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet = myDescriptorSet;
+		descriptorWrites[0].dstBinding = 0;
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		descriptorWrites[0].pBufferInfo = &mySSBO.myDescriptor;
+
+		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 }
 }
