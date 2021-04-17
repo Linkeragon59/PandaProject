@@ -442,27 +442,28 @@ namespace Vulkan
 		}
 
 		// Three subpasses
+		VkAttachmentReference colorReferences[4];
+		colorReferences[0] = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+		colorReferences[1] = { 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+		colorReferences[2] = { 2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+		colorReferences[3] = { 3, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+		
+		VkAttachmentReference depthReference  = { 4, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
+
+		VkAttachmentReference inputReferences[3];
+		inputReferences[0] = { 1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+		inputReferences[1] = { 2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+		inputReferences[2] = { 3, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+		
 		std::array<VkSubpassDescription, 3> subpassDescriptions{};
 		{
 			// First subpass: Fill G-Buffer components
-			VkAttachmentReference colorReferences[4];
-			colorReferences[0] = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-			colorReferences[1] = { 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-			colorReferences[2] = { 2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-			colorReferences[3] = { 3, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-			VkAttachmentReference depthReference = { 4, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-
 			subpassDescriptions[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			subpassDescriptions[0].colorAttachmentCount = 4;
 			subpassDescriptions[0].pColorAttachments = colorReferences;
 			subpassDescriptions[0].pDepthStencilAttachment = &depthReference;
 
 			// Second subpass: Final Lighting (using G-Buffer components)
-			VkAttachmentReference inputReferences[3];
-			inputReferences[0] = { 1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-			inputReferences[1] = { 2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-			inputReferences[2] = { 3, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-
 			subpassDescriptions[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			subpassDescriptions[1].colorAttachmentCount = 1;
 			subpassDescriptions[1].pColorAttachments = colorReferences;
@@ -481,7 +482,7 @@ namespace Vulkan
 
 		// TODO: Understand subpass dependencies better!
 		// Subpass dependencies for layout transitions
-		std::array<VkSubpassDependency, 4> dependencies;
+		std::array<VkSubpassDependency, 4> dependencies{};
 		{
 			dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 			dependencies[0].dstSubpass = 0;
@@ -665,7 +666,7 @@ namespace Vulkan
 		VkShaderModule vertModule = CreateShaderModule("Frameworks/shaders/gbuffer_vert.spv");
 		VkShaderModule fragModule = CreateShaderModule("Frameworks/shaders/gbuffer_frag.spv");
 
-		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 		shaderStages[0] = {};
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -800,7 +801,7 @@ namespace Vulkan
 		VkShaderModule vertModule = CreateShaderModule("Frameworks/shaders/composition_vert.spv");
 		VkShaderModule fragModule = CreateShaderModule("Frameworks/shaders/composition_frag.spv");
 
-		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 		shaderStages[0] = {};
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -926,7 +927,7 @@ namespace Vulkan
 		VkShaderModule vertModule = CreateShaderModule("Frameworks/shaders/transparent_vert.spv");
 		VkShaderModule fragModule = CreateShaderModule("Frameworks/shaders/transparent_frag.spv");
 
-		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 		shaderStages[0] = {};
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
