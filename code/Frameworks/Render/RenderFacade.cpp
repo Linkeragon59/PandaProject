@@ -1,22 +1,53 @@
 #include "RenderFacade.h"
+
+#include "RenderCamera.h"
 #include "VulkanRenderer.h"
 
 namespace Render
 {
+	Facade* Facade::ourInstance = nullptr;
+
+	void Facade::Create()
+	{
+		Assert(!ourInstance);
+		ourInstance = new Facade;
+	}
+
+	void Facade::Destroy()
+	{
+		Assert(ourInstance);
+		delete ourInstance;
+		ourInstance = nullptr;
+	}
+
 	void Facade::InitVulkanRenderer(GLFWwindow* aWindow)
 	{
-		Vulkan::Renderer::CreateInstance();
-		Vulkan::Renderer::GetInstance()->OnWindowOpened(aWindow);
+		myVulkanRenderer = new Vulkan::Renderer;
+		myVulkanRenderer->Init();
+		myVulkanRenderer->OnWindowOpened(aWindow);
 	}
 
 	void Facade::UpdateVulkanRenderer()
 	{
-		Vulkan::Renderer::GetInstance()->Update();
+		myVulkanRenderer->Update();
 	}
 
 	void Facade::FinalizeVulkanRenderer(GLFWwindow* aWindow)
 	{
-		Vulkan::Renderer::GetInstance()->OnWindowClosed(aWindow);
-		Vulkan::Renderer::DestroyInstance();
+		myVulkanRenderer->OnWindowClosed(aWindow);
+		myVulkanRenderer->Finalize();
+		delete myVulkanRenderer;
+		myVulkanRenderer = nullptr;
+	}
+
+	Facade::Facade()
+	{
+		myCamera = new Camera;
+	}
+
+	Facade::~Facade()
+	{
+		delete myCamera;
+		Assert(!myVulkanRenderer);
 	}
 }

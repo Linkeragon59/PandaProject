@@ -15,15 +15,17 @@ namespace Vulkan
 	struct Device;
 	class SwapChain;
 
-	class Camera;
-	class DummyModel;
-
 	class Renderer
 	{
 	public:
-		static void CreateInstance();
-		static void DestroyInstance();
-		static Renderer* GetInstance() { return ourInstance; }
+		// Shortcut using the Facade singleton
+		static Renderer* GetInstance();
+
+		Renderer();
+		~Renderer();
+
+		void Init();
+		void Finalize();
 
 		void OnWindowOpened(GLFWwindow* aWindow);
 		void OnWindowClosed(GLFWwindow* aWindow);
@@ -39,18 +41,8 @@ namespace Vulkan
 		VkQueue GetGraphicsQueue() const;
 		VkCommandPool GetGraphicsCommandPool() const;
 
-		const VkDescriptorImageInfo* GetMissingTextureDescriptor() const { return &myMissingTexture.myDescriptor; }
-
-		Camera* GetCamera() const { return myCamera; }
-
 	private:
-		static Renderer* ourInstance;
-
-		Renderer();
-		~Renderer();
-
 		void CreateVkInstance();
-		void SetupDebugMessenger();
 		void CreateDevice();
 
 		void SetupEmptyTexture();
@@ -64,8 +56,6 @@ namespace Vulkan
 		std::vector<SwapChain*> mySwapChains;
 
 		Image myMissingTexture;
-
-		Camera* myCamera = nullptr;
 	};
 }
 }

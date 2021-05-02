@@ -3,8 +3,8 @@
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 #include "VulkanDevice.h"
+#include "VulkanDebugMessenger.h"
 
-#include "VulkanCamera.h"
 #include "glTFModel.h"
 #include "DummyModel.h"
 
@@ -41,22 +41,20 @@ namespace Vulkan
 
 		myDeferredPipeline.Prepare(myExtent, myColorFormat, myDepthImage.myFormat);
 
-		//myDummyPSO = new DummyPSO(myRenderPass);
-		//myglTFPSO = new glTF::VulkanPSO(myRenderPass);
-
 		SetupCommandBuffers();
 		SetupFramebuffers();
 
-		CreateSyncObjects();
+		for (uint32_t i = 0; i < (uint32_t)myCommandBuffers.size(); ++i)
+			BuildCommandBuffer(i);
 
-		BuildCommandBuffers();
+		CreateSyncObjects();
 	}
 
 	void SwapChain::Cleanup()
 	{
 		vkDeviceWaitIdle(myDevice);
 
-		for (uint32_t i = 0, e = (uint32_t)myImages.size() - 1; i < e; ++i)
+		for (uint32_t i = 0; i < myMaxInFlightFrames; ++i)
 		{
 			vkDestroyFence(myDevice, myInFlightFrameFences[i], nullptr);
 			vkDestroySemaphore(myDevice, myRenderFinishedSemaphores[i], nullptr);
@@ -65,13 +63,13 @@ namespace Vulkan
 		myInFlightFrameFences.clear();
 		myRenderFinishedSemaphores.clear();
 		myImageAvailableSemaphores.clear();
-		myImageFences.clear();
 
 		for (auto framebuffer : myFramebuffers)
 			vkDestroyFramebuffer(myDevice, framebuffer, nullptr);
 		myFramebuffers.clear();
 
 		myCommandBuffers.clear();
+		myCommandBuffersDirty.clear();
 
 		myDeferredPipeline.Destroy();
 
@@ -119,15 +117,14 @@ namespace Vulkan
 		VkPhysicalDevice physicalDevice = Renderer::GetInstance()->GetPhysicalDevice();
 
 		// TODO: Support separate queues for graphics and present.
-		assert(Renderer::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.has_value());
+		Assert(Renderer::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.has_value());
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(
 			physicalDevice,
 			Renderer::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.value(),
 			mySurface,
 			&presentSupport);
-		if (!presentSupport)
-			throw std::runtime_error("The device doesn't support presenting on the graphics queue!");
+		Assert(presentSupport, "The device doesn't support presenting on the graphics queue!");
 
 		VkSurfaceCapabilitiesKHR capabilities = {};
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, mySurface, &capabilities);
@@ -145,7 +142,7 @@ namespace Vulkan
 
 		uint32_t formatCount = 0;
 		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, mySurface, &formatCount, nullptr);
-		assert(formatCount > 0);
+		Assert(formatCount > 0);
 		std::vector<VkSurfaceFormatKHR> availableFormats(formatCount);
 		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, mySurface, &formatCount, availableFormats.data());
 		VkSurfaceFormatKHR surfaceFormat = availableFormats[0];
@@ -158,7 +155,7 @@ namespace Vulkan
 
 		uint32_t presentModeCount = 0;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, mySurface, &presentModeCount, nullptr);
-		assert(presentModeCount > 0);
+		Assert(presentModeCount > 0);
 		std::vector<VkPresentModeKHR> availablePresentModes(presentModeCount);
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, mySurface, &presentModeCount, availablePresentModes.data());
 		VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
@@ -171,6 +168,8 @@ namespace Vulkan
 		uint32_t imageCount = capabilities.minImageCount + 1;
 		if (capabilities.maxImageCount > 0)
 			imageCount = std::min(imageCount, capabilities.maxImageCount);
+
+		myMaxInFlightFrames = imageCount - 1;
 
 		VkSwapchainCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -234,21 +233,22 @@ namespace Vulkan
 		myDepthImage.CreateImageView(aspects);
 
 		// optional
-		myDepthImage.TransitionLayout(
-			VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-			Renderer::GetInstance()->GetGraphicsQueue());
+		//myDepthImage.TransitionLayout(
+		//	VK_IMAGE_LAYOUT_UNDEFINED,
+		//	VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		//	Renderer::GetInstance()->GetGraphicsQueue());
 	}
 
 	void SwapChain::SetupCommandBuffers()
 	{
 		myCommandBuffers.resize(myImages.size());
-
+		myCommandBuffersDirty.resize(myImages.size(), true);
+		
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.commandPool = Renderer::GetInstance()->GetGraphicsCommandPool();
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = static_cast<uint32_t>(myCommandBuffers.size());
+		allocInfo.commandBufferCount = 3;
 
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
 	}
@@ -280,13 +280,9 @@ namespace Vulkan
 
 	void SwapChain::CreateSyncObjects()
 	{
-		myImageFences.resize(myImages.size(), VK_NULL_HANDLE);
-
-		const size_t maxInFlightImagesCount = myImages.size() - 1;
-
-		myImageAvailableSemaphores.resize(maxInFlightImagesCount);
-		myRenderFinishedSemaphores.resize(maxInFlightImagesCount);
-		myInFlightFrameFences.resize(maxInFlightImagesCount);
+		myImageAvailableSemaphores.resize(myMaxInFlightFrames);
+		myRenderFinishedSemaphores.resize(myMaxInFlightFrames);
+		myInFlightFrameFences.resize(myMaxInFlightFrames);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -295,7 +291,7 @@ namespace Vulkan
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		for (size_t i = 0; i < maxInFlightImagesCount; ++i)
+		for (size_t i = 0; i < myMaxInFlightFrames; ++i)
 		{
 			VK_CHECK_RESULT(vkCreateSemaphore(myDevice, &semaphoreInfo, nullptr, &myImageAvailableSemaphores[i]), "Failed to create a semaphore");
 			VK_CHECK_RESULT(vkCreateSemaphore(myDevice, &semaphoreInfo, nullptr, &myRenderFinishedSemaphores[i]), "Failed to create a semaphore");
@@ -303,7 +299,7 @@ namespace Vulkan
 		}
 	}
 
-	void SwapChain::BuildCommandBuffers()
+	void SwapChain::BuildCommandBuffer(uint32_t anImageIndex)
 	{
 		VkCommandBufferBeginInfo cmdBufferBeginInfo{};
 		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -325,135 +321,115 @@ namespace Vulkan
 		renderPassBeginInfo.clearValueCount = (uint32_t)clearValues.size();
 		renderPassBeginInfo.pClearValues = clearValues.data();
 
-		for (uint32_t i = 0; i < (uint32_t)myCommandBuffers.size(); ++i)
+		// Set target frame buffer
+		renderPassBeginInfo.framebuffer = myFramebuffers[anImageIndex];
+
+		VK_CHECK_RESULT(vkBeginCommandBuffer(myCommandBuffers[anImageIndex], &cmdBufferBeginInfo), "Failed to begin a command buffer");
+
+		vkCmdBeginRenderPass(myCommandBuffers[anImageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = (float)myExtent.width;
+		viewport.height = (float)myExtent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(myCommandBuffers[anImageIndex], 0, 1, &viewport);
+
+		VkRect2D scissor{};
+		scissor.extent = myExtent;
+		scissor.offset = { 0, 0 };
+		vkCmdSetScissor(myCommandBuffers[anImageIndex], 0, 1, &scissor);
+
+		vkCmdSetViewport(myCommandBuffers[anImageIndex], 0, 1, &viewport);
+
+		// First sub pass
+		// Renders the components of the scene to the G-Buffer attachments
+		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 0: Deferred G-Buffer creation", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		{
-			// Set target frame buffer
-			renderPassBeginInfo.framebuffer = myFramebuffers[i];
-
-			VK_CHECK_RESULT(vkBeginCommandBuffer(myCommandBuffers[i], &cmdBufferBeginInfo), "Failed to begin a command buffer");
-
-			vkCmdBeginRenderPass(myCommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			VkViewport viewport{};
-			viewport.x = 0.0f;
-			viewport.y = 0.0f;
-			viewport.width = (float)myExtent.width;
-			viewport.height = (float)myExtent.height;
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-			vkCmdSetViewport(myCommandBuffers[i], 0, 1, &viewport);
-
-			VkRect2D scissor{};
-			scissor.extent = myExtent;
-			scissor.offset = { 0, 0 };
-			vkCmdSetScissor(myCommandBuffers[i], 0, 1, &scissor);
-
-			vkCmdSetViewport(myCommandBuffers[i], 0, 1, &viewport);
-
-			// Draw objects with the Dummy Pipeline
-			/*vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myDummyPSO->GetPipeline());
-
-			std::array<VkDescriptorSet, 1> dummyPerFrameDescriptorSets = { camera->GetDummyDescriptorSet() };
-			vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myDummyPSO->GetPipelineLayout(),
-				0, (uint32_t)dummyPerFrameDescriptorSets.size(), dummyPerFrameDescriptorSets.data(), 0, NULL);
-
-			for (uint32_t j = 0; j < Renderer::GetInstance()->GetPandaModelsCount(); ++j)
-			{
-				VulkanModel* pandaModel = Renderer::GetInstance()->GetPandaModel(j);
-				pandaModel->Draw(myCommandBuffers[i], myDummyPSO->GetPipelineLayout());
-			}*/
-
-			// Draw objects with the glTF Pipeline
-			/*vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myglTFPSO->GetPipeline());
-
-			std::array<VkDescriptorSet, 1> glTFPerFrameDescriptorSets = { camera->GetglTFDescriptorSet() };
-			vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myglTFPSO->GetPipelineLayout(),
-				0, (uint32_t)glTFPerFrameDescriptorSets.size(), glTFPerFrameDescriptorSets.data(), 0, NULL);
-
-			if (glTF::Model* model = Renderer::GetInstance()->GetglTFModel())
-				model->Draw(myCommandBuffers[i], myglTFPSO->GetPipelineLayout());*/
-
-			// First sub pass
-			// Renders the components of the scene to the G-Buffer attachments
-			{
-				vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipeline);
-				vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipelineLayout, 0, 1, &myDeferredPipeline.myGBufferDescriptorSet, 0, NULL);
-				myDeferredPipeline.myCastleModel->Draw(myCommandBuffers[i], myDeferredPipeline.myGBufferPipelineLayout);
-				myDeferredPipeline.myAvocadoModel->Draw(myCommandBuffers[i], myDeferredPipeline.myGBufferPipelineLayout);
-				myDeferredPipeline.myAnimatedModel->Draw(myCommandBuffers[i], myDeferredPipeline.myGBufferPipelineLayout);
-				myDeferredPipeline.myDummyModel->Draw(myCommandBuffers[i], myDeferredPipeline.myGBufferPipelineLayout);
-			}
-
-			// Second sub pass
-			// This subpass will use the G-Buffer components as input attachment for the lighting
-			{
-				vkCmdNextSubpass(myCommandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
-
-				vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipeline);
-				vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 0, 1, &myDeferredPipeline.myLightingDescriptorSet, 0, NULL);
-				vkCmdDraw(myCommandBuffers[i], 4, 1, 0, 0);
-			}
-
-			// Third subpass
-			// Render transparent geometry using a forward pass that compares against depth generated during G-Buffer fill
-			{
-				vkCmdNextSubpass(myCommandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
-
-				vkCmdBindPipeline(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipeline);
-				vkCmdBindDescriptorSets(myCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipelineLayout, 0, 1, &myDeferredPipeline.myTransparentDescriptorSet, 0, NULL);
-				myDeferredPipeline.myCastleWindows->Draw(myCommandBuffers[i], myDeferredPipeline.myTransparentPipelineLayout);
-			}
-
-			vkCmdEndRenderPass(myCommandBuffers[i]);
-
-			VK_CHECK_RESULT(vkEndCommandBuffer(myCommandBuffers[i]), "Failed to end a command buffer");
+			vkCmdBindPipeline(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipeline);
+			vkCmdBindDescriptorSets(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipelineLayout, 0, 1, &myDeferredPipeline.myGBufferDescriptorSet, 0, NULL);
+			myDeferredPipeline.myCastleModel->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout);
+			myDeferredPipeline.myAvocadoModel->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout);
+			myDeferredPipeline.myAnimatedModel->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout);
+			myDeferredPipeline.myDummyModel->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout);
 		}
+		Debug::EndRegion(myCommandBuffers[anImageIndex]);
+
+		// Second sub pass
+		// This subpass will use the G-Buffer components as input attachment for the lighting
+		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 1: Deferred composition", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		{
+			vkCmdNextSubpass(myCommandBuffers[anImageIndex], VK_SUBPASS_CONTENTS_INLINE);
+
+			vkCmdBindPipeline(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipeline);
+			vkCmdBindDescriptorSets(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 0, 1, &myDeferredPipeline.myLightingDescriptorSet, 0, NULL);
+			vkCmdDraw(myCommandBuffers[anImageIndex], 4, 1, 0, 0);
+		}
+		Debug::EndRegion(myCommandBuffers[anImageIndex]);
+
+		// Third subpass
+		// Render transparent geometry using a forward pass that compares against depth generated during G-Buffer fill
+		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 2: Forward transparency", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		{
+			vkCmdNextSubpass(myCommandBuffers[anImageIndex], VK_SUBPASS_CONTENTS_INLINE);
+
+			vkCmdBindPipeline(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipeline);
+			vkCmdBindDescriptorSets(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipelineLayout, 0, 1, &myDeferredPipeline.myTransparentDescriptorSet, 0, NULL);
+			myDeferredPipeline.myCastleWindows->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myTransparentPipelineLayout);
+		}
+		Debug::EndRegion(myCommandBuffers[anImageIndex]);
+
+		vkCmdEndRenderPass(myCommandBuffers[anImageIndex]);
+
+		VK_CHECK_RESULT(vkEndCommandBuffer(myCommandBuffers[anImageIndex]), "Failed to end a command buffer");
+
+		myCommandBuffersDirty[anImageIndex] = false;
 	}
 
 	void SwapChain::DrawFrame()
 	{
 		vkWaitForFences(myDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame], VK_TRUE, UINT64_MAX);
 
+		VkSemaphore imageAvailableSemaphore = myImageAvailableSemaphores[myCurrentInFlightFrame];
+		VkSemaphore renderCompleteSemaphore = myRenderFinishedSemaphores[myCurrentInFlightFrame];
+
 		uint32_t imageIndex = 0;
-		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, myImageAvailableSemaphores[myCurrentInFlightFrame], VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
 			Recreate();
 			return;
 		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		else
 		{
-			throw std::runtime_error("Failed to acquire a swapchain image!");
+			Assert(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire a swapchain image!");
 		}
 
-		if (myImageFences[imageIndex] != VK_NULL_HANDLE)
-			vkWaitForFences(myDevice, 1, &myImageFences[imageIndex], VK_TRUE, UINT64_MAX);
+		if (myCommandBuffersDirty[imageIndex])
+			BuildCommandBuffer(imageIndex);
 
-		myImageFences[imageIndex] = myInFlightFrameFences[myCurrentInFlightFrame];
-
-		VkSemaphore waitSemaphores[] = { myImageAvailableSemaphores[myCurrentInFlightFrame] };
-		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		VkSemaphore signalSemaphores[] = { myRenderFinishedSemaphores[myCurrentInFlightFrame] };
+		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = waitSemaphores;
-		submitInfo.pWaitDstStageMask = waitStages;
+		submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
+		submitInfo.pWaitDstStageMask = &waitStage;
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &myCommandBuffers[imageIndex];
 		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
+		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
 
 		vkResetFences(myDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame]);
-
 		VK_CHECK_RESULT(vkQueueSubmit(Renderer::GetInstance()->GetGraphicsQueue(), 1, &submitInfo, myInFlightFrameFences[myCurrentInFlightFrame]),
 			"Failed to submit a command buffer");
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
+		presentInfo.pWaitSemaphores = &renderCompleteSemaphore;
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &myVkSwapChain;
 		presentInfo.pImageIndices = &imageIndex;
@@ -464,12 +440,12 @@ namespace Vulkan
 			myFramebufferResized = false;
 			Recreate();
 		}
-		else if (result != VK_SUCCESS)
+		else
 		{
-			throw std::runtime_error("Failed to present a swapchain image!");
+			Assert(result == VK_SUCCESS, "Failed to present a swapchain image!");
 		}
 
-		myCurrentInFlightFrame = (myCurrentInFlightFrame + 1) % ((uint32_t)myImages.size() - 1);
+		myCurrentInFlightFrame = (myCurrentInFlightFrame + 1) % myMaxInFlightFrames;
 	}
 }
 }

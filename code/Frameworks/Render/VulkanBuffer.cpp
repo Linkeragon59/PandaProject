@@ -9,7 +9,7 @@ namespace Vulkan
 {
 	Buffer::~Buffer()
 	{
-		assert(!myBuffer);
+		Assert(!myBuffer);
 	}
 
 	void Buffer::Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
@@ -43,7 +43,7 @@ namespace Vulkan
 		}
 		else
 		{
-			throw std::runtime_error("Buffer allocation usage not supported yet.");
+			Assert(false, "Buffer allocation usage not supported yet.");
 		}
 		allocInfo.requiredFlags = someProperties;
 

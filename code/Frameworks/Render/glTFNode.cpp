@@ -147,14 +147,14 @@ namespace glTF
 				if (primitive.myMaterial > -1)
 				{
 					material = aContainer->GetMaterial(primitive.myMaterial);
-					assert(material);
+					Assert(material);
 
 					if (material->myBaseColorTexture > -1)
 					{
 						const Texture* texture = aContainer->GetTexture(material->myBaseColorTexture);
-						assert(texture);
+						Assert(texture);
 						image = aContainer->GetImage(texture->myImageIndex);
-						assert(image);
+						Assert(image);
 					}
 				}
 				if (!image)

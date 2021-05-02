@@ -1,6 +1,9 @@
 #include "GameWork.h"
 
 #include "Module.h"
+#include "Camera.h"
+#include "RenderCamera.h"
+
 #include "Input.h"
 
 #include <GLFW/glfw3.h>
@@ -52,9 +55,12 @@ namespace GameWork
 		InputManager::Create();
 		InputManager::GetInstance()->AddWindow(ourInstance->myWindow);
 
+		ourInstance->Init();
+
 		try
 		{
-			Render::Facade::InitVulkanRenderer(ourInstance->myWindow);
+			Render::Facade::Create();
+			Render::Facade::GetInstance()->InitVulkanRenderer(ourInstance->myWindow);
 		}
 		catch (const std::exception& e)
 		{
@@ -67,7 +73,8 @@ namespace GameWork
 
 	void GameWork::Destroy()
 	{
-		Render::Facade::FinalizeVulkanRenderer(ourInstance->myWindow);
+		Render::Facade::GetInstance()->FinalizeVulkanRenderer(ourInstance->myWindow);
+		Render::Facade::Destroy();
 
 		InputManager::GetInstance()->RemoveWindow(ourInstance->myWindow);
 		InputManager::Destroy();
@@ -110,8 +117,22 @@ namespace GameWork
 		myWindow = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.1", nullptr, nullptr);
 	}
 
+	void GameWork::Init()
+	{
+		myCamera = new Camera();
+		myCamera->SetPosition(glm::vec3(0.0f, -0.75f, -2.0f));
+		myCamera->SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+		myCamera->SetPerspective(800.0f / 600.0f, 60.0f, 0.1f, 256.0f);
+	}
+
 	void GameWork::Cleanup()
 	{
+		if (myCamera)
+		{
+			delete myCamera;
+			myCamera = nullptr;
+		}
+
 		glfwDestroyWindow(myWindow);
 		myWindow = nullptr;
 		glfwTerminate();
@@ -175,20 +196,28 @@ namespace GameWork
 		
 		bool escapePressed = inputManager->PollRawInput(RawInput::KeyEscape) == RawInputState::Pressed;
 
-		// Update Render
-		try
-		{
-			Render::Facade::UpdateVulkanRenderer();
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << e.what() << std::endl;
-		}
-
 		// Update Modules
 		for (Module* mod : myModules)
 		{
 			mod->OnUpdate();
+		}
+
+		myCamera->Update();
+
+		// Update Props
+
+		// Update Render
+		try
+		{
+			Render::Camera* renderCamera = Render::Facade::GetInstance()->GetRenderCamera();
+			myCamera->GetViewMatrix(renderCamera->myView);
+			myCamera->GetPerspectiveMatrix(renderCamera->myPerspective);
+
+			Render::Facade::GetInstance()->UpdateVulkanRenderer();
+		}
+		catch (const std::exception& e)
+		{
+			std::cerr << e.what() << std::endl;
 		}
 
 		return !escapePressed;

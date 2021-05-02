@@ -9,7 +9,7 @@ namespace Vulkan
 {
 	Image::~Image()
 	{
-		assert(!myImage);
+		Assert(!myImage);
 	}
 
 	void Image::Create(uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
@@ -41,7 +41,7 @@ namespace Vulkan
 		}
 		else
 		{
-			throw std::runtime_error("Image allocation usage not supported yet.");
+			Assert(false, "Image allocation usage not supported yet.");
 		}
 		allocInfo.requiredFlags = someProperties;
 
@@ -100,8 +100,8 @@ namespace Vulkan
 	{
 		VkCommandBuffer commandBuffer = BeginOneTimeCommand(aCommandPool);
 
-		VkPipelineStageFlags sourceStage;
-		VkPipelineStageFlags destinationStage;
+		VkPipelineStageFlags sourceStage = 0;
+		VkPipelineStageFlags destinationStage = 0;
 
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -142,7 +142,7 @@ namespace Vulkan
 		}
 		else
 		{
-			throw std::runtime_error("Image transition not supported yet!");
+			Assert(false, "Image transition not supported yet!");
 		}
 		
 		if (aNewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)

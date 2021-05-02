@@ -9,7 +9,7 @@ namespace Vulkan
 	Device::Device(VkPhysicalDevice aPhysicalDevice)
 		: myPhysicalDevice(aPhysicalDevice)
 	{
-		assert(myPhysicalDevice);
+		Assert(myPhysicalDevice);
 
 		vkGetPhysicalDeviceProperties(myPhysicalDevice, &myProperties);
 		vkGetPhysicalDeviceFeatures(myPhysicalDevice, &myFeatures);
@@ -17,7 +17,7 @@ namespace Vulkan
 
 		uint32_t queueFamilyCount;
 		vkGetPhysicalDeviceQueueFamilyProperties(myPhysicalDevice, &queueFamilyCount, nullptr);
-		assert(queueFamilyCount > 0);
+		Assert(queueFamilyCount > 0);
 		myQueueFamilyProperties.resize(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(myPhysicalDevice, &queueFamilyCount, myQueueFamilyProperties.data());
 
@@ -42,6 +42,14 @@ namespace Vulkan
 			vkDestroyCommandPool(myLogicalDevice, myGraphicsCommandPool, nullptr);
 			vkDestroyDevice(myLogicalDevice, nullptr);
 		}
+	}
+
+	bool Device::SupportsExtension(const char* anExtension)
+	{
+		for (VkExtensionProperties extension : mySupportedExtensions)
+			if (strcmp(extension.extensionName, anExtension) == 0)
+				return true;
+		return false;
 	}
 
 	void Device::SetupLogicalDevice(
@@ -123,6 +131,7 @@ namespace Vulkan
 			VkCommandPoolCreateInfo commandPoolInfo{};
 			commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 			commandPoolInfo.queueFamilyIndex = myQueueFamilyIndices.myGraphicsFamily.value();
+			commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 			VK_CHECK_RESULT(vkCreateCommandPool(myLogicalDevice, &commandPoolInfo, nullptr, &myGraphicsCommandPool), "Failed to create the graphics command pool");
 		}
@@ -172,7 +181,8 @@ namespace Vulkan
 				return i;
 		}
 
-		throw std::runtime_error("Couldn't find a matching queue family index");
+		Assert(false, "Couldn't find a matching queue family index");
+		return 0;
 	}
 
 	VkFormat Device::FindSupportedFormat(const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures)
@@ -188,7 +198,8 @@ namespace Vulkan
 				return format;
 		}
 
-		throw std::runtime_error("Couldn't find an available format!");
+		Assert(false, "Couldn't find an available format!");
+		return VK_FORMAT_UNDEFINED;
 	}
 
 	VkFormat Device::FindBestDepthFormat()

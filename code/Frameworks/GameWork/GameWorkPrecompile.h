@@ -2,12 +2,7 @@
 
 #include "Assert.h"
 
-#include "vulkan/vulkan.h"
-#define VMA_ASSERT(expr) Verify((expr)) // workaround for Release builds
-#include "vk_mem_alloc.h"
-
 #include <vector>
-#include <array>
 
 #pragma warning(push)
 #pragma warning(disable:4201)
@@ -19,6 +14,3 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #pragma warning(pop)
-
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#include <tiny_gltf.h>

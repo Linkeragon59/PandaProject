@@ -12,6 +12,8 @@ namespace Vulkan
 		explicit Device(VkPhysicalDevice aPhysicalDevice);
 		~Device();
 
+		bool SupportsExtension(const char* anExtension);
+
 		void SetupLogicalDevice(
 			const VkPhysicalDeviceFeatures& someEnabledFeatures,
 			const std::vector<const char*>& someEnabledLayers,

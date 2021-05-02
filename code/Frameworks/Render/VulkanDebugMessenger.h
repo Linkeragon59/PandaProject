@@ -4,8 +4,11 @@ namespace Render
 {
 namespace Vulkan
 {
+namespace Debug
+{
 	void PopulateValidationLayers(std::vector<const char*>& anOutLayerList);
 	void PopulateDebugExtensions(std::vector<const char*>& anOutExtensionList);
+	void PopulateDebugDeviceExtensions(std::vector<const char*>& anOutExtensionList);
 
 	VkResult CreateDebugMessenger(
 		VkInstance anInstance,
@@ -25,5 +28,10 @@ namespace Vulkan
 		void* aUserData);
 
 	void FillDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& someOutInfo);
+
+	void SetupDebugMarkers(VkDevice aDevice);
+	void BeginRegion(VkCommandBuffer aCmdbuffer, const char* aMarkerName, glm::vec4 aColor);
+	void EndRegion(VkCommandBuffer aCmdbuffer);
+}
 }
 }

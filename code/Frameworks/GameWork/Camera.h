@@ -1,10 +1,6 @@
 #pragma once
 
-#include "VulkanBuffer.h"
-
-namespace Render
-{
-namespace Vulkan
+namespace GameWork
 {
 	class Camera
 	{
@@ -18,7 +14,6 @@ namespace Vulkan
 		void Translate(const glm::vec3& aPositionDelta);
 		void SetRotation(const glm::vec3& aRotation);
 		void Rotate(const glm::vec3& aRotationDelta);
-		void GetPosition(glm::vec3& anOutPosition) const;
 		void GetViewMatrix(glm::mat4& anOutMatrix) const;
 
 		void SetPerspective(float anAspectRatio, float aFov, float aZNear, float aZFar);
@@ -39,5 +34,4 @@ namespace Vulkan
 		glm::mat4 myView;
 		glm::mat4 myPerspective;
 	};
-}
 }

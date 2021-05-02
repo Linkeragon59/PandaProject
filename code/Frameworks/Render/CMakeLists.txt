@@ -1,9 +1,48 @@
 cmake_minimum_required(VERSION 3.16)
 
-file(GLOB Headers *.h)
-file(GLOB Sources *.cpp)
-file(GLOB Natvis *.natvis)
-add_library(Render STATIC ${Headers} ${Sources} ${Natvis})
+add_library(Render "")
+target_sources(Render
+	PRIVATE
+		DummyModel.cpp
+		glTFAnimation.cpp
+		glTFMaterial.cpp
+		glTFMesh.cpp
+		glTFModel.cpp
+		glTFNode.cpp
+		glTFSkin.cpp
+		glTFTexture.cpp
+		RenderFacade.cpp
+		RenderPrecompile.cpp
+		VulkanBuffer.cpp
+		VulkanDebugMessenger.cpp
+		VulkanDeferredPipeline.cpp
+		VulkanDevice.cpp
+		VulkanHelpers.cpp
+		VulkanImage.cpp
+		VulkanRenderer.cpp
+		VulkanSwapChain.cpp
+
+		DummyModel.h
+		glTFAnimation.h
+		glTFMaterial.h
+		glTFMesh.h
+		glTFModel.h
+		glTFNode.h
+		glTFSkin.h
+		glTFTexture.h
+		RenderCamera.h
+		RenderFacade.h
+		RenderPrecompile.h
+		VulkanBuffer.h
+		VulkanDebugMessenger.h
+		VulkanDeferredPipeline.h
+		VulkanDevice.h
+		VulkanHelpers.h
+		VulkanImage.h
+		VulkanModel.h
+		VulkanRenderer.h
+		VulkanSwapChain.h
+)
 
 target_link_libraries(Render Base)
 
@@ -11,7 +50,6 @@ target_compile_features(Render PRIVATE cxx_std_20)
 
 target_include_directories(Render PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/glfw/3.3/include)
-target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/glm/0.9.9.8/include)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/stb)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/tinygltf)
 target_include_directories(Render PRIVATE ${CMAKE_SOURCE_DIR}/code/Extern/tinyobjloader)

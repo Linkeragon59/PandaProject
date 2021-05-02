@@ -2,7 +2,6 @@
 
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
-#include "VulkanCamera.h"
 
 namespace Render
 {

@@ -13,11 +13,7 @@ namespace Vulkan
 		std::vector<char> locReadFile(const std::string& aFilename)
 		{
 			std::ifstream file(aFilename, std::ios::ate | std::ios::binary);
-
-			if (!file.is_open())
-			{
-				throw std::runtime_error(std::string{ "Failed to read the file " } + aFilename + "!");
-			}
+			Assert(file.is_open(), "Failed to read the file %s", aFilename.c_str());
 
 			size_t fileSize = (size_t)file.tellg();
 			std::vector<char> buffer(fileSize);

@@ -63,7 +63,7 @@ namespace glTF
 
 		size_t vertexBufferSize = vertexBuffer.size() * sizeof(Mesh::Vertex);
 		size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
-		assert((vertexBufferSize > 0) && (indexBufferSize > 0));
+		Assert((vertexBufferSize > 0) && (indexBufferSize > 0));
 
 		Render::Vulkan::Buffer vertexStagingBuffer, indexStagingBuffer;
 
@@ -181,7 +181,7 @@ namespace glTF
 
 	void Model::SetupDescriptorPool()
 	{
-		assert(myNodeCount > 0);
+		Assert(myNodeCount > 0);
 
 		std::vector<VkDescriptorPoolSize> poolSizes{};
 		VkDescriptorPoolSize uboSize;

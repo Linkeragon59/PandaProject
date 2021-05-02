@@ -1,6 +1,6 @@
 #pragma once
 
-#define VK_CHECK_RESULT(X, Msg) if (X != VK_SUCCESS) { throw std::runtime_error(Msg); }
+#define VK_CHECK_RESULT(X, Msg) Verify((X == VK_SUCCESS), Msg)
 
 namespace Render
 {

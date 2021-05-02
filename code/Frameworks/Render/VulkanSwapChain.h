@@ -34,7 +34,7 @@ namespace Vulkan
 		void SetupFramebuffers();
 		void CreateSyncObjects();
 
-		void BuildCommandBuffers();
+		void BuildCommandBuffer(uint32_t anImageIndex);
 		void DrawFrame();
 
 		GLFWwindow* myWindow = nullptr;
@@ -54,14 +54,15 @@ namespace Vulkan
 
 		// One per swapchain image
 		std::vector<VkCommandBuffer> myCommandBuffers;
+		std::vector<bool> myCommandBuffersDirty;
 		std::vector<VkFramebuffer> myFramebuffers;
-		std::vector<VkFence> myImageFences;
 
-		// One per in flight image
+		// One per in flight frame
+		uint32_t myMaxInFlightFrames = 0;
+		uint32_t myCurrentInFlightFrame = 0;
 		std::vector<VkSemaphore> myImageAvailableSemaphores;
 		std::vector<VkSemaphore> myRenderFinishedSemaphores;
 		std::vector<VkFence> myInFlightFrameFences;
-		uint32_t myCurrentInFlightFrame = 0;
 	};
 }
 }

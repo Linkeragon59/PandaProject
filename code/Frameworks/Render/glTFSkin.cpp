@@ -50,7 +50,7 @@ namespace glTF
 			memcpy(mySSBO.myMappedData, myInverseBindMatrices.data(), ssboSize);
 		}
 
-		assert(myJoints.size() == myInverseBindMatrices.size());
+		Assert(myJoints.size() == myInverseBindMatrices.size());
 	}
 
 	void Skin::LoadEmpty()

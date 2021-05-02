@@ -6,6 +6,11 @@ namespace Render
 {
 namespace Vulkan
 {
+namespace Debug
+{
+	PFN_vkCmdDebugMarkerBeginEXT locCmdDebugMarkerBegin = nullptr;
+	PFN_vkCmdDebugMarkerEndEXT locCmdDebugMarkerEnd = nullptr;
+
 	void PopulateValidationLayers(std::vector<const char*>& anOutLayerList)
 	{
 		anOutLayerList.push_back("VK_LAYER_KHRONOS_validation");
@@ -15,6 +20,11 @@ namespace Vulkan
 	void PopulateDebugExtensions(std::vector<const char*>& anOutExtensionList)
 	{
 		anOutExtensionList.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	}
+
+	void PopulateDebugDeviceExtensions(std::vector<const char*>& anOutExtensionList)
+	{
+		anOutExtensionList.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
 	}
 
 	VkResult CreateDebugMessenger(
@@ -66,5 +76,32 @@ namespace Vulkan
 			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 		someOutInfo.pfnUserCallback = DebugMessengerCallback;
 	}
+
+	void SetupDebugMarkers(VkDevice aDevice)
+	{
+		locCmdDebugMarkerBegin = reinterpret_cast<PFN_vkCmdDebugMarkerBeginEXT>(vkGetDeviceProcAddr(aDevice, "vkCmdDebugMarkerBeginEXT"));
+		locCmdDebugMarkerEnd = reinterpret_cast<PFN_vkCmdDebugMarkerEndEXT>(vkGetDeviceProcAddr(aDevice, "vkCmdDebugMarkerEndEXT"));
+	}
+
+	void BeginRegion(VkCommandBuffer aCmdbuffer, const char* aMarkerName, glm::vec4 aColor)
+	{
+		if (locCmdDebugMarkerBegin)
+		{
+			VkDebugMarkerMarkerInfoEXT markerInfo = {};
+			markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_MARKER_MARKER_INFO_EXT;
+			memcpy(markerInfo.color, &aColor[0], sizeof(float) * 4);
+			markerInfo.pMarkerName = aMarkerName;
+			locCmdDebugMarkerBegin(aCmdbuffer, &markerInfo);
+		}
+	}
+
+	void EndRegion(VkCommandBuffer aCmdbuffer)
+	{
+		if (locCmdDebugMarkerEnd)
+		{
+			locCmdDebugMarkerEnd(aCmdbuffer);
+		}
+	}
+}
 }
 }

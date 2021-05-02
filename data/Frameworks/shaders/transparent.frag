@@ -34,5 +34,5 @@ void main ()
 		discard;
 	};
 
-	outColor = sampledColor * materialData.color;
+	outColor = inColor * sampledColor * materialData.color;
 }

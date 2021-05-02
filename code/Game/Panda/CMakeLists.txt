@@ -1,8 +1,17 @@
 cmake_minimum_required(VERSION 3.16)
 
-file(GLOB Headers *.h)
-file(GLOB Sources *.cpp)
-add_library(Panda STATIC ${Headers} ${Sources})
+add_library(Panda "")
+target_sources(Panda
+	PRIVATE
+		DummyGameObject.h
+		Map.h
+		PandaModule.h
+		Perlin.h
+		DummyGameObject.cpp
+		Map.cpp
+		PandaModule.cpp
+		Perlin.cpp
+)
 
 target_compile_features(Panda PRIVATE cxx_std_20)
 

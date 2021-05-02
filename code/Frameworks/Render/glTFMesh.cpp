@@ -33,7 +33,7 @@ namespace glTF
 				uint32_t numColorComponents = 0;
 
 				// Position attribute is required
-				assert(gltfPrimitive.attributes.find("POSITION") != gltfPrimitive.attributes.end());
+				Assert(gltfPrimitive.attributes.find("POSITION") != gltfPrimitive.attributes.end());
 				if (gltfPrimitive.attributes.find("POSITION") != gltfPrimitive.attributes.end())
 				{
 					const tinygltf::Accessor& accessor = aModel.accessors[gltfPrimitive.attributes.find("POSITION")->second];
@@ -133,7 +133,7 @@ namespace glTF
 				}
 				break;
 				default:
-					throw std::runtime_error("Index component type not supported");
+					Assert(false, "Index component type not supported");
 				}
 			}
 			

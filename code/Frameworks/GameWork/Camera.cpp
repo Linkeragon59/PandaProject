@@ -1,13 +1,8 @@
-#include "VulkanCamera.h"
-
-#include "VulkanHelpers.h"
-#include "VulkanRenderer.h"
+#include "Camera.h"
 
 #include "Input.h"
 
-namespace Render
-{
-namespace Vulkan
+namespace GameWork
 {
 	void Camera::Update()
 	{
@@ -28,19 +23,11 @@ namespace Vulkan
 		}
 		if (inputManager->PollRawInput(Input::RawInput::MouseMiddle) == Input::RawInputState::Pressed)
 		{
-			Translate(glm::vec3(-deltaMouseX * 0.01f, -deltaMouseY * 0.01f, 0.0f));
+			Translate(glm::vec3(-deltaMouseX * 0.01f, deltaMouseY * 0.01f, 0.0f));
 		}
 
 		prevMouseX = mouseX;
 		prevMouseY = mouseY;
-		/*if (inputManager->PollRawInput(Input::RawInput::KeyW) == Input::RawInputState::Pressed)
-			myPosition += myDirection * 0.1f;
-		else if (inputManager->PollRawInput(Input::RawInput::KeyS) == Input::RawInputState::Pressed)
-			myPosition -= myDirection * 0.1f;
-
-		glm::mat4 view = glm::lookAt(myPosition, myPosition + myDirection, glm::vec3(0.0f, 0.0f, 1.0f));
-		glm::mat4 proj = glm::perspective(glm::radians(45.0f), 800.f / 600.f, 0.1f, 10.0f);
-		proj[1][1] *= -1; // adapt calculation for Vulkan*/
 	}
 
 	Camera::Camera()
@@ -49,7 +36,7 @@ namespace Vulkan
 		inputManager->AddScrollInputCallback([this](double aX, double aY) {
 			(void)aX;
 			Translate(glm::vec3(0.0f, 0.0f, (float)aY * 0.3f));
-		});
+			});
 	}
 
 	Camera::~Camera()
@@ -80,11 +67,6 @@ namespace Vulkan
 		UpdateViewMatrix();
 	}
 
-	void Camera::GetPosition(glm::vec3& anOutPosition) const
-	{
-		anOutPosition = myPosition;
-	}
-
 	void Camera::GetViewMatrix(glm::mat4& anOutMatrix) const
 	{
 		anOutMatrix = myView;
@@ -112,16 +94,15 @@ namespace Vulkan
 		rotationMatrix = glm::rotate(rotationMatrix, glm::radians(myRotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 
 		glm::vec3 translation = myPosition;
-		translation.y *= -1.0f;
 		glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translation);
 
-		myView = translationMatrix * rotationMatrix;
+		//myView = translationMatrix * rotationMatrix;
+		myView = rotationMatrix * translationMatrix;
 	}
 
 	void Camera::UpdatePerspectiveMatrix()
 	{
 		myPerspective = glm::perspective(glm::radians(myFov), myAspectRatio, myZNear, myZFar);
-		myPerspective[1][1] *= -1.0f;
+		myPerspective[1][1] *= -1.0f; // Adapt for Vulkan
 	}
-}
 }

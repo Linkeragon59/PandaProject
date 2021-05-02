@@ -25,7 +25,7 @@ namespace glTF
 				const tinygltf::BufferView& bufferView = aModel.bufferViews[accessor.bufferView];
 				const tinygltf::Buffer& buffer = aModel.buffers[bufferView.buffer];
 				const void* dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
-				assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+				Assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 
 				const float* buf = static_cast<const float*>(dataPtr);
 				for (size_t index = 0; index < accessor.count; index++)
@@ -48,7 +48,7 @@ namespace glTF
 				const tinygltf::BufferView& bufferView = aModel.bufferViews[accessor.bufferView];
 				const tinygltf::Buffer& buffer = aModel.buffers[bufferView.buffer];
 				const void* dataPtr = &buffer.data[accessor.byteOffset + bufferView.byteOffset];
-				assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
+				Assert(accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT);
 
 				switch (accessor.type)
 				{
@@ -71,7 +71,7 @@ namespace glTF
 				}
 				break;
 				default:
-					throw std::runtime_error("AnimationSampler output format not supported yet");
+					Assert(false, "AnimationSampler output format not supported yet");
 				}
 			}
 		}
@@ -89,7 +89,7 @@ namespace glTF
 			else if (gltfChannel.target_path == "scale")
 				myChannels[i].myPath = AnimationChannel::Path::SCALE;
 			else
-				throw std::runtime_error("AnimationChannel not supported yet");
+				Assert(false, "AnimationChannel not supported yet");
 
 			myChannels[i].mySamplerIndex = gltfChannel.sampler;
 			myChannels[i].myNode = aContainer->GetNodeByIndex(gltfChannel.target_node);
@@ -112,7 +112,7 @@ namespace glTF
 				if ((myCurrentTime >= sampler.myInputTimes[i]) && (myCurrentTime <= sampler.myInputTimes[i + 1]))
 				{
 					float u = (myCurrentTime - sampler.myInputTimes[i]) / (sampler.myInputTimes[i + 1] - sampler.myInputTimes[i]);
-					assert(u >= 0.0f && u <= 1.0f);
+					Assert(u >= 0.0f && u <= 1.0f);
 					
 					switch (channel.myPath)
 					{

@@ -1,11 +1,11 @@
 #include "VulkanRenderer.h"
 
+#include "RenderFacade.h"
+
 #include "VulkanHelpers.h"
 #include "VulkanDebugMessenger.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
-
-#include "VulkanCamera.h"
 
 #include <GLFW/glfw3.h>
 
@@ -24,18 +24,50 @@ namespace Vulkan
 #endif
 	}
 
-	Renderer* Renderer::ourInstance = nullptr;
-
-	void Renderer::CreateInstance()
+	Renderer* Renderer::GetInstance()
 	{
-		assert(!ourInstance);
-		new Renderer();
+		return Facade::GetInstance()->GetVulkanRenderer();
 	}
 
-	void Renderer::DestroyInstance()
+	Renderer::Renderer()
 	{
-		assert(ourInstance);
-		delete ourInstance;
+		CreateVkInstance();
+
+		if (locEnableValidationLayers)
+		{
+			VkDebugUtilsMessengerCreateInfoEXT createInfo;
+			Debug::FillDebugMessengerCreateInfo(createInfo);
+			VK_CHECK_RESULT(Debug::CreateDebugMessenger(myVkInstance, &createInfo, nullptr, &myDebugMessenger), "Couldn't create a debug messenger!");
+		}
+
+		CreateDevice();
+
+		if (locEnableValidationLayers)
+			Debug::SetupDebugMarkers(myDevice->myLogicalDevice);
+	}
+
+	Renderer::~Renderer()
+	{
+		delete myDevice;
+
+		if (locEnableValidationLayers)
+			Debug::DestroyDebugMessenger(myVkInstance, myDebugMessenger, nullptr);
+
+		vkDestroyInstance(myVkInstance, nullptr);
+	}
+
+	void Renderer::Init()
+	{
+		SetupEmptyTexture();
+
+		DeferredPipeline::SetupDescriptorSetLayouts();
+	}
+
+	void Renderer::Finalize()
+	{
+		DeferredPipeline::DestroyDescriptorSetLayouts();
+
+		myMissingTexture.Destroy();
 	}
 
 	void Renderer::OnWindowOpened(GLFWwindow* aWindow)
@@ -59,8 +91,6 @@ namespace Vulkan
 
 	void Renderer::Update()
 	{
-		myCamera->Update();
-
 		for (uint32_t i = 0; i < (uint32_t)mySwapChains.size(); ++i)
 		{
 			mySwapChains[i]->Update();
@@ -92,63 +122,21 @@ namespace Vulkan
 		return myDevice->myGraphicsCommandPool;
 	}
 
-	Renderer::Renderer()
-	{
-		CreateVkInstance();
-
-		if (locEnableValidationLayers)
-			SetupDebugMessenger();
-
-		CreateDevice();
-
-		ourInstance = this;
-
-		SetupEmptyTexture();
-
-		DeferredPipeline::SetupDescriptorSetLayouts();
-
-		myCamera = new Camera();
-		myCamera->SetPosition(glm::vec3(0.0f, 0.75f, -2.0f));
-		myCamera->SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		myCamera->SetPerspective(800.0f / 600.0f, 60.0f, 0.1f, 256.0f);
-	}
-
-	Renderer::~Renderer()
-	{
-		delete myCamera;
-		myCamera = nullptr;
-
-		DeferredPipeline::DestroyDescriptorSetLayouts();
-
-		myMissingTexture.Destroy();
-
-		ourInstance = nullptr;
-
-		delete myDevice;
-
-		if (locEnableValidationLayers)
-			DestroyDebugMessenger(myVkInstance, myDebugMessenger, nullptr);
-
-		vkDestroyInstance(myVkInstance, nullptr);
-	}
-
 	void Renderer::CreateVkInstance()
 	{
 		std::vector<const char*> layers;
 		if (locEnableValidationLayers)
-			PopulateValidationLayers(layers);
+			Debug::PopulateValidationLayers(layers);
 
-		if (!CheckInstanceLayersSupport(layers))
-			throw std::runtime_error("Validation layers are enabled but not supported!");
+		Verify(CheckInstanceLayersSupport(layers), "Validation layers are enabled but not supported!");
 
 		uint32_t glfwExtensionCount = 0;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 		if (locEnableValidationLayers)
-			PopulateDebugExtensions(extensions);
+			Debug::PopulateDebugExtensions(extensions);
 
-		if (!CheckInstanceExtensionsSupport(extensions))
-			throw std::runtime_error("Required extensions are not available!");
+		Verify(CheckInstanceExtensionsSupport(extensions), "Required extensions are not available!");
 
 		// TODO: Have more parameters when creating the RenderCore
 		VkApplicationInfo appInfo{};
@@ -166,7 +154,7 @@ namespace Vulkan
 		createInfo.pApplicationInfo = &appInfo;
 		if (locEnableValidationLayers)
 		{
-			FillDebugMessengerCreateInfo(debugCreateInfo);
+			Debug::FillDebugMessengerCreateInfo(debugCreateInfo);
 			createInfo.pNext = &debugCreateInfo;
 		}
 		createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
@@ -177,20 +165,11 @@ namespace Vulkan
 		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &myVkInstance), "Failed to create Vulkan instance!");
 	}
 
-	void Renderer::SetupDebugMessenger()
-	{
-		VkDebugUtilsMessengerCreateInfoEXT createInfo;
-		FillDebugMessengerCreateInfo(createInfo);
-
-		VK_CHECK_RESULT(CreateDebugMessenger(myVkInstance, &createInfo, nullptr, &myDebugMessenger), "Couldn't create a debug messenger!");
-	}
-
 	void Renderer::CreateDevice()
 	{
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(myVkInstance, &deviceCount, nullptr);
-		if (deviceCount == 0)
-			throw std::runtime_error("No physical device supporting Vulkan was found!");
+		Assert(deviceCount > 0, "No physical device supporting Vulkan was found!");
 
 		std::vector<VkPhysicalDevice> devices(deviceCount);
 		vkEnumeratePhysicalDevices(myVkInstance, &deviceCount, devices.data());
@@ -216,9 +195,11 @@ namespace Vulkan
 
 		std::vector<const char*> layers;
 		if (locEnableValidationLayers)
-			PopulateValidationLayers(layers);
+			Debug::PopulateValidationLayers(layers);
 
 		std::vector<const char*> extensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+		if (myDevice->SupportsExtension(VK_EXT_DEBUG_MARKER_EXTENSION_NAME))
+			extensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
 
 		myDevice->SetupLogicalDevice(
 			enabledFeatures,

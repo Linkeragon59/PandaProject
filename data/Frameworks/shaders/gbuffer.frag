@@ -30,7 +30,7 @@ void main()
 	// Write color attachments to avoid undefined behaviour (validation error)
 	outColor = vec4(0.0);
 	
-	// Store linearized depth in alpha component
+	// Store depth in alpha component
 	outPosition = vec4(inWorldPosition, linearDepth(gl_FragCoord.z));
 	
 	outNormal = vec4(normalize(inWorldNormal), 1.0);

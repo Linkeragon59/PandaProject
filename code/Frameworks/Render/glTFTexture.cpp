@@ -19,7 +19,7 @@ namespace glTF
 		const tinygltf::Image& gltfImage = aModel.images[anImageIndex];
 
 		// TODO: check anImage.component, if equal to 3 and the Vulkan device doesn't support RGB only, modify the buffer
-		assert(gltfImage.component == 4);
+		Assert(gltfImage.component == 4);
 		const unsigned char* buffer = &gltfImage.image[0];
 		VkDeviceSize bufferSize = gltfImage.image.size();
 

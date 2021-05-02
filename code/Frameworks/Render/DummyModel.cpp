@@ -93,12 +93,9 @@ namespace Vulkan
 		VkDeviceSize indexBufferSize = sizeof(uint32_t) * locIndices.size();
 		int texWidth, texHeight, texChannels;
 		stbi_uc* pixels = stbi_load(locTestTexture.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-		if (!pixels)
-		{
-			throw std::runtime_error("Failed to load an image!");
-		}
-		VkDeviceSize textureSize = static_cast<VkDeviceSize>(texWidth) * static_cast<VkDeviceSize>(texHeight) * 4;
+		Assert(pixels, "Failed to load an image!");
 
+		VkDeviceSize textureSize = static_cast<VkDeviceSize>(texWidth) * static_cast<VkDeviceSize>(texHeight) * 4;
 		Buffer vertexStaging, indexStaging, textureStaging;
 
 		vertexStaging.Create(vertexBufferSize,
