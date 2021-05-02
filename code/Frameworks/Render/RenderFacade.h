@@ -18,10 +18,10 @@ namespace Render
 		static Facade* GetInstance() { return ourInstance; }
 
 		// Render Camera
-		Camera* const GetRenderCamera() const { return myCamera; }
+		Camera* GetRenderCamera() const { return myCamera; }
 
 		// Vulkan Renderer
-		Vulkan::Renderer* const GetVulkanRenderer() const { return myVulkanRenderer; }
+		Vulkan::Renderer* GetVulkanRenderer() const { return myVulkanRenderer; }
 		// TODO: We may want to support adding/removing windows dynamically
 		// TODO: We may want to be able to init the Vulkan Renderer without a window
 		void InitVulkanRenderer(GLFWwindow* aWindow);

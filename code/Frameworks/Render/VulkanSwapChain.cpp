@@ -169,8 +169,6 @@ namespace Vulkan
 		if (capabilities.maxImageCount > 0)
 			imageCount = std::min(imageCount, capabilities.maxImageCount);
 
-		myMaxInFlightFrames = imageCount - 1;
-
 		VkSwapchainCreateInfoKHR createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		createInfo.surface = mySurface;
@@ -215,6 +213,8 @@ namespace Vulkan
 
 			VK_CHECK_RESULT(vkCreateImageView(myDevice, &viewCreateInfo, nullptr, &myImageViews[i]), "Failed to create an image view for the swap chain!");
 		}
+
+		myMaxInFlightFrames = imageCount - 1;
 	}
 
 	void SwapChain::SetupDepthStencil()
@@ -248,7 +248,7 @@ namespace Vulkan
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.commandPool = Renderer::GetInstance()->GetGraphicsCommandPool();
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = 3;
+		allocInfo.commandBufferCount = (uint32_t)myCommandBuffers.size();
 
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
 	}
