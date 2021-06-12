@@ -6,6 +6,10 @@
 #include "VulkanDebugMessenger.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
+#include "VulkanCamera.h"
+
+#include "DummyModel.h"
+#include "VulkanglTFModel.h"
 
 #include <GLFW/glfw3.h>
 
@@ -15,7 +19,7 @@ namespace Vulkan
 {
 	namespace
 	{
-		uint32_t locVulkanApiVersion = VK_API_VERSION_1_0;
+		uint locVulkanApiVersion = VK_API_VERSION_1_0;
 
 #if defined(_WINDOWS) && !defined(NDEBUG)
 		constexpr bool locEnableValidationLayers = true;
@@ -26,7 +30,7 @@ namespace Vulkan
 
 	Renderer* Renderer::GetInstance()
 	{
-		return Facade::GetInstance()->GetVulkanRenderer();
+		return Facade::GetInstance()->GetRenderer();
 	}
 
 	Renderer::Renderer()
@@ -61,10 +65,28 @@ namespace Vulkan
 		SetupEmptyTexture();
 
 		DeferredPipeline::SetupDescriptorSetLayouts();
+
+		myCamera = new Camera;
 	}
 
 	void Renderer::Finalize()
 	{
+		delete myCamera;
+		myCamera = nullptr;
+
+		for (uint i = 0; i < (uint)myModels.size(); ++i)
+		{
+			if (myModels[i])
+				delete myModels[i];
+		}
+		myModels.clear();
+
+		for (uint i = 0; i < (uint)myDespawningModels.size(); ++i)
+		{
+			delete myDespawningModels[i].myModel;
+		}
+		myDespawningModels.clear();
+
 		DeferredPipeline::DestroyDescriptorSetLayouts();
 
 		myMissingTexture.Destroy();
@@ -78,7 +100,7 @@ namespace Vulkan
 
 	void Renderer::OnWindowClosed(GLFWwindow* aWindow)
 	{
-		for (uint32_t i = 0; i < (uint32_t)mySwapChains.size(); ++i)
+		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
 		{
 			if (mySwapChains[i]->GetWindow() == aWindow)
 			{
@@ -89,9 +111,27 @@ namespace Vulkan
 		}
 	}
 
-	void Renderer::Update()
+	void Renderer::Update(const glm::mat4& aView, const glm::mat4& aProjection)
 	{
-		for (uint32_t i = 0; i < (uint32_t)mySwapChains.size(); ++i)
+		myCamera->Update(aView, aProjection);
+
+		// TODO: This is slow, need optimization
+		for (uint i = 0; i < (uint)myModels.size(); ++i)
+		{
+			if (myModels[i])
+				myModels[i]->Update();
+		}
+
+		for (int i = (int)myDespawningModels.size() - 1; i >= 0; --i)
+		{
+			if (--myDespawningModels[i].myFramesToKeep == 0)
+			{
+				delete myDespawningModels[i].myModel;
+				myDespawningModels.erase(myDespawningModels.begin() + i);
+			}
+		}
+
+		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
 		{
 			mySwapChains[i]->Update();
 		}
@@ -122,6 +162,47 @@ namespace Vulkan
 		return myDevice->myGraphicsCommandPool;
 	}
 
+	uint Renderer::SpawnModel(const std::string& aFilePath, const RenderData& aRenderData)
+	{
+		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
+		{
+			mySwapChains[i]->SetDirty();
+		}
+
+		Model* model = nullptr;
+		if (aFilePath.empty())
+		{
+			model = new DummyModel(aRenderData);
+		}
+		else
+		{
+			model = new glTF::Model(aFilePath, aRenderData);
+		}
+
+		for (uint i = 0; i < (uint)myModels.size(); ++i)
+		{
+			if (myModels[i] == nullptr)
+			{
+				myModels[i] = model;
+				return i;
+			}
+		}
+
+		myModels.push_back(model);
+		return (uint)myModels.size() - 1;
+	}
+
+	void Renderer::DespawnModel(uint anIndex)
+	{
+		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
+		{
+			mySwapChains[i]->SetDirty();
+		}
+
+		myDespawningModels.push_back({ myModels[anIndex], 3 });
+		myModels[anIndex] = nullptr;
+	}
+
 	void Renderer::CreateVkInstance()
 	{
 		std::vector<const char*> layers;
@@ -130,7 +211,7 @@ namespace Vulkan
 
 		Verify(CheckInstanceLayersSupport(layers), "Validation layers are enabled but not supported!");
 
-		uint32_t glfwExtensionCount = 0;
+		uint glfwExtensionCount = 0;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 		if (locEnableValidationLayers)
@@ -157,9 +238,9 @@ namespace Vulkan
 			Debug::FillDebugMessengerCreateInfo(debugCreateInfo);
 			createInfo.pNext = &debugCreateInfo;
 		}
-		createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
+		createInfo.enabledLayerCount = static_cast<uint>(layers.size());
 		createInfo.ppEnabledLayerNames = layers.data();
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+		createInfo.enabledExtensionCount = static_cast<uint>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
 
 		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &myVkInstance), "Failed to create Vulkan instance!");
@@ -167,7 +248,7 @@ namespace Vulkan
 
 	void Renderer::CreateDevice()
 	{
-		uint32_t deviceCount = 0;
+		uint deviceCount = 0;
 		vkEnumeratePhysicalDevices(myVkInstance, &deviceCount, nullptr);
 		Assert(deviceCount > 0, "No physical device supporting Vulkan was found!");
 

@@ -13,7 +13,7 @@ namespace Vulkan
 
 		~Image();
 
-		void Create(uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties);
+		void Create(uint aWidth, uint aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties);
 		VkImage myImage = VK_NULL_HANDLE;
 		VmaAllocation myAllocation = VK_NULL_HANDLE;
 		VkFormat myFormat = VK_FORMAT_UNDEFINED;

@@ -12,7 +12,7 @@ namespace Vulkan
 		Assert(!myImage);
 	}
 
-	void Image::Create(uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
+	void Image::Create(uint aWidth, uint aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
 	{
 		myDevice = Renderer::GetInstance()->GetDevice();
 		myAllocator = Renderer::GetInstance()->GetAllocator();

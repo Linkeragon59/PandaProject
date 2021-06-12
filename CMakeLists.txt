@@ -12,5 +12,6 @@ else()
     add_compile_options(-Wall -Wextra -pedantic -Werror)
 endif()
 
+add_subdirectory(code/Extern)
 add_subdirectory(code/Frameworks)
 add_subdirectory(code/Game)

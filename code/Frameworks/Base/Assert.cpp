@@ -17,7 +17,7 @@ void Abort(const char* aFile, int aLine, const char* aString, const char* aMsgFo
 		int len = std::vsnprintf(NULL, 0, aMsgFormat, vaCopy);
 		va_end(vaCopy);
 
-		message.reserve((size_t)len + 1);
+		message.resize((size_t)len + 1);
 		message[(size_t)len] = 0;
 		std::vsnprintf(message.data(), message.size(), aMsgFormat, vaArgs);
 		va_end(vaArgs);

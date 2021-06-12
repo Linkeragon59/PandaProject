@@ -1,9 +1,23 @@
 #include "Camera.h"
 
+#include "RenderFacade.h"
 #include "Input.h"
 
 namespace GameWork
 {
+	Camera::Camera()
+	{
+		Input::InputManager* inputManager = Input::InputManager::GetInstance();
+		inputManager->AddScrollInputCallback([this](double aX, double aY) {
+			(void)aX;
+			Translate(glm::vec3(0.0f, 0.0f, (float)aY * 0.3f));
+			});
+	}
+
+	Camera::~Camera()
+	{
+	}
+
 	void Camera::Update()
 	{
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
@@ -30,19 +44,6 @@ namespace GameWork
 		prevMouseY = mouseY;
 	}
 
-	Camera::Camera()
-	{
-		Input::InputManager* inputManager = Input::InputManager::GetInstance();
-		inputManager->AddScrollInputCallback([this](double aX, double aY) {
-			(void)aX;
-			Translate(glm::vec3(0.0f, 0.0f, (float)aY * 0.3f));
-			});
-	}
-
-	Camera::~Camera()
-	{
-	}
-
 	void Camera::SetPosition(const glm::vec3& aPosition)
 	{
 		myPosition = aPosition;
@@ -67,11 +68,6 @@ namespace GameWork
 		UpdateViewMatrix();
 	}
 
-	void Camera::GetViewMatrix(glm::mat4& anOutMatrix) const
-	{
-		anOutMatrix = myView;
-	}
-
 	void Camera::SetPerspective(float anAspectRatio, float aFov, float aZNear, float aZFar)
 	{
 		myAspectRatio = anAspectRatio;
@@ -79,11 +75,6 @@ namespace GameWork
 		myZNear = aZNear;
 		myZFar = aZFar;
 		UpdatePerspectiveMatrix();
-	}
-
-	void Camera::GetPerspectiveMatrix(glm::mat4& anOutMatrix) const
-	{
-		anOutMatrix = myPerspective;
 	}
 
 	void Camera::UpdateViewMatrix()
@@ -96,8 +87,8 @@ namespace GameWork
 		glm::vec3 translation = myPosition;
 		glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translation);
 
-		//myView = translationMatrix * rotationMatrix;
-		myView = rotationMatrix * translationMatrix;
+		myView = translationMatrix * rotationMatrix;
+		//myView = rotationMatrix * translationMatrix;
 	}
 
 	void Camera::UpdatePerspectiveMatrix()

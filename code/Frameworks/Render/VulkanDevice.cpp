@@ -15,13 +15,13 @@ namespace Vulkan
 		vkGetPhysicalDeviceFeatures(myPhysicalDevice, &myFeatures);
 		vkGetPhysicalDeviceMemoryProperties(myPhysicalDevice, &myMemoryProperties);
 
-		uint32_t queueFamilyCount;
+		uint queueFamilyCount;
 		vkGetPhysicalDeviceQueueFamilyProperties(myPhysicalDevice, &queueFamilyCount, nullptr);
 		Assert(queueFamilyCount > 0);
 		myQueueFamilyProperties.resize(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(myPhysicalDevice, &queueFamilyCount, myQueueFamilyProperties.data());
 
-		uint32_t extensionsCount = 0;
+		uint extensionsCount = 0;
 		vkEnumerateDeviceExtensionProperties(myPhysicalDevice, nullptr, &extensionsCount, nullptr);
 		if (extensionsCount > 0)
 		{
@@ -114,11 +114,11 @@ namespace Vulkan
 		// Logical Device creation
 		VkDeviceCreateInfo deviceCreateInfo{};
 		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+		deviceCreateInfo.queueCreateInfoCount = static_cast<uint>(queueCreateInfos.size());
 		deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(someEnabledLayers.size());
+		deviceCreateInfo.enabledLayerCount = static_cast<uint>(someEnabledLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = someEnabledLayers.data();
-		deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(someEnabledExtensions.size());
+		deviceCreateInfo.enabledExtensionCount = static_cast<uint>(someEnabledExtensions.size());
 		deviceCreateInfo.ppEnabledExtensionNames = someEnabledExtensions.data();
 		deviceCreateInfo.pEnabledFeatures = &myEnabledFeatures;
 
@@ -137,7 +137,7 @@ namespace Vulkan
 		}
 	}
 
-	void Device::SetupVmaAllocator(VkInstance anInstance, uint32_t aVulkanApiVersion)
+	void Device::SetupVmaAllocator(VkInstance anInstance, uint aVulkanApiVersion)
 	{
 		VmaAllocatorCreateInfo allocatorInfo{};
 		allocatorInfo.instance = anInstance;
@@ -148,13 +148,13 @@ namespace Vulkan
 		VK_CHECK_RESULT(vmaCreateAllocator(&allocatorInfo, &myVmaAllocator), "Could not create the vma allocator");
 	}
 
-	uint32_t Device::GetQueueFamilyIndex(VkQueueFlagBits someQueueTypes) const
+	uint Device::GetQueueFamilyIndex(VkQueueFlagBits someQueueTypes) const
 	{
 		if ((someQueueTypes & VK_QUEUE_COMPUTE_BIT) && !(someQueueTypes & VK_QUEUE_GRAPHICS_BIT))
 		{
 			// Dedicated queue for compute
 			// Try to find a queue family index that supports compute but not graphics
-			for (uint32_t i = 0; i < static_cast<uint32_t>(myQueueFamilyProperties.size()); ++i)
+			for (uint i = 0; i < static_cast<uint>(myQueueFamilyProperties.size()); ++i)
 			{
 				VkQueueFlags flags = myQueueFamilyProperties[i].queueFlags;
 				if ((flags & someQueueTypes) && !(flags & VK_QUEUE_GRAPHICS_BIT))
@@ -166,7 +166,7 @@ namespace Vulkan
 		{
 			// Dedicated queue for transfer
 			// Try to find a queue family index that supports transfer but not graphics and compute
-			for (uint32_t i = 0; i < static_cast<uint32_t>(myQueueFamilyProperties.size()); ++i)
+			for (uint i = 0; i < static_cast<uint>(myQueueFamilyProperties.size()); ++i)
 			{
 				VkQueueFlags flags = myQueueFamilyProperties[i].queueFlags;
 				if ((flags & someQueueTypes) && !(flags & VK_QUEUE_GRAPHICS_BIT) && !(flags & VK_QUEUE_COMPUTE_BIT))
@@ -175,7 +175,7 @@ namespace Vulkan
 		}
 
 		// For other queue types, return the first one to support the requested flags
-		for (uint32_t i = 0; i < static_cast<uint32_t>(myQueueFamilyProperties.size()); ++i)
+		for (uint i = 0; i < static_cast<uint>(myQueueFamilyProperties.size()); ++i)
 		{
 			if (myQueueFamilyProperties[i].queueFlags & someQueueTypes)
 				return i;

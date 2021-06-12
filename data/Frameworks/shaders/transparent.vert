@@ -1,12 +1,12 @@
 #version 450
 
-layout (set = 0, binding = 0) uniform UBOScene
+layout (set = 1, binding = 0) uniform UBOScene
 {
 	mat4 projection;
 	mat4 view;
 } uboScene;
 
-layout (set = 1, binding = 0) uniform UBOObject
+layout (set = 2, binding = 0) uniform UBOObject
 {
     mat4 model;
 } uboObject;

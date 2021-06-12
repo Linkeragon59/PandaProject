@@ -2,7 +2,6 @@
 
 #include "Module.h"
 #include "Camera.h"
-#include "RenderCamera.h"
 
 #include "Input.h"
 
@@ -35,8 +34,8 @@ namespace GameWork
 
 	namespace
 	{
-		const uint32_t locWindowWidth = 800;
-		const uint32_t locWindowHeight = 600;
+		const uint locWindowWidth = 1280;
+		const uint locWindowHeight = 720;
 	}
 
 	GameWork::GameWork()
@@ -57,23 +56,19 @@ namespace GameWork
 
 		ourInstance->Init();
 
-		try
-		{
-			Render::Facade::Create();
-			Render::Facade::GetInstance()->InitVulkanRenderer(ourInstance->myWindow);
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << e.what() << std::endl;
-			return false;
-		}
+		Render::Facade::Create();
+		Render::Facade::GetInstance()->InitRenderer(ourInstance->myWindow);
+
+		ourInstance->LoadTestAssets();
 
 		return true;
 	}
 
 	void GameWork::Destroy()
 	{
-		Render::Facade::GetInstance()->FinalizeVulkanRenderer(ourInstance->myWindow);
+		ourInstance->UnloadTestAssets();
+
+		Render::Facade::GetInstance()->FinalizeRenderer(ourInstance->myWindow);
 		Render::Facade::Destroy();
 
 		InputManager::GetInstance()->RemoveWindow(ourInstance->myWindow);
@@ -105,8 +100,8 @@ namespace GameWork
 			auto end = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<double, std::milli> elapsed = end - start;
 
-			//if (elapsed < oneFrame)
-			//	std::this_thread::sleep_for(oneFrame - elapsed);
+			if (elapsed < oneFrame)
+				std::this_thread::sleep_for(oneFrame - elapsed);
 		}
 	}
 
@@ -193,7 +188,21 @@ namespace GameWork
 			inputManager->PollMousePosition(mouseX, mouseY);
 			std::cout << " | Mouse position: " << mouseX << " : " << mouseY << std::endl;
 		}
+
+		RawInputState bState = inputManager->PollRawInput(RawInput::KeyB);
+		if (bState == RawInputState::Pressed)
+		{
+			std::cout << "B PRESSED" << std::endl;
+			LoadTestAssets();
+		}
 		
+		RawInputState cState = inputManager->PollRawInput(RawInput::KeyC);
+		if (cState == RawInputState::Pressed)
+		{
+			std::cout << "C PRESSED" << std::endl;
+			UnloadTestAssets();
+		}
+
 		bool escapePressed = inputManager->PollRawInput(RawInput::KeyEscape) == RawInputState::Pressed;
 
 		// Update Modules
@@ -204,22 +213,63 @@ namespace GameWork
 
 		myCamera->Update();
 
-		// Update Props
-
 		// Update Render
-		try
-		{
-			Render::Camera* renderCamera = Render::Facade::GetInstance()->GetRenderCamera();
-			myCamera->GetViewMatrix(renderCamera->myView);
-			myCamera->GetPerspectiveMatrix(renderCamera->myPerspective);
-
-			Render::Facade::GetInstance()->UpdateVulkanRenderer();
-		}
-		catch (const std::exception& e)
-		{
-			std::cerr << e.what() << std::endl;
-		}
+		Render::Facade::GetInstance()->UpdateRenderer(myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
 
 		return !escapePressed;
+	}
+
+	void GameWork::LoadTestAssets()
+	{
+		if (myCastleModel != UINT_MAX)
+			return;
+
+		{
+			Render::RenderData data;
+			myCastleModel = Render::Facade::GetInstance()->SpawnModel("Frameworks/models/samplebuilding.gltf", data);
+		}
+
+		{
+			Render::RenderData data;
+			data.myIsTransparent = true;
+			myCastleWindows = Render::Facade::GetInstance()->SpawnModel("Frameworks/models/samplebuilding_glass.gltf", data);
+		}
+
+		{
+			Render::RenderData data;
+			data.myMatrix[3][3] = 50.0f;
+			myAvocadoModel = Render::Facade::GetInstance()->SpawnModel("Frameworks/models/Avocado/Avocado.gltf", data);
+		}
+
+		{
+			Render::RenderData data;
+			data.myIsAnimated = true;
+			myAnimatedModel = Render::Facade::GetInstance()->SpawnModel("Frameworks/models/CesiumMan/CesiumMan.gltf", data);
+		}
+
+		{
+			Render::RenderData data;
+			data.myMatrix[3][0] = 1.0f;
+			data.myMatrix[3][1] = 1.0f;
+			data.myMatrix[3][2] = -1.0f;
+			myDummyModel = Render::Facade::GetInstance()->SpawnModel("", data);
+		}
+	}
+
+	void GameWork::UnloadTestAssets()
+	{
+		if (myCastleModel == UINT_MAX)
+			return;
+
+		Render::Facade::GetInstance()->DespawnModel(myCastleModel);
+		myCastleModel = UINT_MAX;
+		Render::Facade::GetInstance()->DespawnModel(myCastleWindows);
+		myCastleWindows = UINT_MAX;
+		Render::Facade::GetInstance()->DespawnModel(myAvocadoModel);
+		myAvocadoModel = UINT_MAX;
+		Render::Facade::GetInstance()->DespawnModel(myAnimatedModel);
+		myAnimatedModel = UINT_MAX;
+		Render::Facade::GetInstance()->DespawnModel(myDummyModel);
+		myDummyModel = UINT_MAX;
 	}
 }

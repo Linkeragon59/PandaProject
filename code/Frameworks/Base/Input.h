@@ -15,6 +15,8 @@ namespace Input
         MouseEnd = MouseMiddle,
 
 		KeyA,
+		KeyB,
+		KeyC,
 		KeyD,
 		KeyI,
 		KeyS,

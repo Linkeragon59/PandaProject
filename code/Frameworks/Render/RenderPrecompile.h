@@ -1,13 +1,11 @@
 #pragma once
 
 #include "Assert.h"
+#include "Types.h"
 
 #include "vulkan/vulkan.h"
 #define VMA_ASSERT(expr) Verify((expr)) // workaround for Release builds
 #include "vk_mem_alloc.h"
-
-#include <vector>
-#include <array>
 
 #pragma warning(push)
 #pragma warning(disable:4201)

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 struct GLFWwindow;
 
 namespace GameWork
@@ -36,5 +34,13 @@ namespace GameWork
 		std::vector<Module*> myModules;
 
 		Camera* myCamera = nullptr;
+
+		void LoadTestAssets();
+		void UnloadTestAssets();
+		uint myCastleModel = UINT_MAX;
+		uint myCastleWindows = UINT_MAX;
+		uint myAvocadoModel = UINT_MAX;
+		uint myAnimatedModel = UINT_MAX;
+		uint myDummyModel = UINT_MAX;
 	};
 }

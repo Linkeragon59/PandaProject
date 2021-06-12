@@ -20,9 +20,9 @@ namespace Vulkan
 			const std::vector<const char*>& someEnabledExtensions,
 			VkQueueFlags someRequestedQueueTypes);
 
-		void SetupVmaAllocator(VkInstance anInstance, uint32_t aVulkanAPIVersion);
+		void SetupVmaAllocator(VkInstance anInstance, uint aVulkanAPIVersion);
 
-		uint32_t GetQueueFamilyIndex(VkQueueFlagBits someQueueTypes) const;
+		uint GetQueueFamilyIndex(VkQueueFlagBits someQueueTypes) const;
 
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures);
 		VkFormat FindBestDepthFormat();
@@ -38,9 +38,9 @@ namespace Vulkan
 		VkPhysicalDeviceFeatures myEnabledFeatures{};
 		struct QueueFamilyIndices
 		{
-			std::optional<uint32_t> myGraphicsFamily;
-			std::optional<uint32_t> myComputeFamily;
-			std::optional<uint32_t> myTransferFamily;
+			std::optional<uint> myGraphicsFamily;
+			std::optional<uint> myComputeFamily;
+			std::optional<uint> myTransferFamily;
 		} myQueueFamilyIndices;
 
 		VkQueue myGraphicsQueue = VK_NULL_HANDLE;

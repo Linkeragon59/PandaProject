@@ -28,15 +28,15 @@ namespace Vulkan
 
 	bool CheckInstanceLayersSupport(const std::vector<const char*>& someLayers)
 	{
-		uint32_t layerCount = 0;
+		uint layerCount = 0;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 		std::vector<VkLayerProperties> availableLayers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-		for (uint32_t i = 0, e = static_cast<uint32_t>(someLayers.size()); i < e; ++i)
+		for (uint i = 0, e = static_cast<uint>(someLayers.size()); i < e; ++i)
 		{
 			bool supported = false;
-			for (uint32_t j = 0; j < layerCount; ++j)
+			for (uint j = 0; j < layerCount; ++j)
 			{
 				if (strcmp(someLayers[i], availableLayers[j].layerName) == 0)
 				{
@@ -52,15 +52,15 @@ namespace Vulkan
 
 	bool CheckInstanceExtensionsSupport(const std::vector<const char*>& someExtensions)
 	{
-		uint32_t extensionCount = 0;
+		uint extensionCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, availableExtensions.data());
 
-		for (uint32_t i = 0, e = static_cast<uint32_t>(someExtensions.size()); i < e; ++i)
+		for (uint i = 0, e = static_cast<uint>(someExtensions.size()); i < e; ++i)
 		{
 			bool available = false;
-			for (uint32_t j = 0; j < extensionCount; ++j)
+			for (uint j = 0; j < extensionCount; ++j)
 			{
 				if (strcmp(someExtensions[i], availableExtensions[j].extensionName) == 0)
 				{
@@ -83,7 +83,7 @@ namespace Vulkan
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = shaderCode.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderCode.data());
+		createInfo.pCode = reinterpret_cast<const uint*>(shaderCode.data());
 
 		VK_CHECK_RESULT(vkCreateShaderModule(Renderer::GetInstance()->GetDevice(), &createInfo, nullptr, &shaderModule), "Failed to create a module shader!");
 

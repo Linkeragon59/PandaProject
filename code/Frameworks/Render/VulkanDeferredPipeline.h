@@ -24,14 +24,11 @@ namespace Vulkan
 		static void SetupDescriptorSetLayouts();
 		static void DestroyDescriptorSetLayouts();
 
-		static VkDescriptorSetLayout ourGBufferDescriptorSetLayout;
 		static VkDescriptorSetLayout ourLightingDescriptorSetLayout;
 		static VkDescriptorSetLayout ourTransparentDescriptorSetLayout;
 
-		static VkDescriptorSetLayout ourDescriptorSetLayoutPerObject;
-		static VkDescriptorSetLayout ourDescriptorSetLayoutPerImage;
-		static VkDescriptorSetLayout ourDescriptorSetLayoutPerMaterial;
-		static VkDescriptorSetLayout ourDescriptorSetLayoutPerSkin;
+		static VkDescriptorSetLayout ourCameraDescriptorSetLayout;
+		static VkDescriptorSetLayout ourObjectDescriptorSetLayout;
 
 		VkDevice myDevice = VK_NULL_HANDLE;
 
@@ -55,9 +52,9 @@ namespace Vulkan
 			glm::vec4 myWeight;
 			glm::vec4 myTangent;
 
-			static VkVertexInputBindingDescription GetBindingDescription(uint32_t aBinding = 0);
-			static VkVertexInputAttributeDescription GetAttributeDescription(VertexComponent aComponent, uint32_t aLocation = 0, uint32_t aBinding = 0);
-			static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions(const std::vector<VertexComponent> someComponents, uint32_t aBinding = 0);
+			static VkVertexInputBindingDescription GetBindingDescription(uint aBinding = 0);
+			static VkVertexInputAttributeDescription GetAttributeDescription(VertexComponent aComponent, uint aLocation = 0, uint aBinding = 0);
+			static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions(const std::vector<VertexComponent> someComponents, uint aBinding = 0);
 		};
 
 		struct ViewProjData
@@ -70,7 +67,7 @@ namespace Vulkan
 			glm::mat4 myModel;
 		};
 
-		static const uint32_t ourNumLights = 64;
+		static const uint ourNumLights = 64;
 		struct Light
 		{
 			glm::vec4 myPosition;
@@ -86,7 +83,6 @@ namespace Vulkan
 		LightData myLightsData;
 
 		// Per Scene UBOs
-		Buffer myViewProjUBO;
 		Buffer myLightsUBO;
 
 		Image myPositionAttachement;
@@ -104,14 +100,13 @@ namespace Vulkan
 		VkPipelineLayout myTransparentPipelineLayout = VK_NULL_HANDLE;
 
 		VkDescriptorPool myDescriptorPool = VK_NULL_HANDLE;
-		VkDescriptorSet myGBufferDescriptorSet = VK_NULL_HANDLE;
 		VkDescriptorSet myLightingDescriptorSet = VK_NULL_HANDLE;
 		VkDescriptorSet myTransparentDescriptorSet = VK_NULL_HANDLE;
 
 	private:
 		void PrepareUBOs();
 
-		void UpdateViewProjUBO();
+		//void UpdateViewProjUBO();
 		void UpdateLightsUBO();
 		void SetupRandomLights();
 
@@ -129,17 +124,6 @@ namespace Vulkan
 
 		void SetupTransparentPipeline();
 		void DestroyTransparentPipeline();
-
-	// Temp
-	public:
-		void LoadTestAssets();
-		void UnloadTestAssets();
-		Render::glTF::Model* myCastleModel = nullptr;
-		Render::glTF::Model* myCastleWindows = nullptr;
-
-		Render::glTF::Model* myAvocadoModel = nullptr;
-		Render::glTF::Model* myAnimatedModel = nullptr;
-		DummyModel* myDummyModel = nullptr;
 	};
 }
 }

@@ -4,8 +4,9 @@
 #include "VulkanRenderer.h"
 #include "VulkanDevice.h"
 #include "VulkanDebugMessenger.h"
+#include "VulkanCamera.h"
 
-#include "glTFModel.h"
+#include "VulkanglTFModel.h"
 #include "DummyModel.h"
 
 #include <GLFW/glfw3.h>
@@ -40,11 +41,12 @@ namespace Vulkan
 		SetupDepthStencil();
 
 		myDeferredPipeline.Prepare(myExtent, myColorFormat, myDepthImage.myFormat);
+		myUIOverlay.Prepare(myDeferredPipeline.myRenderPass);
 
 		SetupCommandBuffers();
 		SetupFramebuffers();
 
-		for (uint32_t i = 0; i < (uint32_t)myCommandBuffers.size(); ++i)
+		for (uint i = 0; i < (uint)myCommandBuffers.size(); ++i)
 			BuildCommandBuffer(i);
 
 		CreateSyncObjects();
@@ -54,7 +56,7 @@ namespace Vulkan
 	{
 		vkDeviceWaitIdle(myDevice);
 
-		for (uint32_t i = 0; i < myMaxInFlightFrames; ++i)
+		for (uint i = 0; i < myMaxInFlightFrames; ++i)
 		{
 			vkDestroyFence(myDevice, myInFlightFrameFences[i], nullptr);
 			vkDestroySemaphore(myDevice, myRenderFinishedSemaphores[i], nullptr);
@@ -71,6 +73,7 @@ namespace Vulkan
 		myCommandBuffers.clear();
 		myCommandBuffersDirty.clear();
 
+		myUIOverlay.Destroy();
 		myDeferredPipeline.Destroy();
 
 		myDepthImage.Destroy();
@@ -101,7 +104,14 @@ namespace Vulkan
 	void SwapChain::Update()
 	{
 		myDeferredPipeline.Update();
+		myUIOverlay.Update(myExtent.width, myExtent.height);
 		DrawFrame();
+	}
+
+	void SwapChain::SetDirty()
+	{
+		for (uint i = 0; i < (uint)myCommandBuffers.size(); ++i)
+			myCommandBuffersDirty[i] = true;
 	}
 
 	void SwapChain::FramebufferResizedCallback(GLFWwindow* aWindow, int aWidth, int aHeight)
@@ -136,11 +146,11 @@ namespace Vulkan
 		{
 			int width = 0, height = 0;
 			glfwGetWindowSize(myWindow, &width, &height);
-			myExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, (uint32_t)width));
-			myExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, (uint32_t)height));
+			myExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, (uint)width));
+			myExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, (uint)height));
 		}
 
-		uint32_t formatCount = 0;
+		uint formatCount = 0;
 		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, mySurface, &formatCount, nullptr);
 		Assert(formatCount > 0);
 		std::vector<VkSurfaceFormatKHR> availableFormats(formatCount);
@@ -153,7 +163,7 @@ namespace Vulkan
 		}
 		myColorFormat = surfaceFormat.format;
 
-		uint32_t presentModeCount = 0;
+		uint presentModeCount = 0;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, mySurface, &presentModeCount, nullptr);
 		Assert(presentModeCount > 0);
 		std::vector<VkPresentModeKHR> availablePresentModes(presentModeCount);
@@ -165,7 +175,7 @@ namespace Vulkan
 				presentMode = availablePresentMode;
 		}
 
-		uint32_t imageCount = capabilities.minImageCount + 1;
+		uint imageCount = capabilities.minImageCount + 1;
 		if (capabilities.maxImageCount > 0)
 			imageCount = std::min(imageCount, capabilities.maxImageCount);
 
@@ -248,7 +258,7 @@ namespace Vulkan
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.commandPool = Renderer::GetInstance()->GetGraphicsCommandPool();
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = (uint32_t)myCommandBuffers.size();
+		allocInfo.commandBufferCount = (uint)myCommandBuffers.size();
 
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
 	}
@@ -261,7 +271,7 @@ namespace Vulkan
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		framebufferInfo.renderPass = myDeferredPipeline.myRenderPass;
-		framebufferInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		framebufferInfo.attachmentCount = static_cast<uint>(attachments.size());
 		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = myExtent.width;
 		framebufferInfo.height = myExtent.height;
@@ -299,7 +309,7 @@ namespace Vulkan
 		}
 	}
 
-	void SwapChain::BuildCommandBuffer(uint32_t anImageIndex)
+	void SwapChain::BuildCommandBuffer(uint anImageIndex)
 	{
 		VkCommandBufferBeginInfo cmdBufferBeginInfo{};
 		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -318,7 +328,7 @@ namespace Vulkan
 		renderPassBeginInfo.renderArea.offset.y = 0;
 		renderPassBeginInfo.renderArea.extent.width = myExtent.width;
 		renderPassBeginInfo.renderArea.extent.height = myExtent.height;
-		renderPassBeginInfo.clearValueCount = (uint32_t)clearValues.size();
+		renderPassBeginInfo.clearValueCount = (uint)clearValues.size();
 		renderPassBeginInfo.pClearValues = clearValues.data();
 
 		// Set target frame buffer
@@ -342,18 +352,23 @@ namespace Vulkan
 		scissor.offset = { 0, 0 };
 		vkCmdSetScissor(myCommandBuffers[anImageIndex], 0, 1, &scissor);
 
-		vkCmdSetViewport(myCommandBuffers[anImageIndex], 0, 1, &viewport);
+		Camera* camera = Renderer::GetInstance()->GetCamera();
 
 		// First sub pass
 		// Renders the components of the scene to the G-Buffer attachments
 		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 0: Deferred G-Buffer creation", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		{
 			vkCmdBindPipeline(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipeline);
-			vkCmdBindDescriptorSets(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipelineLayout, 0, 1, &myDeferredPipeline.myGBufferDescriptorSet, 0, NULL);
-			myDeferredPipeline.myCastleModel->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout);
-			myDeferredPipeline.myAvocadoModel->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout);
-			myDeferredPipeline.myAnimatedModel->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout);
-			myDeferredPipeline.myDummyModel->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout);
+
+			camera->BindViewProj(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout, 0);
+			for (uint i = 0, e = Renderer::GetInstance()->GetModelsCount(); i < e; ++i)
+			{
+				if (Model* model = Renderer::GetInstance()->GetModel(i))
+				{
+					if (!model->IsTransparent())
+						model->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout, 1);
+				}
+			}
 		}
 		Debug::EndRegion(myCommandBuffers[anImageIndex]);
 
@@ -362,8 +377,8 @@ namespace Vulkan
 		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 1: Deferred composition", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		{
 			vkCmdNextSubpass(myCommandBuffers[anImageIndex], VK_SUBPASS_CONTENTS_INLINE);
-
 			vkCmdBindPipeline(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipeline);
+
 			vkCmdBindDescriptorSets(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 0, 1, &myDeferredPipeline.myLightingDescriptorSet, 0, NULL);
 			vkCmdDraw(myCommandBuffers[anImageIndex], 4, 1, 0, 0);
 		}
@@ -374,10 +389,23 @@ namespace Vulkan
 		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 2: Forward transparency", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 		{
 			vkCmdNextSubpass(myCommandBuffers[anImageIndex], VK_SUBPASS_CONTENTS_INLINE);
-
 			vkCmdBindPipeline(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipeline);
+
 			vkCmdBindDescriptorSets(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipelineLayout, 0, 1, &myDeferredPipeline.myTransparentDescriptorSet, 0, NULL);
-			myDeferredPipeline.myCastleWindows->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myTransparentPipelineLayout);
+			camera->BindViewProj(myCommandBuffers[anImageIndex], myDeferredPipeline.myTransparentPipelineLayout, 1);
+			for (uint i = 0, e = Renderer::GetInstance()->GetModelsCount(); i < e; ++i)
+			{
+				if (Model* model = Renderer::GetInstance()->GetModel(i))
+				{
+					if (model->IsTransparent())
+						model->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myTransparentPipelineLayout, 2);
+				}
+			}
+		}
+		Debug::EndRegion(myCommandBuffers[anImageIndex]);
+		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 2b: UI Overlay", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		{
+			myUIOverlay.Draw(myCommandBuffers[anImageIndex]);
 		}
 		Debug::EndRegion(myCommandBuffers[anImageIndex]);
 
@@ -395,7 +423,7 @@ namespace Vulkan
 		VkSemaphore imageAvailableSemaphore = myImageAvailableSemaphores[myCurrentInFlightFrame];
 		VkSemaphore renderCompleteSemaphore = myRenderFinishedSemaphores[myCurrentInFlightFrame];
 
-		uint32_t imageIndex = 0;
+		uint imageIndex = 0;
 		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{

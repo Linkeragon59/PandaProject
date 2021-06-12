@@ -11,7 +11,7 @@ layout (set = 1, binding = 0) uniform UBOObject
     mat4 model;
 } uboObject;
 
-layout(std430, set = 4, binding = 0) readonly buffer JointMatrices {
+layout(std430, set = 1, binding = 1) readonly buffer JointMatrices {
 	mat4 jointMatrices[];
 };
 

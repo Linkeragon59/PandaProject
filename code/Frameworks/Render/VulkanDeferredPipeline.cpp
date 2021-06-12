@@ -2,10 +2,9 @@
 
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
-#include "RenderFacade.h"
-#include "RenderCamera.h"
+#include "VulkanCamera.h"
 
-#include "glTFModel.h"
+#include "VulkanglTFModel.h"
 #include "DummyModel.h"
 
 #include <random>
@@ -14,36 +13,15 @@ namespace Render
 {
 namespace Vulkan
 {
-	VkDescriptorSetLayout DeferredPipeline::ourGBufferDescriptorSetLayout = VK_NULL_HANDLE;
 	VkDescriptorSetLayout DeferredPipeline::ourLightingDescriptorSetLayout = VK_NULL_HANDLE;
 	VkDescriptorSetLayout DeferredPipeline::ourTransparentDescriptorSetLayout = VK_NULL_HANDLE;
 
-	VkDescriptorSetLayout DeferredPipeline::ourDescriptorSetLayoutPerObject = VK_NULL_HANDLE;
-	VkDescriptorSetLayout DeferredPipeline::ourDescriptorSetLayoutPerImage = VK_NULL_HANDLE;
-	VkDescriptorSetLayout DeferredPipeline::ourDescriptorSetLayoutPerMaterial = VK_NULL_HANDLE;
-	VkDescriptorSetLayout DeferredPipeline::ourDescriptorSetLayoutPerSkin = VK_NULL_HANDLE;
+	VkDescriptorSetLayout DeferredPipeline::ourCameraDescriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorSetLayout DeferredPipeline::ourObjectDescriptorSetLayout = VK_NULL_HANDLE;
 
 	void DeferredPipeline::SetupDescriptorSetLayouts()
 	{
 		VkDevice device = Renderer::GetInstance()->GetDevice();
-
-		// GBuffer
-		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
-			// Binding 0 : ViewProj
-			bindings[0].binding = 0;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			bindings[0].descriptorCount = 1;
-			bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint32_t)bindings.size();
-			descriptorLayoutInfo.pBindings = bindings.data();
-			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourGBufferDescriptorSetLayout),
-				"Failed to create the GBuffer DescriptorSetLayout");
-		}
 
 		// Lighting
 		{
@@ -71,7 +49,7 @@ namespace Vulkan
 
 			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
 			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint32_t)bindings.size();
+			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
 			descriptorLayoutInfo.pBindings = bindings.data();
 			VK_CHECK_RESULT(
 				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourLightingDescriptorSetLayout),
@@ -80,31 +58,26 @@ namespace Vulkan
 
 		// Transparent
 		{
-			std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
-			// Binding 0 : ViewProj
+			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
+			// Binding 0 : Position attachment
 			bindings[0].binding = 0;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 			bindings[0].descriptorCount = 1;
-			bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-			// Binding 1 : Position attachment
-			bindings[1].binding = 1;
-			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			bindings[1].descriptorCount = 1;
-			bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
 			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint32_t)bindings.size();
+			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
 			descriptorLayoutInfo.pBindings = bindings.data();
 			VK_CHECK_RESULT(
 				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourTransparentDescriptorSetLayout),
 				"Failed to create the Transparent DescriptorSetLayout");
 		}
 
-		// Per Object
+		// Camera
 		{
 			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
-			// Binding 0 : Model
+			// Binding 0 : ViewProj
 			bindings[0].binding = 0;
 			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			bindings[0].descriptorCount = 1;
@@ -112,65 +85,44 @@ namespace Vulkan
 
 			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
 			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint32_t)bindings.size();
+			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
 			descriptorLayoutInfo.pBindings = bindings.data();
 			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourDescriptorSetLayoutPerObject),
-				"Failed to create the DescriptorSetLayout PerObject");
+				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourCameraDescriptorSetLayout),
+				"Failed to create the Camera DescriptorSetLayout");
 		}
 
-		// Per Image
+		// Object
 		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
-			// Binding 0 : Texture Sampler
+			std::array<VkDescriptorSetLayoutBinding, 4> bindings{};
+			// Binding 0 : Model
 			bindings[0].binding = 0;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			bindings[0].descriptorCount = 1;
-			bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint32_t)bindings.size();
-			descriptorLayoutInfo.pBindings = bindings.data();
-			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourDescriptorSetLayoutPerImage),
-				"Failed to create the DescriptorSetLayout PerImage");
-		}
-
-		// Per Material
-		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
-			// Binding 0 : Material
-			bindings[0].binding = 0;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			bindings[0].descriptorCount = 1;
-			bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint32_t)bindings.size();
-			descriptorLayoutInfo.pBindings = bindings.data();
-			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourDescriptorSetLayoutPerMaterial),
-				"Failed to create the DescriptorSetLayout PerMaterial");
-		}
-
-		// Per Skin
-		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
-			// Binding 0 : Joint Matrices
-			bindings[0].binding = 0;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			bindings[0].descriptorCount = 1;
 			bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			// Binding 1 : Joint Matrices
+			bindings[1].binding = 1;
+			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[1].descriptorCount = 1;
+			bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			// Binding 2 : Texture Sampler
+			bindings[2].binding = 2;
+			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			bindings[2].descriptorCount = 1;
+			bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			// Binding 3 : Material
+			bindings[3].binding = 3;
+			bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[3].descriptorCount = 1;
+			bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
 			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint32_t)bindings.size();
+			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
 			descriptorLayoutInfo.pBindings = bindings.data();
 			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourDescriptorSetLayoutPerSkin),
-				"Failed to create the DescriptorSetLayout PerSkin");
+				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourObjectDescriptorSetLayout),
+				"Failed to create the Object DescriptorSetLayout");
 		}
 	}
 
@@ -178,29 +130,20 @@ namespace Vulkan
 	{
 		VkDevice device = Renderer::GetInstance()->GetDevice();
 
-		vkDestroyDescriptorSetLayout(device, ourGBufferDescriptorSetLayout, nullptr);
-		ourGBufferDescriptorSetLayout = VK_NULL_HANDLE;
-
 		vkDestroyDescriptorSetLayout(device, ourLightingDescriptorSetLayout, nullptr);
 		ourLightingDescriptorSetLayout = VK_NULL_HANDLE;
 
 		vkDestroyDescriptorSetLayout(device, ourTransparentDescriptorSetLayout, nullptr);
 		ourTransparentDescriptorSetLayout = VK_NULL_HANDLE;
 
-		vkDestroyDescriptorSetLayout(device, ourDescriptorSetLayoutPerObject, nullptr);
-		ourDescriptorSetLayoutPerObject = VK_NULL_HANDLE;
+		vkDestroyDescriptorSetLayout(device, ourCameraDescriptorSetLayout, nullptr);
+		ourCameraDescriptorSetLayout = VK_NULL_HANDLE;
 
-		vkDestroyDescriptorSetLayout(device, ourDescriptorSetLayoutPerImage, nullptr);
-		ourDescriptorSetLayoutPerImage = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorSetLayout(device, ourDescriptorSetLayoutPerMaterial, nullptr);
-		ourDescriptorSetLayoutPerMaterial = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorSetLayout(device, ourDescriptorSetLayoutPerSkin, nullptr);
-		ourDescriptorSetLayoutPerSkin = VK_NULL_HANDLE;
+		vkDestroyDescriptorSetLayout(device, ourObjectDescriptorSetLayout, nullptr);
+		ourObjectDescriptorSetLayout = VK_NULL_HANDLE;
 	}
 
-	VkVertexInputBindingDescription DeferredPipeline::Vertex::GetBindingDescription(uint32_t aBinding /*= 0*/)
+	VkVertexInputBindingDescription DeferredPipeline::Vertex::GetBindingDescription(uint aBinding /*= 0*/)
 	{
 		VkVertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = aBinding;
@@ -209,7 +152,7 @@ namespace Vulkan
 		return bindingDescription;
 	}
 
-	VkVertexInputAttributeDescription DeferredPipeline::Vertex::GetAttributeDescription(DeferredPipeline::VertexComponent aComponent, uint32_t aLocation /*= 0*/, uint32_t aBinding /*= 0*/)
+	VkVertexInputAttributeDescription DeferredPipeline::Vertex::GetAttributeDescription(DeferredPipeline::VertexComponent aComponent, uint aLocation /*= 0*/, uint aBinding /*= 0*/)
 	{
 		VkVertexInputAttributeDescription attributeDescription{};
 		attributeDescription.location = aLocation;
@@ -248,11 +191,11 @@ namespace Vulkan
 		return attributeDescription;
 	}
 
-	std::vector<VkVertexInputAttributeDescription> DeferredPipeline::Vertex::GetAttributeDescriptions(const std::vector<DeferredPipeline::VertexComponent> someComponents, uint32_t aBinding /*= 0*/)
+	std::vector<VkVertexInputAttributeDescription> DeferredPipeline::Vertex::GetAttributeDescriptions(const std::vector<DeferredPipeline::VertexComponent> someComponents, uint aBinding /*= 0*/)
 	{
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 		attributeDescriptions.reserve(someComponents.size());
-		for (uint32_t i = 0; i < (uint32_t)someComponents.size(); ++i)
+		for (uint i = 0; i < (uint)someComponents.size(); ++i)
 			attributeDescriptions.push_back(GetAttributeDescription(someComponents[i], i, aBinding));
 		return attributeDescriptions;
 	}
@@ -274,23 +217,15 @@ namespace Vulkan
 		SetupGBufferPipeline();
 		SetupLightingPipeline();
 		SetupTransparentPipeline();
-
-		LoadTestAssets();
 	}
 
 	void DeferredPipeline::Update()
 	{
-		UpdateViewProjUBO();
 		UpdateLightsUBO();
-
-		myAnimatedModel->Update();
-		myDummyModel->Update();
 	}
 
 	void DeferredPipeline::Destroy()
 	{
-		UnloadTestAssets();
-
 		vkDestroyDescriptorPool(myDevice, myDescriptorPool, nullptr);
 		myDescriptorPool = VK_NULL_HANDLE;
 
@@ -300,39 +235,22 @@ namespace Vulkan
 
 		DestroyRenderPass();
 
-		myViewProjUBO.Destroy();
 		myLightsUBO.Destroy();
 	}
 
 	void DeferredPipeline::PrepareUBOs()
 	{
-		myViewProjUBO.Create(sizeof(ViewProjData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		myViewProjUBO.SetupDescriptor();
-		myViewProjUBO.Map();
-		
 		myLightsUBO.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myLightsUBO.SetupDescriptor();
 		myLightsUBO.Map();
-
-		UpdateViewProjUBO();
 
 		SetupRandomLights();
 		UpdateLightsUBO();
 	}
 
-	void DeferredPipeline::UpdateViewProjUBO()
-	{
-		const Camera* camera = Facade::GetInstance()->GetRenderCamera();
-		ViewProjData data;
-		data.myView = camera->myView;
-		data.myProjection = camera->myPerspective;
-		memcpy(myViewProjUBO.myMappedData, &data, sizeof(ViewProjData));
-	}
-
 	void DeferredPipeline::UpdateLightsUBO()
 	{
-		const Camera* camera = Facade::GetInstance()->GetRenderCamera();
-		glm::vec3 cameraPosition = camera->myView[3];
+		glm::vec3 cameraPosition = Renderer::GetInstance()->GetCamera()->GetView()[3];
 		myLightsData.myViewPos = glm::vec4(cameraPosition, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
 		memcpy(myLightsUBO.myMappedData, &myLightsData, sizeof(LightData));
 	}
@@ -350,7 +268,7 @@ namespace Vulkan
 
 		std::default_random_engine rndGen((unsigned int)time(nullptr));
 		std::uniform_real_distribution<float> rndDist(-10.0f, 10.0f);
-		std::uniform_int_distribution<uint32_t> rndCol(0, static_cast<uint32_t>(colors.size() - 1));
+		std::uniform_int_distribution<uint> rndCol(0, static_cast<uint>(colors.size() - 1));
 
 		for (Light& light : myLightsData.myLights)
 		{
@@ -509,11 +427,11 @@ namespace Vulkan
 
 		VkRenderPassCreateInfo renderPassInfo = {};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		renderPassInfo.attachmentCount = static_cast<uint>(attachments.size());
 		renderPassInfo.pAttachments = attachments.data();
-		renderPassInfo.subpassCount = static_cast<uint32_t>(subpassDescriptions.size());
+		renderPassInfo.subpassCount = static_cast<uint>(subpassDescriptions.size());
 		renderPassInfo.pSubpasses = subpassDescriptions.data();
-		renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		renderPassInfo.dependencyCount = static_cast<uint>(dependencies.size());
 		renderPassInfo.pDependencies = dependencies.data();
 
 		VK_CHECK_RESULT(vkCreateRenderPass(myDevice, &renderPassInfo, nullptr, &myRenderPass), "Failed to create the render pass!");
@@ -533,41 +451,21 @@ namespace Vulkan
 	{
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = 3; // GBuffer, Lighting, Transparent
+		poolSizes[0].descriptorCount = 1; //  1 - Lighting
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 		poolSizes[1].descriptorCount = 4; //  3 - Lighting, 1 - Transparent
 
 		VkDescriptorPoolCreateInfo descriptorPoolInfo{};
 		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descriptorPoolInfo.poolSizeCount = (uint32_t)poolSizes.size();
+		descriptorPoolInfo.poolSizeCount = (uint)poolSizes.size();
 		descriptorPoolInfo.pPoolSizes = poolSizes.data();
-		descriptorPoolInfo.maxSets = 3; // GBuffer, Lighting, Transparent
+		descriptorPoolInfo.maxSets = 2; // Lighting, Transparent
 
 		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
 	}
 
 	void DeferredPipeline::SetupDescriptorSets()
 	{
-		// GBuffer
-		{
-			std::array<VkDescriptorSetLayout, 1> layouts = { ourGBufferDescriptorSetLayout };
-			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
-			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
-			descriptorSetAllocateInfo.pSetLayouts = layouts.data();
-			descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)layouts.size();
-			VK_CHECK_RESULT(vkAllocateDescriptorSets(myDevice, &descriptorSetAllocateInfo, &myGBufferDescriptorSet), "Failed to create the GBuffer DescriptorSet");
-
-			std::array<VkWriteDescriptorSet, 1> writeDescriptorSets{};
-			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = myGBufferDescriptorSet;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSets[0].dstBinding = 0;
-			writeDescriptorSets[0].pBufferInfo = &myViewProjUBO.myDescriptor;
-			writeDescriptorSets[0].descriptorCount = 1;
-			vkUpdateDescriptorSets(myDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
-		}
-
 		// Lighting
 		{
 			std::array<VkDescriptorSetLayout, 1> layouts = { ourLightingDescriptorSetLayout };
@@ -575,7 +473,7 @@ namespace Vulkan
 			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
 			descriptorSetAllocateInfo.pSetLayouts = layouts.data();
-			descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)layouts.size();
+			descriptorSetAllocateInfo.descriptorSetCount = (uint)layouts.size();
 			VK_CHECK_RESULT(vkAllocateDescriptorSets(myDevice, &descriptorSetAllocateInfo, &myLightingDescriptorSet), "Failed to create the node descriptor set");
 
 			std::array<VkWriteDescriptorSet, 4> writeDescriptorSets{};
@@ -603,7 +501,7 @@ namespace Vulkan
 			writeDescriptorSets[3].dstBinding = 3;
 			writeDescriptorSets[3].pBufferInfo = &myLightsUBO.myDescriptor;
 			writeDescriptorSets[3].descriptorCount = 1;
-			vkUpdateDescriptorSets(myDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
+			vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
 		}
 
 		// Transparent
@@ -613,38 +511,29 @@ namespace Vulkan
 			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
 			descriptorSetAllocateInfo.pSetLayouts = layouts.data();
-			descriptorSetAllocateInfo.descriptorSetCount = (uint32_t)layouts.size();
+			descriptorSetAllocateInfo.descriptorSetCount = (uint)layouts.size();
 			VK_CHECK_RESULT(vkAllocateDescriptorSets(myDevice, &descriptorSetAllocateInfo, &myTransparentDescriptorSet), "Failed to create the node descriptor set");
 
-			std::array<VkWriteDescriptorSet, 2> writeDescriptorSets{};
+			std::array<VkWriteDescriptorSet, 1> writeDescriptorSets{};
 			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSets[0].dstSet = myTransparentDescriptorSet;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 			writeDescriptorSets[0].dstBinding = 0;
-			writeDescriptorSets[0].pBufferInfo = &myViewProjUBO.myDescriptor;
+			writeDescriptorSets[0].pImageInfo = &myPositionAttachement.myDescriptor;
 			writeDescriptorSets[0].descriptorCount = 1;
-			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[1].dstSet = myTransparentDescriptorSet;
-			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			writeDescriptorSets[1].dstBinding = 1;
-			writeDescriptorSets[1].pImageInfo = &myPositionAttachement.myDescriptor;
-			writeDescriptorSets[1].descriptorCount = 1;
-			vkUpdateDescriptorSets(myDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
+			vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
 		}
 	}
 
 	void DeferredPipeline::SetupGBufferPipeline()
 	{
-		std::array<VkDescriptorSetLayout, 5> descriptorSetLayouts = {
-			ourGBufferDescriptorSetLayout,
-			ourDescriptorSetLayoutPerObject,
-			ourDescriptorSetLayoutPerImage,
-			ourDescriptorSetLayoutPerMaterial,
-			ourDescriptorSetLayoutPerSkin
+		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
+			ourCameraDescriptorSetLayout,
+			ourObjectDescriptorSetLayout
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutCreateInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
+		pipelineLayoutCreateInfo.setLayoutCount = (uint)descriptorSetLayouts.size();
 		pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
 		pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 
@@ -681,7 +570,7 @@ namespace Vulkan
 		vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertexInputStateInfo.vertexBindingDescriptionCount = 1;
 		vertexInputStateInfo.pVertexBindingDescriptions = &bindingDescription;
-		vertexInputStateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+		vertexInputStateInfo.vertexAttributeDescriptionCount = static_cast<uint>(attributeDescriptions.size());
 		vertexInputStateInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
@@ -729,18 +618,18 @@ namespace Vulkan
 		VkPipelineColorBlendStateCreateInfo colorBlendState{};
 		colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		colorBlendState.logicOpEnable = VK_FALSE;
-		colorBlendState.attachmentCount = (uint32_t)blendAttachmentStates.size();
+		colorBlendState.attachmentCount = (uint)blendAttachmentStates.size();
 		colorBlendState.pAttachments = blendAttachmentStates.data();
 
 		std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 		VkPipelineDynamicStateCreateInfo dynamicState{};
 		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 		dynamicState.pDynamicStates = dynamicStateEnables.data();
-		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
+		dynamicState.dynamicStateCount = static_cast<uint>(dynamicStateEnables.size());
 
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = (uint32_t)shaderStages.size();
+		pipelineInfo.stageCount = (uint)shaderStages.size();
 		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputStateInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssemblyState;
@@ -776,10 +665,12 @@ namespace Vulkan
 
 	void DeferredPipeline::SetupLightingPipeline()
 	{
-		std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = { ourLightingDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
+			ourLightingDescriptorSetLayout
+		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutCreateInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
+		pipelineLayoutCreateInfo.setLayoutCount = (uint)descriptorSetLayouts.size();
 		pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
 		pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 
@@ -849,18 +740,18 @@ namespace Vulkan
 		VkPipelineColorBlendStateCreateInfo colorBlendState{};
 		colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		colorBlendState.logicOpEnable = VK_FALSE;
-		colorBlendState.attachmentCount = (uint32_t)blendAttachmentStates.size();
+		colorBlendState.attachmentCount = (uint)blendAttachmentStates.size();
 		colorBlendState.pAttachments = blendAttachmentStates.data();
 
 		std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 		VkPipelineDynamicStateCreateInfo dynamicState{};
 		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 		dynamicState.pDynamicStates = dynamicStateEnables.data();
-		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
+		dynamicState.dynamicStateCount = static_cast<uint>(dynamicStateEnables.size());
 
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = (uint32_t)shaderStages.size();
+		pipelineInfo.stageCount = (uint)shaderStages.size();
 		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputStateInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssemblyState;
@@ -896,16 +787,14 @@ namespace Vulkan
 
 	void DeferredPipeline::SetupTransparentPipeline()
 	{
-		std::array<VkDescriptorSetLayout, 5> descriptorSetLayouts = {
+		std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = {
 			ourTransparentDescriptorSetLayout,
-			ourDescriptorSetLayoutPerObject,
-			ourDescriptorSetLayoutPerImage,
-			ourDescriptorSetLayoutPerMaterial,
-			ourDescriptorSetLayoutPerSkin
+			ourCameraDescriptorSetLayout,
+			ourObjectDescriptorSetLayout
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutCreateInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
+		pipelineLayoutCreateInfo.setLayoutCount = (uint)descriptorSetLayouts.size();
 		pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
 		pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 
@@ -939,7 +828,7 @@ namespace Vulkan
 		vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertexInputStateInfo.vertexBindingDescriptionCount = 1;
 		vertexInputStateInfo.pVertexBindingDescriptions = &bindingDescription;
-		vertexInputStateInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+		vertexInputStateInfo.vertexAttributeDescriptionCount = static_cast<uint>(attributeDescriptions.size());
 		vertexInputStateInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
@@ -987,18 +876,18 @@ namespace Vulkan
 		VkPipelineColorBlendStateCreateInfo colorBlendState{};
 		colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		colorBlendState.logicOpEnable = VK_FALSE;
-		colorBlendState.attachmentCount = (uint32_t)blendAttachmentStates.size();
+		colorBlendState.attachmentCount = (uint)blendAttachmentStates.size();
 		colorBlendState.pAttachments = blendAttachmentStates.data();
 
 		std::vector<VkDynamicState> dynamicStateEnables = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 		VkPipelineDynamicStateCreateInfo dynamicState{};
 		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 		dynamicState.pDynamicStates = dynamicStateEnables.data();
-		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
+		dynamicState.dynamicStateCount = static_cast<uint>(dynamicStateEnables.size());
 
 		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipelineInfo.stageCount = (uint32_t)shaderStages.size();
+		pipelineInfo.stageCount = (uint)shaderStages.size();
 		pipelineInfo.pStages = shaderStages.data();
 		pipelineInfo.pVertexInputState = &vertexInputStateInfo;
 		pipelineInfo.pInputAssemblyState = &inputAssemblyState;
@@ -1030,41 +919,6 @@ namespace Vulkan
 
 		vkDestroyPipelineLayout(myDevice, myTransparentPipelineLayout, nullptr);
 		myTransparentPipelineLayout = VK_NULL_HANDLE;
-	}
-
-	void DeferredPipeline::LoadTestAssets()
-	{
-		myCastleModel = new Render::glTF::Model();
-		myCastleModel->LoadFromFile("Frameworks/models/samplebuilding.gltf", Renderer::GetInstance()->GetGraphicsQueue(), 1.0f);
-
-		myCastleWindows = new Render::glTF::Model();
-		myCastleWindows->LoadFromFile("Frameworks/models/samplebuilding_glass.gltf", Renderer::GetInstance()->GetGraphicsQueue(), 1.0f);
-
-		myAvocadoModel = new Render::glTF::Model();
-		myAvocadoModel->LoadFromFile("Frameworks/models/Avocado/Avocado.gltf", Renderer::GetInstance()->GetGraphicsQueue(), 50.0f);
-
-		myAnimatedModel = new Render::glTF::Model();
-		myAnimatedModel->LoadFromFile("Frameworks/models/CesiumMan/CesiumMan.gltf", Renderer::GetInstance()->GetGraphicsQueue(), 1.0f);
-
-		myDummyModel = new DummyModel(glm::vec3(1.0f, 1.0f, -1.0f));
-	}
-
-	void DeferredPipeline::UnloadTestAssets()
-	{
-		delete myCastleModel;
-		myCastleModel = nullptr;
-
-		delete myCastleWindows;
-		myCastleWindows = nullptr;
-
-		delete myAvocadoModel;
-		myAvocadoModel = nullptr;
-
-		delete myAnimatedModel;
-		myAnimatedModel = nullptr;
-
-		delete myDummyModel;
-		myDummyModel = nullptr;
 	}
 }
 }

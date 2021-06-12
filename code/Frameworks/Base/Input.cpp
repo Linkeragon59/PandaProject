@@ -18,6 +18,10 @@ namespace Input
 
             case RawInput::KeyA:
                 return GLFW_KEY_A;
+			case RawInput::KeyB:
+				return GLFW_KEY_B;
+			case RawInput::KeyC:
+				return GLFW_KEY_C;
             case RawInput::KeyD:
                 return GLFW_KEY_D;
             case RawInput::KeyI:

@@ -14,10 +14,10 @@ namespace GameWork
 		void Translate(const glm::vec3& aPositionDelta);
 		void SetRotation(const glm::vec3& aRotation);
 		void Rotate(const glm::vec3& aRotationDelta);
-		void GetViewMatrix(glm::mat4& anOutMatrix) const;
+		const glm::mat4& GetViewMatrix() const { return myView; }
 
 		void SetPerspective(float anAspectRatio, float aFov, float aZNear, float aZFar);
-		void GetPerspectiveMatrix(glm::mat4& anOutMatrix) const;
+		const glm::mat4& GetPerspectiveMatrix() const { return myPerspective; }
 
 	private:
 		void UpdateViewMatrix();
@@ -31,7 +31,7 @@ namespace GameWork
 		float myZNear = 0.1f;
 		float myZFar = 256.0f;
 
-		glm::mat4 myView;
-		glm::mat4 myPerspective;
+		glm::mat4 myView = glm::mat4(1.0f);
+		glm::mat4 myPerspective = glm::mat4(1.0f);
 	};
 }

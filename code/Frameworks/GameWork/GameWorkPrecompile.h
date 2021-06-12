@@ -1,8 +1,7 @@
 #pragma once
 
 #include "Assert.h"
-
-#include <vector>
+#include "Types.h"
 
 #pragma warning(push)
 #pragma warning(disable:4201)

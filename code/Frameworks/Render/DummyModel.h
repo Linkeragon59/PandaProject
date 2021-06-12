@@ -2,20 +2,20 @@
 
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
+#include "VulkanModel.h"
 
 namespace Render
 {
 namespace Vulkan
 {
-	class DummyModel
+	class DummyModel : public Model
 	{
 	public:
-		DummyModel(const glm::vec3& aPosition);
+		DummyModel(const RenderData& aRenderData);
 		~DummyModel();
 
-		void Update();
-
-		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout);
+		void Update() override;
+		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) override;
 
 	private:
 		void SetupDescriptorPool();
@@ -29,20 +29,14 @@ namespace Vulkan
 
 		Buffer myVertexBuffer;
 		Buffer myIndexBuffer;
-		uint32_t myIndexCount = 0;
+		uint myIndexCount = 0;
 
-		glm::vec3 myPosition;
 		Buffer myUBOObject;
-		VkDescriptorSet myDescriptorSetObject = VK_NULL_HANDLE;
-
-		Image myTexture;
-		VkDescriptorSet myDescriptorSetImage = VK_NULL_HANDLE;
-
-		Buffer mySSBOMaterial;
-		VkDescriptorSet myDescriptorSetMaterial = VK_NULL_HANDLE;
-
 		Buffer mySSBOSkin;
-		VkDescriptorSet myDescriptorSetSkin = VK_NULL_HANDLE;
+		Image myTexture;
+		Buffer mySSBOMaterial;
+
+		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
 }
 }

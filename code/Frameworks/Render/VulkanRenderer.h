@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VulkanImage.h"
+#include "VulkanModel.h"
 
 struct GLFWwindow;
 
@@ -14,6 +15,7 @@ namespace Vulkan
 {
 	struct Device;
 	class SwapChain;
+	class Camera;
 
 	class Renderer
 	{
@@ -30,7 +32,7 @@ namespace Vulkan
 		void OnWindowOpened(GLFWwindow* aWindow);
 		void OnWindowClosed(GLFWwindow* aWindow);
 
-		void Update();
+		void Update(const glm::mat4& aView, const glm::mat4& aProjection);
 
 		VkInstance GetVkInstance() const { return myVkInstance; }
 
@@ -40,6 +42,14 @@ namespace Vulkan
 		VmaAllocator GetAllocator() const;
 		VkQueue GetGraphicsQueue() const;
 		VkCommandPool GetGraphicsCommandPool() const;
+
+		Camera* GetCamera() const { return myCamera; }
+
+		uint GetModelsCount() const { return (uint)myModels.size(); }
+		Model* GetModel(uint anIndex) const { return myModels[anIndex]; }
+
+		uint SpawnModel(const std::string& aFilePath, const RenderData& aRenderData);
+		void DespawnModel(uint anIndex);
 
 	private:
 		void CreateVkInstance();
@@ -54,6 +64,17 @@ namespace Vulkan
 
 		// One SwapChain per window/surface
 		std::vector<SwapChain*> mySwapChains;
+
+		Camera* myCamera = nullptr;
+
+		std::vector<Model*> myModels;
+
+		struct DespawningModel
+		{
+			Model* myModel = nullptr;
+			uint myFramesToKeep = 1;
+		};
+		std::vector<DespawningModel> myDespawningModels;
 
 		Image myMissingTexture;
 	};

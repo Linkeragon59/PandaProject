@@ -2,6 +2,7 @@
 
 #include "VulkanImage.h"
 #include "VulkanDeferredPipeline.h"
+#include "VulkanImGuiOverlay.h"
 
 struct GLFWwindow;
 
@@ -20,6 +21,7 @@ namespace Vulkan
 		void Recreate();
 
 		void Update();
+		void SetDirty();
 
 		GLFWwindow* GetWindow() const { return myWindow; }
 		VkSurfaceKHR GetSurface() const { return mySurface; }
@@ -34,7 +36,7 @@ namespace Vulkan
 		void SetupFramebuffers();
 		void CreateSyncObjects();
 
-		void BuildCommandBuffer(uint32_t anImageIndex);
+		void BuildCommandBuffer(uint anImageIndex);
 		void DrawFrame();
 
 		GLFWwindow* myWindow = nullptr;
@@ -51,6 +53,7 @@ namespace Vulkan
 		Image myDepthImage;
 
 		DeferredPipeline myDeferredPipeline;
+		ImGuiOverlay myUIOverlay;
 
 		// One per swapchain image
 		std::vector<VkCommandBuffer> myCommandBuffers;
@@ -58,8 +61,8 @@ namespace Vulkan
 		std::vector<VkFramebuffer> myFramebuffers;
 
 		// One per in flight frame
-		uint32_t myMaxInFlightFrames = 0;
-		uint32_t myCurrentInFlightFrame = 0;
+		uint myMaxInFlightFrames = 0;
+		uint myCurrentInFlightFrame = 0;
 		std::vector<VkSemaphore> myImageAvailableSemaphores;
 		std::vector<VkSemaphore> myRenderFinishedSemaphores;
 		std::vector<VkFence> myInFlightFrameFences;

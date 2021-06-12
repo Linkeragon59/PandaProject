@@ -2,13 +2,16 @@
 
 struct GLFWwindow;
 
+#include "RenderData.h"
+
 namespace Render
 {
-	struct Camera;
 	namespace Vulkan
 	{
 		class Renderer;
 	}
+	class Camera;
+	class Model;
 
 	class Facade
 	{
@@ -17,16 +20,16 @@ namespace Render
 		static void Destroy();
 		static Facade* GetInstance() { return ourInstance; }
 
-		// Render Camera
-		Camera* GetRenderCamera() const { return myCamera; }
-
 		// Vulkan Renderer
-		Vulkan::Renderer* GetVulkanRenderer() const { return myVulkanRenderer; }
+		Vulkan::Renderer* GetRenderer() const { return myVulkanRenderer; }
 		// TODO: We may want to support adding/removing windows dynamically
 		// TODO: We may want to be able to init the Vulkan Renderer without a window
-		void InitVulkanRenderer(GLFWwindow* aWindow);
-		void UpdateVulkanRenderer();
-		void FinalizeVulkanRenderer(GLFWwindow* aWindow);
+		void InitRenderer(GLFWwindow* aWindow);
+		void UpdateRenderer(const glm::mat4& aView, const glm::mat4& aProjection);
+		void FinalizeRenderer(GLFWwindow* aWindow);
+
+		uint SpawnModel(const std::string& aFilePath, const RenderData& aRenderData);
+		void DespawnModel(uint anIndex);
 
 	private:
 		static Facade* ourInstance;
@@ -34,7 +37,6 @@ namespace Render
 		Facade();
 		~Facade();
 
-		Camera* myCamera = nullptr;
 		Vulkan::Renderer* myVulkanRenderer = nullptr;
 	};
 }

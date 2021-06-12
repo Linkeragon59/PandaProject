@@ -1,6 +1,6 @@
 #include "RenderFacade.h"
 
-#include "RenderCamera.h"
+#include "VulkanCamera.h"
 #include "VulkanRenderer.h"
 
 namespace Render
@@ -20,19 +20,19 @@ namespace Render
 		ourInstance = nullptr;
 	}
 
-	void Facade::InitVulkanRenderer(GLFWwindow* aWindow)
+	void Facade::InitRenderer(GLFWwindow* aWindow)
 	{
 		myVulkanRenderer = new Vulkan::Renderer;
 		myVulkanRenderer->Init();
 		myVulkanRenderer->OnWindowOpened(aWindow);
 	}
 
-	void Facade::UpdateVulkanRenderer()
+	void Facade::UpdateRenderer(const glm::mat4& aView, const glm::mat4& aProjection)
 	{
-		myVulkanRenderer->Update();
+		myVulkanRenderer->Update(aView, aProjection);
 	}
 
-	void Facade::FinalizeVulkanRenderer(GLFWwindow* aWindow)
+	void Facade::FinalizeRenderer(GLFWwindow* aWindow)
 	{
 		myVulkanRenderer->OnWindowClosed(aWindow);
 		myVulkanRenderer->Finalize();
@@ -40,14 +40,22 @@ namespace Render
 		myVulkanRenderer = nullptr;
 	}
 
+	uint Facade::SpawnModel(const std::string& aFilePath, const RenderData& aRenderData)
+	{
+		return myVulkanRenderer->SpawnModel(aFilePath, aRenderData);
+	}
+
+	void Facade::DespawnModel(uint anIndex)
+	{
+		myVulkanRenderer->DespawnModel(anIndex);
+	}
+
 	Facade::Facade()
 	{
-		myCamera = new Camera;
 	}
 
 	Facade::~Facade()
 	{
-		delete myCamera;
 		Assert(!myVulkanRenderer);
 	}
 }

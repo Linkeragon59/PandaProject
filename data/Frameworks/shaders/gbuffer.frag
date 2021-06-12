@@ -1,8 +1,8 @@
 #version 450
 
-layout (set = 2, binding = 0) uniform sampler2D samplerTexture;
+layout (set = 1, binding = 2) uniform sampler2D samplerTexture;
 
-layout (std430, set = 3, binding = 0) readonly buffer MaterialData {
+layout (std430, set = 1, binding = 3) readonly buffer MaterialData {
 	vec4 color;
 } materialData;
 
