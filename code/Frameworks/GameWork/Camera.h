@@ -33,5 +33,7 @@ namespace GameWork
 
 		glm::mat4 myView = glm::mat4(1.0f);
 		glm::mat4 myPerspective = glm::mat4(1.0f);
+
+		uint myScrollCallbackId = UINT_MAX;
 	};
 }

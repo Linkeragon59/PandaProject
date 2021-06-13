@@ -71,10 +71,11 @@ namespace GameWork
 		Render::Facade::GetInstance()->FinalizeRenderer(ourInstance->myWindow);
 		Render::Facade::Destroy();
 
+		ourInstance->Cleanup();
+
 		InputManager::GetInstance()->RemoveWindow(ourInstance->myWindow);
 		InputManager::Destroy();
 
-		ourInstance->Cleanup();
 		delete ourInstance;
 		ourInstance = nullptr;
 	}
@@ -82,9 +83,10 @@ namespace GameWork
 	void GameWork::Run()
 	{
 		InputManager* inputManager = InputManager::GetInstance();
-		inputManager->SetupCallback();
-		inputManager->AddCallback(RawInput::KeySpace, JumpCallback);
-		inputManager->AddCallback(RawInput::MouseLeft, ShootCallback);
+		inputManager->SetupCallbacks();
+
+		uint keySpaceCallback = inputManager->AddCallback(RawInput::KeySpace, JumpCallback);
+		uint mouseLeftCallback = inputManager->AddCallback(RawInput::MouseLeft, ShootCallback);
 
 		while (!glfwWindowShouldClose(myWindow))
 		{
@@ -103,6 +105,9 @@ namespace GameWork
 			if (elapsed < oneFrame)
 				std::this_thread::sleep_for(oneFrame - elapsed);
 		}
+
+		inputManager->RemoveCallback(keySpaceCallback);
+		inputManager->RemoveCallback(mouseLeftCallback);
 	}
 
 	void GameWork::InitWindow()

@@ -3,159 +3,216 @@
 
 namespace Input
 {
-    namespace
-    {
-        int locRawInputToGlfwInput(RawInput aRawInput)
-        {
-            switch (aRawInput)
-            {
-            case RawInput::MouseLeft:
-                return GLFW_MOUSE_BUTTON_LEFT;
-            case RawInput::MouseRight:
-                return GLFW_MOUSE_BUTTON_RIGHT;
-			case RawInput::MouseMiddle:
-				return GLFW_MOUSE_BUTTON_MIDDLE;
-
-            case RawInput::KeyA:
-                return GLFW_KEY_A;
-			case RawInput::KeyB:
-				return GLFW_KEY_B;
-			case RawInput::KeyC:
-				return GLFW_KEY_C;
-            case RawInput::KeyD:
-                return GLFW_KEY_D;
-            case RawInput::KeyI:
-                return GLFW_KEY_I;
-            case RawInput::KeyS:
-                return GLFW_KEY_S;
-            case RawInput::KeyW:
-                return GLFW_KEY_W;
-
-            case RawInput::KeySpace:
-                return GLFW_KEY_SPACE;
-            case RawInput::KeyEscape:
-                return GLFW_KEY_ESCAPE;
-
-            default:
-                return GLFW_KEY_UNKNOWN;
-            }
-        }
-
-        RawInputState locGlfwInputStateToRawInputState(int aGlfwInputState)
-        {
-            if (aGlfwInputState == GLFW_PRESS)
-                return RawInputState::Pressed;
-            else if (aGlfwInputState == GLFW_RELEASE)
-                return RawInputState::Released;
-            else if (aGlfwInputState == GLFW_REPEAT)
-                return RawInputState::Repeated;
-            else
-                return RawInputState::Unknown;
-        }
-    }
-
-    InputManager* InputManager::ourInstance = nullptr;
-
-	InputManager::InputManager()
+	namespace
 	{
+		int locRawInputToGlfwInput(RawInput aRawInput)
+		{
+			#define RAW2GLFW(raw, glfw) case RawInput::raw: return glfw;
+			
+			switch (aRawInput)
+			{
+			RAW2GLFW(MouseLeft, GLFW_MOUSE_BUTTON_LEFT)
+			RAW2GLFW(MouseRight, GLFW_MOUSE_BUTTON_RIGHT)
+			RAW2GLFW(MouseMiddle, GLFW_MOUSE_BUTTON_MIDDLE)
+
+			RAW2GLFW(Key0, GLFW_KEY_0)
+			RAW2GLFW(Key1, GLFW_KEY_1)
+			RAW2GLFW(Key2, GLFW_KEY_2)
+			RAW2GLFW(Key3, GLFW_KEY_3)
+			RAW2GLFW(Key4, GLFW_KEY_4)
+			RAW2GLFW(Key5, GLFW_KEY_5)
+			RAW2GLFW(Key6, GLFW_KEY_6)
+			RAW2GLFW(Key7, GLFW_KEY_7)
+			RAW2GLFW(Key8, GLFW_KEY_8)
+			RAW2GLFW(Key9, GLFW_KEY_9)
+
+			RAW2GLFW(KeyA, GLFW_KEY_A)
+			RAW2GLFW(KeyB, GLFW_KEY_B)
+			RAW2GLFW(KeyC, GLFW_KEY_C)
+			RAW2GLFW(KeyD, GLFW_KEY_D)
+			RAW2GLFW(KeyE, GLFW_KEY_E)
+			RAW2GLFW(KeyF, GLFW_KEY_F)
+			RAW2GLFW(KeyG, GLFW_KEY_G)
+			RAW2GLFW(KeyH, GLFW_KEY_H)
+			RAW2GLFW(KeyI, GLFW_KEY_I)
+			RAW2GLFW(KeyJ, GLFW_KEY_J)
+			RAW2GLFW(KeyK, GLFW_KEY_K)
+			RAW2GLFW(KeyL, GLFW_KEY_L)
+			RAW2GLFW(KeyM, GLFW_KEY_M)
+			RAW2GLFW(KeyN, GLFW_KEY_N)
+			RAW2GLFW(KeyO, GLFW_KEY_O)
+			RAW2GLFW(KeyP, GLFW_KEY_P)
+			RAW2GLFW(KeyQ, GLFW_KEY_Q)
+			RAW2GLFW(KeyR, GLFW_KEY_R)
+			RAW2GLFW(KeyS, GLFW_KEY_S)
+			RAW2GLFW(KeyT, GLFW_KEY_T)
+			RAW2GLFW(KeyU, GLFW_KEY_U)
+			RAW2GLFW(KeyV, GLFW_KEY_V)
+			RAW2GLFW(KeyW, GLFW_KEY_W)
+			RAW2GLFW(KeyX, GLFW_KEY_X)
+			RAW2GLFW(KeyY, GLFW_KEY_Y)
+			RAW2GLFW(KeyZ, GLFW_KEY_Z)
+
+			RAW2GLFW(KeySpace, GLFW_KEY_SPACE)
+			RAW2GLFW(KeyEscape, GLFW_KEY_ESCAPE)
+
+			default: return GLFW_KEY_UNKNOWN;
+			}
+
+			#undef RAW2GLFW
+		}
+
+		RawInputState locGlfwInputStateToRawInputState(int aGlfwInputState)
+		{
+			if (aGlfwInputState == GLFW_PRESS)
+				return RawInputState::Pressed;
+			else if (aGlfwInputState == GLFW_RELEASE)
+				return RawInputState::Released;
+			else if (aGlfwInputState == GLFW_REPEAT)
+				return RawInputState::Repeated;
+			else
+				return RawInputState::Unknown;
+		}
 	}
 
-    InputManager::~InputManager()
+	InputManager* InputManager::ourInstance = nullptr;
+
+	void InputManager::Create()
 	{
+		ourInstance = new InputManager;
+	}
+	
+	void InputManager::Destroy()
+	{
+		delete ourInstance;
+		ourInstance = nullptr;
 	}
 
-    void InputManager::Create()
-    {
-        ourInstance = new InputManager;
-    }
-    
-    void InputManager::Destroy()
-    {
-        delete ourInstance;
-        ourInstance = nullptr;
-    }
-
-    RawInputState InputManager::PollRawInput(RawInput anInput, unsigned int aWindowIdx)
-    {
-        if (aWindowIdx >= myWindows.size())
-            return RawInputState::Unknown;
-
-        if (anInput <= RawInput::MouseEnd)
-            return locGlfwInputStateToRawInputState(glfwGetMouseButton(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
-        else
-            return locGlfwInputStateToRawInputState(glfwGetKey(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
-    }
-
-	void InputManager::PollMousePosition(double& anOutX, double& anOutY, unsigned int aWindowIdx)
+	RawInputState InputManager::PollRawInput(RawInput anInput, uint aWindowIdx /*= 0*/)
 	{
-        if (aWindowIdx >= myWindows.size())
-        {
-            anOutX = 0;
-            anOutY = 0;
-            return;
-        }
+		if (aWindowIdx >= myWindows.size())
+			return RawInputState::Unknown;
 
-        glfwGetCursorPos(myWindows[aWindowIdx], &anOutX, &anOutY);
+		if (anInput <= RawInput::MouseEnd)
+			return locGlfwInputStateToRawInputState(glfwGetMouseButton(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
+		else
+			return locGlfwInputStateToRawInputState(glfwGetKey(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
 	}
 
-    void InputManager::AddCallback(RawInput anInput, std::function<void()> aCallbackFunction)
+	void InputManager::PollMousePosition(double& anOutX, double& anOutY, uint aWindowIdx /*= 0*/)
 	{
-		InputCallback callback{anInput, aCallbackFunction};
-		myInputCallbacks.push_back(callback);
+		if (aWindowIdx >= myWindows.size())
+		{
+			anOutX = -1;
+			anOutY = -1;
+			return;
+		}
+
+		glfwGetCursorPos(myWindows[aWindowIdx], &anOutX, &anOutY);
 	}
 
-	void InputManager::AddScrollInputCallback(std::function<void(double, double)> aCallback)
-	{
-		ScrollInputCallback callback{ aCallback };
-		myScrollInputCallbacks.push_back(callback);
-	}
-
-	void InputManager::SetupCallback(unsigned int aWindowIdx)
+	void InputManager::SetupCallbacks(uint aWindowIdx /*= 0*/)
 	{
 		glfwSetKeyCallback(myWindows[aWindowIdx], InputManager::KeyCallback);
 		glfwSetMouseButtonCallback(myWindows[aWindowIdx], InputManager::MouseCallback);
 		glfwSetScrollCallback(myWindows[aWindowIdx], InputManager::ScrollCallback);
 	}
 
-	void InputManager::KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+	uint InputManager::AddCallback(RawInput anInput, std::function<void()> aCallback, uint aWindowIdx /*= 0*/)
 	{
-		(void) window;
-		(void) scancode;
-		(void) action;
-		(void) mods;
+		if (aWindowIdx >= myWindows.size())
+			return UINT_MAX;
+
+		for (uint i = 0; i < myInputCallbacks.size(); ++i)
+		{
+			InputCallback& callback = myInputCallbacks[i];
+			if (callback.myCallback == nullptr)
+			{
+				callback.myInput = anInput;
+				callback.myWindow = myWindows[aWindowIdx];
+				callback.myCallback = aCallback;
+				return i;
+			}
+		}
+
+		myInputCallbacks.push_back({ anInput, myWindows[aWindowIdx], aCallback });
+		return (uint)myInputCallbacks.size() - 1;
+	}
+
+	void InputManager::RemoveCallback(uint aCallbakId)
+	{
+		if (aCallbakId >= myInputCallbacks.size())
+			return;
+
+		myInputCallbacks[aCallbakId].myCallback = nullptr;
+	}
+
+	uint InputManager::AddScrollCallback(std::function<void(double, double)> aCallback, uint aWindowIdx /*= 0*/)
+	{
+		if (aWindowIdx >= myWindows.size())
+			return UINT_MAX;
+
+		for (uint i = 0; i < myScrollInputCallbacks.size(); ++i)
+		{
+			ScrollInputCallback& callback = myScrollInputCallbacks[i];
+			if (callback.myCallback == nullptr)
+			{
+				callback.myWindow = myWindows[aWindowIdx];
+				callback.myCallback = aCallback;
+				return i;
+			}
+		}
+
+		myScrollInputCallbacks.push_back({ myWindows[aWindowIdx], aCallback });
+		return (uint)myScrollInputCallbacks.size() - 1;
+	}
+
+	void InputManager::RemoveScrollCallback(uint aCallbakId)
+	{
+		if (aCallbakId >= myScrollInputCallbacks.size())
+			return;
+
+		myScrollInputCallbacks[aCallbakId].myCallback = nullptr;
+	}
+
+	void InputManager::KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods)
+	{
+		(void)aScanCode;
+		(void)anAction;
+		(void)someMods;
 
 		for(auto callback : ourInstance->myInputCallbacks)
 		{
-			if(key == locRawInputToGlfwInput(callback.myInput))
+			if(callback.myCallback != nullptr && aWindow == callback.myWindow && aKey == locRawInputToGlfwInput(callback.myInput))
 			{
 				callback.myCallback();
 			}
 		}
 	}
 
-	void InputManager::MouseCallback(GLFWwindow* window, int button, int action, int mods)
+	void InputManager::MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int someMods)
 	{
-		(void) window;
-		(void) action;
-		(void) mods;
+		(void)anAction;
+		(void)someMods;
 
 		for(auto callback : ourInstance->myInputCallbacks)
 		{
-			if(button == locRawInputToGlfwInput(callback.myInput))
+			if (callback.myCallback != nullptr && aWindow == callback.myWindow && aButton == locRawInputToGlfwInput(callback.myInput))
 			{
 				callback.myCallback();
 			}
 		}
 	}
 
-	void InputManager::ScrollCallback(GLFWwindow* window, double x, double y)
+	void InputManager::ScrollCallback(GLFWwindow* aWindow, double anX, double anY)
 	{
-        (void)window;
-        (void)x;
-        for (auto callback : ourInstance->myScrollInputCallbacks)
-        {
-            callback.myCallback(x, y);
-        }
+		for (auto callback : ourInstance->myScrollInputCallbacks)
+		{
+			if (callback.myCallback != nullptr && aWindow == callback.myWindow)
+			{
+				callback.myCallback(anX, anY);
+			}
+		}
 	}
 
 }

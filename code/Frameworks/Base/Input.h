@@ -6,77 +6,112 @@ struct GLFWwindow;
 
 namespace Input
 {	
-    enum class RawInput
-    {
-        MouseLeft,
-        MouseRight,
-        MouseMiddle,
+	enum class RawInput
+	{
+		MouseStart,
+		MouseLeft = MouseStart,
+		MouseRight,
+		MouseMiddle,
+		MouseEnd = MouseMiddle,
 
-        MouseEnd = MouseMiddle,
+		KeyNumStart,
+		Key0 = KeyNumStart,
+		Key1,
+		Key2,
+		Key3,
+		Key4,
+		Key5,
+		Key6,
+		Key7,
+		Key8,
+		Key9,
+		KeyNumEnd = Key9,
 
-		KeyA,
+		KeyAlphaStart,
+		KeyA = KeyAlphaStart,
 		KeyB,
 		KeyC,
 		KeyD,
+		KeyE,
+		KeyF,
+		KeyG,
+		KeyH,
 		KeyI,
+		KeyJ,
+		KeyK,
+		KeyL,
+		KeyM,
+		KeyN,
+		KeyO,
+		KeyP,
+		KeyQ,
+		KeyR,
 		KeyS,
+		KeyT,
+		KeyU,
+		KeyV,
 		KeyW,
+		KeyX,
+		KeyY,
+		KeyZ,
+		KeyAlphaEnd = KeyZ,
 
 		KeySpace,
 		KeyEscape,
-    };
+	};
 
-    enum class RawInputState
-    {
-        Unknown,
+	enum class RawInputState
+	{
+		Unknown,
 
-        Pressed,
-        Released,
-        Repeated,
-    };
+		Pressed,
+		Released,
+		Repeated,
+	};
 
 	struct InputCallback
 	{
 		RawInput myInput;
+		GLFWwindow* myWindow;
 		std::function<void()> myCallback;
 	};
 
-    struct ScrollInputCallback
-    {
-        std::function<void(double, double)> myCallback;
-    };
+	struct ScrollInputCallback
+	{
+		GLFWwindow* myWindow;
+		std::function<void(double, double)> myCallback;
+	};
 
-    class InputManager
-    {
-    public:
-        InputManager();
-        ~InputManager();
+	class InputManager
+	{
+	public:
+		static void Create();
+		static void Destroy();
+		static InputManager* GetInstance() { return ourInstance; }
 
-        static void Create();
-        static void Destroy();
-        static InputManager* GetInstance() { return ourInstance; }
+		void AddWindow(GLFWwindow* aWindow) { myWindows.push_back(aWindow); }
+		void RemoveWindow(GLFWwindow* aWindow) { std::erase(myWindows, aWindow); }
 
-        void AddWindow(GLFWwindow* aWindow) { myWindows.push_back(aWindow); }
-        void RemoveWindow(GLFWwindow* aWindow) { std::erase(myWindows, aWindow); }
+		RawInputState PollRawInput(RawInput anInput, uint aWindowIdx = 0);
+		void PollMousePosition(double& anOutX, double& anOutY, uint aWindowIdx = 0);
 
-        RawInputState PollRawInput(RawInput anInput, unsigned int aWindowIdx = 0);
-        void PollMousePosition(double& anOutX, double& anOutY, unsigned int aWindowIdx = 0);
+		void SetupCallbacks(uint aWindowIdx = 0);
 
-        void AddCallback(RawInput anInput, std::function<void()> aCallback);
-        void RemoveCallback(RawInput anInput, std::function<void()> aCallback);
+		uint AddCallback(RawInput anInput, std::function<void()> aCallback, uint aWindowIdx = 0);
+		void RemoveCallback(uint aCallbakId);
 
-        void AddScrollInputCallback(std::function<void(double, double)> aCallback);
+		uint AddScrollCallback(std::function<void(double, double)> aCallback, uint aWindowIdx = 0);
+		void RemoveScrollCallback(uint aCallbakId);
 
-		void SetupCallback(unsigned int aWindowIdx = 0);
+	private:
+		static void KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods);
+		static void MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int someMods);
+		static void ScrollCallback(GLFWwindow* aWindow, double anX, double anY);
 
-    private:
-		static void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-		static void MouseCallback(GLFWwindow* window, int button, int action, int mods);
-        static void ScrollCallback(GLFWwindow* window, double x, double y);
+		static InputManager* ourInstance;
 
-        static InputManager* ourInstance;
-        std::vector<GLFWwindow*> myWindows;
-        std::vector<InputCallback> myInputCallbacks;
-        std::vector<ScrollInputCallback> myScrollInputCallbacks;
-    };
+		std::vector<GLFWwindow*> myWindows;
+		std::vector<InputCallback> myInputCallbacks;
+		std::vector<ScrollInputCallback> myScrollInputCallbacks;
+	};
 } // namespace Input

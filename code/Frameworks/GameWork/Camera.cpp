@@ -8,14 +8,16 @@ namespace GameWork
 	Camera::Camera()
 	{
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
-		inputManager->AddScrollInputCallback([this](double aX, double aY) {
+		myScrollCallbackId = inputManager->AddScrollCallback([this](double aX, double aY) {
 			(void)aX;
 			Translate(glm::vec3(0.0f, 0.0f, (float)aY * 0.3f));
-			});
+		});
 	}
 
 	Camera::~Camera()
 	{
+		Input::InputManager* inputManager = Input::InputManager::GetInstance();
+		inputManager->RemoveScrollCallback(myScrollCallbackId);
 	}
 
 	void Camera::Update()

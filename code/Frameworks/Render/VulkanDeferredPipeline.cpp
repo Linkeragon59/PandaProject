@@ -83,7 +83,7 @@ namespace Vulkan
 			glm::vec3(1.0f, 1.0f, 0.0f),
 		};
 
-		std::default_random_engine rndGen((unsigned int)time(nullptr));
+		std::default_random_engine rndGen((uint)time(nullptr));
 		std::uniform_real_distribution<float> rndDist(-10.0f, 10.0f);
 		std::uniform_int_distribution<uint> rndCol(0, static_cast<uint>(colors.size() - 1));
 
