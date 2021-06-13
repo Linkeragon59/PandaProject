@@ -2,30 +2,10 @@
 
 #include "VulkanRenderer.h"
 
-#include <fstream>
-
 namespace Render
 {
 namespace Vulkan
 {
-	namespace
-	{
-		std::vector<char> locReadFile(const std::string& aFilename)
-		{
-			std::ifstream file(aFilename, std::ios::ate | std::ios::binary);
-			Assert(file.is_open(), "Failed to read the file %s", aFilename.c_str());
-
-			size_t fileSize = (size_t)file.tellg();
-			std::vector<char> buffer(fileSize);
-			file.seekg(0);
-			file.read(buffer.data(), fileSize);
-
-			file.close();
-
-			return buffer;
-		}
-	}
-
 	bool CheckInstanceLayersSupport(const std::vector<const char*>& someLayers)
 	{
 		uint layerCount = 0;
@@ -72,22 +52,6 @@ namespace Vulkan
 				return false;
 		}
 		return true;
-	}
-
-	VkShaderModule CreateShaderModule(const std::string& aFilename)
-	{
-		VkShaderModule shaderModule;
-
-		auto shaderCode = locReadFile(aFilename);
-
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = shaderCode.size();
-		createInfo.pCode = reinterpret_cast<const uint*>(shaderCode.data());
-
-		VK_CHECK_RESULT(vkCreateShaderModule(Renderer::GetInstance()->GetDevice(), &createInfo, nullptr, &shaderModule), "Failed to create a module shader!");
-
-		return shaderModule;
 	}
 
 	VkCommandBuffer BeginOneTimeCommand(VkCommandPool aCommandPool)

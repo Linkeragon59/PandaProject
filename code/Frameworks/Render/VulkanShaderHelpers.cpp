@@ -3,14 +3,18 @@
 #include "VulkanHelpers.h"
 #include "VulkanRenderer.h"
 
+#include "File.h"
+
 namespace Render
 {
 namespace Vulkan
 {
-	VkDescriptorSetLayout ShaderHelpers::ourCameraDescriptorSetLayout = VK_NULL_HANDLE;
-	VkDescriptorSetLayout ShaderHelpers::ourObjectDescriptorSetLayout = VK_NULL_HANDLE;
+namespace ShaderHelpers
+{
+	VkDescriptorSetLayout locCameraDescriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorSetLayout locObjectDescriptorSetLayout = VK_NULL_HANDLE;
 
-	void ShaderHelpers::SetupDescriptorSetLayouts()
+	void SetupDescriptorSetLayouts()
 	{
 		// Camera
 		{
@@ -26,7 +30,7 @@ namespace Vulkan
 			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
 			descriptorLayoutInfo.pBindings = bindings.data();
 			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &ourCameraDescriptorSetLayout),
+				vkCreateDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &locCameraDescriptorSetLayout),
 				"Failed to create the Camera DescriptorSetLayout");
 		}
 
@@ -59,21 +63,31 @@ namespace Vulkan
 			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
 			descriptorLayoutInfo.pBindings = bindings.data();
 			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &ourObjectDescriptorSetLayout),
+				vkCreateDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &locObjectDescriptorSetLayout),
 				"Failed to create the Object DescriptorSetLayout");
 		}
 	}
 
-	void ShaderHelpers::DestroyDescriptorSetLayouts()
+	void DestroyDescriptorSetLayouts()
 	{
-		vkDestroyDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), ourCameraDescriptorSetLayout, nullptr);
-		ourCameraDescriptorSetLayout = VK_NULL_HANDLE;
+		vkDestroyDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), locCameraDescriptorSetLayout, nullptr);
+		locCameraDescriptorSetLayout = VK_NULL_HANDLE;
 
-		vkDestroyDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), ourObjectDescriptorSetLayout, nullptr);
-		ourObjectDescriptorSetLayout = VK_NULL_HANDLE;
+		vkDestroyDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), locObjectDescriptorSetLayout, nullptr);
+		locObjectDescriptorSetLayout = VK_NULL_HANDLE;
 	}
 
-	VkVertexInputBindingDescription ShaderHelpers::Vertex::GetBindingDescription(uint aBinding /*= 0*/)
+	VkDescriptorSetLayout GetCameraDescriptorSetLayout()
+	{
+		return locCameraDescriptorSetLayout;
+	}
+
+	VkDescriptorSetLayout GetObjectDescriptorSetLayout()
+	{
+		return locObjectDescriptorSetLayout;
+	}
+
+	VkVertexInputBindingDescription Vertex::GetBindingDescription(uint aBinding /*= 0*/)
 	{
 		VkVertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = aBinding;
@@ -82,7 +96,7 @@ namespace Vulkan
 		return bindingDescription;
 	}
 
-	VkVertexInputAttributeDescription ShaderHelpers::Vertex::GetAttributeDescription(VertexComponent aComponent, uint aLocation /*= 0*/, uint aBinding /*= 0*/)
+	VkVertexInputAttributeDescription Vertex::GetAttributeDescription(VertexComponent aComponent, uint aLocation /*= 0*/, uint aBinding /*= 0*/)
 	{
 		VkVertexInputAttributeDescription attributeDescription{};
 		attributeDescription.location = aLocation;
@@ -121,7 +135,7 @@ namespace Vulkan
 		return attributeDescription;
 	}
 
-	std::vector<VkVertexInputAttributeDescription> ShaderHelpers::Vertex::GetAttributeDescriptions(const std::vector<VertexComponent> someComponents, uint aBinding /*= 0*/)
+	std::vector<VkVertexInputAttributeDescription> Vertex::GetAttributeDescriptions(const std::vector<VertexComponent> someComponents, uint aBinding /*= 0*/)
 	{
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 		attributeDescriptions.reserve(someComponents.size());
@@ -129,5 +143,23 @@ namespace Vulkan
 			attributeDescriptions.push_back(GetAttributeDescription(someComponents[i], i, aBinding));
 		return attributeDescriptions;
 	}
+
+	VkShaderModule CreateShaderModule(const std::string& aFilename)
+	{
+		VkShaderModule shaderModule;
+
+		std::vector<char> shaderCode;
+		Verify(File::ReadAsBuffer(aFilename, shaderCode), "Couldn't read shader file: %s", aFilename.c_str());
+
+		VkShaderModuleCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		createInfo.codeSize = shaderCode.size();
+		createInfo.pCode = reinterpret_cast<const uint*>(shaderCode.data());
+
+		VK_CHECK_RESULT(vkCreateShaderModule(Renderer::GetInstance()->GetDevice(), &createInfo, nullptr, &shaderModule), "Failed to create a module shader!");
+
+		return shaderModule;
+	}
+}
 }
 }

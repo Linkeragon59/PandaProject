@@ -1,18 +1,7 @@
 #pragma once
 
-#include <string>
-#include <fstream>
-#include <iostream>
-
-class File
+namespace File
 {
-public:
-	File(std::string aPath);
-	~File();
-	std::string Read();
-	void Write(std::string aString);
-
-private:
-	std::fstream myFile;
-	std::string myPath;
-};
+	bool ReadAsBuffer(const std::string& aFilePath, std::vector<char>& anOutBuffer);
+	bool ReadAsString(const std::string& aFilePath, std::string& anOutString);
+}

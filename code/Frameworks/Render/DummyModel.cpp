@@ -239,7 +239,7 @@ namespace Vulkan
 
 	void DummyModel::SetupDescriptoSets()
 	{
-		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::ourObjectDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::GetObjectDescriptorSetLayout() };
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;

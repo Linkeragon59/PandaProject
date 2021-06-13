@@ -1,28 +1,39 @@
 #include "File.h"
 
-File::File(std::string aPath)
+#include <fstream>
+#include <iostream>
+
+namespace File
 {
-	myPath = aPath;
-	myFile.open(myPath);
-	if(myFile.fail())
+	bool ReadAsBuffer(const std::string& aFilePath, std::vector<char>& anOutBuffer)
 	{
-		std::cout << "Opening file " << aPath << " failed." << std::endl;
+		std::ifstream file(aFilePath, std::ios::ate | std::ios::binary);
+		if (!file.is_open())
+		{
+			std::cout << "Failed to read the file %s" << aFilePath.c_str() << std::endl;
+			return false;
+		}
+		std::streamsize fileSize = file.tellg();
+		anOutBuffer.resize(fileSize);
+		file.seekg(0);
+		file.read(anOutBuffer.data(), fileSize);
+		file.close();
+		return true;
 	}
-}
 
-File::~File()
-{
-	myFile.close();
-}
-
-std::string File::Read()
-{
-	std::string text;
-	myFile >> text;
-	return text;
-}
-
-void File::Write(std::string aString)
-{
-	myFile << aString;
+	bool ReadAsString(const std::string& aFilePath, std::string& anOutString)
+	{
+		std::ifstream file(aFilePath, std::ios::ate);
+		if (!file.is_open())
+		{
+			std::cout << "Failed to read the file %s" << aFilePath.c_str() << std::endl;
+			return false;
+		}
+		std::streamsize fileSize = file.tellg();
+		anOutString.resize(fileSize);
+		file.seekg(0);
+		file.read(anOutString.data(), fileSize);
+		file.close();
+		return true;
+	}
 }

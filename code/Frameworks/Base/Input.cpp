@@ -88,7 +88,7 @@ namespace Input
 		ourInstance = nullptr;
 	}
 
-	RawInputState InputManager::PollRawInput(RawInput anInput, uint aWindowIdx /*= 0*/)
+	RawInputState InputManager::PollRawInput(RawInput anInput, uint aWindowIdx /*= 0*/) const
 	{
 		if (aWindowIdx >= myWindows.size())
 			return RawInputState::Unknown;
@@ -99,7 +99,7 @@ namespace Input
 			return locGlfwInputStateToRawInputState(glfwGetKey(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
 	}
 
-	void InputManager::PollMousePosition(double& anOutX, double& anOutY, uint aWindowIdx /*= 0*/)
+	void InputManager::PollMousePosition(double& anOutX, double& anOutY, uint aWindowIdx /*= 0*/) const
 	{
 		if (aWindowIdx >= myWindows.size())
 		{

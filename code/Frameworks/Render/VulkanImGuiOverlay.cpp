@@ -2,6 +2,7 @@
 
 #include "VulkanRenderer.h"
 #include "VulkanHelpers.h"
+#include "VulkanShaderHelpers.h"
 
 #include "imgui.h"
 
@@ -311,8 +312,8 @@ namespace Vulkan
 			vkCreatePipelineLayout(myDevice, &pipelineLayoutCreateInfo, nullptr, &myPipelineLayout),
 			"Failed to create the GBuffer pipeline layout");
 
-		VkShaderModule vertModule = CreateShaderModule("Frameworks/shaders/uiOverlay_vert.spv");
-		VkShaderModule fragModule = CreateShaderModule("Frameworks/shaders/uiOverlay_frag.spv");
+		VkShaderModule vertModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/uiOverlay_vert.spv");
+		VkShaderModule fragModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/uiOverlay_frag.spv");
 
 		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 		shaderStages[0] = {};

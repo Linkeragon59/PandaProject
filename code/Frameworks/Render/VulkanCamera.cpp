@@ -31,7 +31,7 @@ namespace Vulkan
 
 		VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
 
-		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::ourCameraDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::GetCameraDescriptorSetLayout() };
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;

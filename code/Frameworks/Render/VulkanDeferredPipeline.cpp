@@ -230,8 +230,8 @@ namespace Vulkan
 	void DeferredPipeline::SetupGBufferPipeline(const DeferredRenderPass& aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
-			ShaderHelpers::ourCameraDescriptorSetLayout,
-			ShaderHelpers::ourObjectDescriptorSetLayout
+			ShaderHelpers::GetCameraDescriptorSetLayout(),
+			ShaderHelpers::GetObjectDescriptorSetLayout()
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -243,8 +243,8 @@ namespace Vulkan
 			vkCreatePipelineLayout(myDevice, &pipelineLayoutCreateInfo, nullptr, &myGBufferPipelineLayout),
 			"Failed to create the GBuffer pipeline layout");
 
-		VkShaderModule vertModule = CreateShaderModule("Frameworks/shaders/gbuffer_vert.spv");
-		VkShaderModule fragModule = CreateShaderModule("Frameworks/shaders/gbuffer_frag.spv");
+		VkShaderModule vertModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/gbuffer_vert.spv");
+		VkShaderModule fragModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/gbuffer_frag.spv");
 
 		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 		shaderStages[0] = {};
@@ -380,8 +380,8 @@ namespace Vulkan
 			vkCreatePipelineLayout(myDevice, &pipelineLayoutCreateInfo, nullptr, &myLightingPipelineLayout),
 			"Failed to create the Lighting pipeline layout");
 
-		VkShaderModule vertModule = CreateShaderModule("Frameworks/shaders/composition_vert.spv");
-		VkShaderModule fragModule = CreateShaderModule("Frameworks/shaders/composition_frag.spv");
+		VkShaderModule vertModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/composition_vert.spv");
+		VkShaderModule fragModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/composition_frag.spv");
 
 		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 		shaderStages[0] = {};
@@ -491,8 +491,8 @@ namespace Vulkan
 	{
 		std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = {
 			myTransparentDescriptorSetLayout,
-			ShaderHelpers::ourCameraDescriptorSetLayout,
-			ShaderHelpers::ourObjectDescriptorSetLayout
+			ShaderHelpers::GetCameraDescriptorSetLayout(),
+			ShaderHelpers::GetObjectDescriptorSetLayout()
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -504,8 +504,8 @@ namespace Vulkan
 			vkCreatePipelineLayout(myDevice, &pipelineLayoutCreateInfo, nullptr, &myTransparentPipelineLayout),
 			"Failed to create the Transparent pipeline layout");
 
-		VkShaderModule vertModule = CreateShaderModule("Frameworks/shaders/transparent_vert.spv");
-		VkShaderModule fragModule = CreateShaderModule("Frameworks/shaders/transparent_frag.spv");
+		VkShaderModule vertModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/transparent_vert.spv");
+		VkShaderModule fragModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/transparent_frag.spv");
 
 		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 		shaderStages[0] = {};
