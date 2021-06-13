@@ -52,7 +52,7 @@ namespace glTF
 			myMesh.Load(aModel, gltfNode.mesh, someOutVertices, someOutIndices);
 
 		myUBO.Create(
-			sizeof(DeferredPipeline::ModelData),
+			sizeof(ShaderHelpers::ModelData),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myUBO.SetupDescriptor();
@@ -65,7 +65,7 @@ namespace glTF
 		{
 			VkDevice device = Renderer::GetInstance()->GetDevice();
 
-			std::array<VkDescriptorSetLayout, 1> layouts = { DeferredPipeline::ourObjectDescriptorSetLayout };
+			std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::ourObjectDescriptorSetLayout };
 
 			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;

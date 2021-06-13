@@ -62,9 +62,8 @@ namespace Vulkan
 
 	void Renderer::Init()
 	{
+		ShaderHelpers::SetupDescriptorSetLayouts();
 		SetupEmptyTexture();
-
-		DeferredPipeline::SetupDescriptorSetLayouts();
 
 		myCamera = new Camera;
 	}
@@ -87,9 +86,8 @@ namespace Vulkan
 		}
 		myDespawningModels.clear();
 
-		DeferredPipeline::DestroyDescriptorSetLayouts();
-
 		myMissingTexture.Destroy();
+		ShaderHelpers::DestroyDescriptorSetLayouts();
 	}
 
 	void Renderer::OnWindowOpened(GLFWwindow* aWindow)

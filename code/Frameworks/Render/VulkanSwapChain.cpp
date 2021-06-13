@@ -40,8 +40,9 @@ namespace Vulkan
 		SetupVkSwapChain();
 		SetupDepthStencil();
 
-		myDeferredPipeline.Prepare(myExtent, myColorFormat, myDepthImage.myFormat);
-		myUIOverlay.Prepare(myDeferredPipeline.myRenderPass);
+		myDeferredRenderPass.Setup(myExtent, myColorFormat, myDepthImage.myFormat);
+		myDeferredPipeline.Prepare(myDeferredRenderPass);
+		//myUIOverlay.Prepare(myDeferredPipeline.myRenderPass);
 
 		SetupCommandBuffers();
 		SetupFramebuffers();
@@ -73,8 +74,9 @@ namespace Vulkan
 		myCommandBuffers.clear();
 		myCommandBuffersDirty.clear();
 
-		myUIOverlay.Destroy();
+		//myUIOverlay.Destroy();
 		myDeferredPipeline.Destroy();
+		myDeferredRenderPass.Destroy();
 
 		myDepthImage.Destroy();
 		for (auto imageView : myImageViews)
@@ -104,7 +106,7 @@ namespace Vulkan
 	void SwapChain::Update()
 	{
 		myDeferredPipeline.Update();
-		myUIOverlay.Update(myExtent.width, myExtent.height);
+		//myUIOverlay.Update(myExtent.width, myExtent.height);
 		DrawFrame();
 	}
 
@@ -270,7 +272,7 @@ namespace Vulkan
 		std::array<VkImageView, 5> attachments{};
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = myDeferredPipeline.myRenderPass;
+		framebufferInfo.renderPass = myDeferredRenderPass.myRenderPass;
 		framebufferInfo.attachmentCount = static_cast<uint>(attachments.size());
 		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = myExtent.width;
@@ -280,9 +282,9 @@ namespace Vulkan
 		for (size_t i = 0, e = myFramebuffers.size(); i < e; ++i)
 		{
 			attachments[0] = myImageViews[i];
-			attachments[1] = myDeferredPipeline.myPositionAttachement.myImageView;
-			attachments[2] = myDeferredPipeline.myNormalAttachement.myImageView;
-			attachments[3] = myDeferredPipeline.myAlbedoAttachement.myImageView;
+			attachments[1] = myDeferredRenderPass.myPositionAttachement.myImageView;
+			attachments[2] = myDeferredRenderPass.myNormalAttachement.myImageView;
+			attachments[3] = myDeferredRenderPass.myAlbedoAttachement.myImageView;
 			attachments[4] = myDepthImage.myImageView;
 			VK_CHECK_RESULT(vkCreateFramebuffer(myDevice, &framebufferInfo, nullptr, &myFramebuffers[i]), "Failed to create a framebuffer!");
 		}
@@ -323,7 +325,7 @@ namespace Vulkan
 
 		VkRenderPassBeginInfo renderPassBeginInfo{};
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassBeginInfo.renderPass = myDeferredPipeline.myRenderPass;
+		renderPassBeginInfo.renderPass = myDeferredRenderPass.myRenderPass;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
 		renderPassBeginInfo.renderArea.extent.width = myExtent.width;
@@ -403,11 +405,11 @@ namespace Vulkan
 			}
 		}
 		Debug::EndRegion(myCommandBuffers[anImageIndex]);
-		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 2b: UI Overlay", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-		{
-			myUIOverlay.Draw(myCommandBuffers[anImageIndex]);
-		}
-		Debug::EndRegion(myCommandBuffers[anImageIndex]);
+		//Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 2b: UI Overlay", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		//{
+		//	myUIOverlay.Draw(myCommandBuffers[anImageIndex]);
+		//}
+		//Debug::EndRegion(myCommandBuffers[anImageIndex]);
 
 		vkCmdEndRenderPass(myCommandBuffers[anImageIndex]);
 

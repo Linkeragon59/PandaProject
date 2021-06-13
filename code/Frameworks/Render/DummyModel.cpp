@@ -1,8 +1,8 @@
 #include "DummyModel.h"
 
 #include "VulkanHelpers.h"
+#include "VulkanShaderHelpers.h"
 #include "VulkanRenderer.h"
-#include "VulkanDeferredPipeline.h"
 
 #include <stb_image.h>
 
@@ -15,7 +15,7 @@ namespace Vulkan
 {
 	namespace
 	{
-		const std::vector<DeferredPipeline::Vertex> locVertices =
+		const std::vector<ShaderHelpers::Vertex> locVertices =
 		{
 			{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
 			{{0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
@@ -63,7 +63,7 @@ namespace Vulkan
 		if (GetPosition().x < 0.f)
 			elapsedTime *= -1.0f;
 
-		DeferredPipeline::ModelData ubo{};
+		ShaderHelpers::ModelData ubo{};
 		ubo.myModel = glm::rotate(glm::translate(glm::mat4(1.0f), GetPosition()), elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
 		memcpy(myUBOObject.myMappedData, &ubo, sizeof(ubo));
@@ -86,7 +86,7 @@ namespace Vulkan
 	{
 		myDevice = Renderer::GetInstance()->GetDevice();
 
-		VkDeviceSize vertexBufferSize = sizeof(DeferredPipeline::Vertex) * locVertices.size();
+		VkDeviceSize vertexBufferSize = sizeof(ShaderHelpers::Vertex) * locVertices.size();
 		VkDeviceSize indexBufferSize = sizeof(uint) * locIndices.size();
 		int texWidth, texHeight, texChannels;
 		stbi_uc* pixels = stbi_load(locTestTexture.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -210,7 +210,7 @@ namespace Vulkan
 
 	void DummyModel::PrepareBuffers()
 	{
-		myUBOObject.Create(sizeof(DeferredPipeline::ModelData),
+		myUBOObject.Create(sizeof(ShaderHelpers::ModelData),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myUBOObject.SetupDescriptor();
@@ -239,7 +239,7 @@ namespace Vulkan
 
 	void DummyModel::SetupDescriptoSets()
 	{
-		std::array<VkDescriptorSetLayout, 1> layouts = { DeferredPipeline::ourObjectDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::ourObjectDescriptorSetLayout };
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;

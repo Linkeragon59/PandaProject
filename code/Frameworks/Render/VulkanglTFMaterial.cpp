@@ -1,9 +1,5 @@
 #include "VulkanglTFMaterial.h"
 
-#include "VulkanRenderer.h"
-#include "VulkanHelpers.h"
-#include "VulkanDeferredPipeline.h"
-
 namespace Render
 {
 namespace Vulkan

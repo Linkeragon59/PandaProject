@@ -1,9 +1,7 @@
 #include "VulkanglTFTexture.h"
 
-#include "VulkanRenderer.h"
-#include "VulkanHelpers.h"
 #include "VulkanBuffer.h"
-#include "VulkanDeferredPipeline.h"
+#include "VulkanHelpers.h"
 
 namespace Render
 {

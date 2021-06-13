@@ -1,6 +1,6 @@
 #pragma once
 
-#include "VulkanDeferredPipeline.h"
+#include "VulkanShaderHelpers.h"
 
 namespace Render
 {
@@ -22,7 +22,7 @@ namespace glTF
 
 	struct Mesh
 	{
-		typedef DeferredPipeline::Vertex Vertex;
+		typedef ShaderHelpers::Vertex Vertex;
 
 		void Load(const tinygltf::Model& aModel, uint aMeshIndex, std::vector<Vertex>& someOutVertices, std::vector<uint>& someOutIndices);
 

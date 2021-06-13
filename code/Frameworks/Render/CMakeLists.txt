@@ -11,6 +11,7 @@ target_sources(Render
 		VulkanCamera.h
 		VulkanDebugMessenger.h
 		VulkanDeferredPipeline.h
+		VulkanDeferredRenderPass.h
 		VulkanDevice.h
 		VulkanglTFAnimation.h
 		VulkanglTFMaterial.h
@@ -24,6 +25,7 @@ target_sources(Render
 		VulkanImGuiOverlay.h
 		VulkanModel.h
 		VulkanRenderer.h
+		VulkanShaderHelpers.h
 		VulkanSwapChain.h
 
 		DummyModel.cpp
@@ -34,6 +36,7 @@ target_sources(Render
 		VulkanCamera.cpp
 		VulkanDebugMessenger.cpp
 		VulkanDeferredPipeline.cpp
+		VulkanDeferredRenderPass.cpp
 		VulkanDevice.cpp
 		VulkanglTFAnimation.cpp
 		VulkanglTFMaterial.cpp
@@ -46,6 +49,7 @@ target_sources(Render
 		VulkanImage.cpp
 		VulkanImGuiOverlay.cpp
 		VulkanRenderer.cpp
+		VulkanShaderHelpers.cpp
 		VulkanSwapChain.cpp
 )
 

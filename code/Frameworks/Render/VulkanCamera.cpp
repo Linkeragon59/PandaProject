@@ -1,7 +1,7 @@
 #include "VulkanCamera.h"
 #include "VulkanHelpers.h"
+#include "VulkanShaderHelpers.h"
 #include "VulkanRenderer.h"
-#include "VulkanDeferredPipeline.h"
 
 namespace Render
 {
@@ -9,7 +9,7 @@ namespace Vulkan
 {
 	Camera::Camera()
 	{
-		myViewProjUBO.Create(sizeof(DeferredPipeline::ViewProjData),
+		myViewProjUBO.Create(sizeof(ShaderHelpers::ViewProjData),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myViewProjUBO.SetupDescriptor();
@@ -31,7 +31,7 @@ namespace Vulkan
 
 		VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
 
-		std::array<VkDescriptorSetLayout, 1> layouts = { DeferredPipeline::ourCameraDescriptorSetLayout };
+		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::ourCameraDescriptorSetLayout };
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
@@ -61,10 +61,10 @@ namespace Vulkan
 		myView = aView;
 		myProjection = aProjection;
 
-		DeferredPipeline::ViewProjData data;
+		ShaderHelpers::ViewProjData data;
 		data.myView = myView;
 		data.myProjection = myProjection;
-		memcpy(myViewProjUBO.myMappedData, &data, sizeof(DeferredPipeline::ViewProjData));
+		memcpy(myViewProjUBO.myMappedData, &data, sizeof(ShaderHelpers::ViewProjData));
 	}
 
 	void Camera::BindViewProj(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aSetIndex)

@@ -1,6 +1,7 @@
 #include "VulkanDeferredPipeline.h"
 
 #include "VulkanHelpers.h"
+#include "VulkanShaderHelpers.h"
 #include "VulkanRenderer.h"
 #include "VulkanCamera.h"
 
@@ -13,210 +14,22 @@ namespace Render
 {
 namespace Vulkan
 {
-	VkDescriptorSetLayout DeferredPipeline::ourLightingDescriptorSetLayout = VK_NULL_HANDLE;
-	VkDescriptorSetLayout DeferredPipeline::ourTransparentDescriptorSetLayout = VK_NULL_HANDLE;
-
-	VkDescriptorSetLayout DeferredPipeline::ourCameraDescriptorSetLayout = VK_NULL_HANDLE;
-	VkDescriptorSetLayout DeferredPipeline::ourObjectDescriptorSetLayout = VK_NULL_HANDLE;
-
-	void DeferredPipeline::SetupDescriptorSetLayouts()
-	{
-		VkDevice device = Renderer::GetInstance()->GetDevice();
-
-		// Lighting
-		{
-			std::array<VkDescriptorSetLayoutBinding, 4> bindings{};
-			// Binding 0 : Position attachment
-			bindings[0].binding = 0;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			bindings[0].descriptorCount = 1;
-			bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			// Binding 1 : Normal attachment
-			bindings[1].binding = 1;
-			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			bindings[1].descriptorCount = 1;
-			bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			// Binding 2 : Albedo attachment
-			bindings[2].binding = 2;
-			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			bindings[2].descriptorCount = 1;
-			bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			// Binding 3 : Lights
-			bindings[3].binding = 3;
-			bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			bindings[3].descriptorCount = 1;
-			bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
-			descriptorLayoutInfo.pBindings = bindings.data();
-			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourLightingDescriptorSetLayout),
-				"Failed to create the Lighting descriptor set layout");
-		}
-
-		// Transparent
-		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
-			// Binding 0 : Position attachment
-			bindings[0].binding = 0;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			bindings[0].descriptorCount = 1;
-			bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
-			descriptorLayoutInfo.pBindings = bindings.data();
-			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourTransparentDescriptorSetLayout),
-				"Failed to create the Transparent DescriptorSetLayout");
-		}
-
-		// Camera
-		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
-			// Binding 0 : ViewProj
-			bindings[0].binding = 0;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			bindings[0].descriptorCount = 1;
-			bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
-			descriptorLayoutInfo.pBindings = bindings.data();
-			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourCameraDescriptorSetLayout),
-				"Failed to create the Camera DescriptorSetLayout");
-		}
-
-		// Object
-		{
-			std::array<VkDescriptorSetLayoutBinding, 4> bindings{};
-			// Binding 0 : Model
-			bindings[0].binding = 0;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			bindings[0].descriptorCount = 1;
-			bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-			// Binding 1 : Joint Matrices
-			bindings[1].binding = 1;
-			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			bindings[1].descriptorCount = 1;
-			bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-			// Binding 2 : Texture Sampler
-			bindings[2].binding = 2;
-			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			bindings[2].descriptorCount = 1;
-			bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			// Binding 3 : Material
-			bindings[3].binding = 3;
-			bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			bindings[3].descriptorCount = 1;
-			bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
-			descriptorLayoutInfo.pBindings = bindings.data();
-			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(device, &descriptorLayoutInfo, nullptr, &ourObjectDescriptorSetLayout),
-				"Failed to create the Object DescriptorSetLayout");
-		}
-	}
-
-	void DeferredPipeline::DestroyDescriptorSetLayouts()
-	{
-		VkDevice device = Renderer::GetInstance()->GetDevice();
-
-		vkDestroyDescriptorSetLayout(device, ourLightingDescriptorSetLayout, nullptr);
-		ourLightingDescriptorSetLayout = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorSetLayout(device, ourTransparentDescriptorSetLayout, nullptr);
-		ourTransparentDescriptorSetLayout = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorSetLayout(device, ourCameraDescriptorSetLayout, nullptr);
-		ourCameraDescriptorSetLayout = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorSetLayout(device, ourObjectDescriptorSetLayout, nullptr);
-		ourObjectDescriptorSetLayout = VK_NULL_HANDLE;
-	}
-
-	VkVertexInputBindingDescription DeferredPipeline::Vertex::GetBindingDescription(uint aBinding /*= 0*/)
-	{
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = aBinding;
-		bindingDescription.stride = sizeof(Vertex);
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		return bindingDescription;
-	}
-
-	VkVertexInputAttributeDescription DeferredPipeline::Vertex::GetAttributeDescription(DeferredPipeline::VertexComponent aComponent, uint aLocation /*= 0*/, uint aBinding /*= 0*/)
-	{
-		VkVertexInputAttributeDescription attributeDescription{};
-		attributeDescription.location = aLocation;
-		attributeDescription.binding = aBinding;
-		switch (aComponent)
-		{
-		case DeferredPipeline::VertexComponent::Position:
-			attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescription.offset = offsetof(Vertex, myPosition);
-			break;
-		case DeferredPipeline::VertexComponent::Normal:
-			attributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
-			attributeDescription.offset = offsetof(Vertex, myNormal);
-			break;
-		case DeferredPipeline::VertexComponent::UV:
-			attributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescription.offset = offsetof(Vertex, myUV);
-			break;
-		case DeferredPipeline::VertexComponent::Color:
-			attributeDescription.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-			attributeDescription.offset = offsetof(Vertex, myColor);
-			break;
-		case DeferredPipeline::VertexComponent::Joint:
-			attributeDescription.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-			attributeDescription.offset = offsetof(Vertex, myJoint);
-			break;
-		case DeferredPipeline::VertexComponent::Weight:
-			attributeDescription.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-			attributeDescription.offset = offsetof(Vertex, myWeight);
-			break;
-		case DeferredPipeline::VertexComponent::Tangent:
-			attributeDescription.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-			attributeDescription.offset = offsetof(Vertex, myTangent);
-			break;
-		}
-		return attributeDescription;
-	}
-
-	std::vector<VkVertexInputAttributeDescription> DeferredPipeline::Vertex::GetAttributeDescriptions(const std::vector<DeferredPipeline::VertexComponent> someComponents, uint aBinding /*= 0*/)
-	{
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-		attributeDescriptions.reserve(someComponents.size());
-		for (uint i = 0; i < (uint)someComponents.size(); ++i)
-			attributeDescriptions.push_back(GetAttributeDescription(someComponents[i], i, aBinding));
-		return attributeDescriptions;
-	}
-
 	DeferredPipeline::DeferredPipeline()
 	{
 		myDevice = Renderer::GetInstance()->GetDevice();
 	}
 
-	void DeferredPipeline::Prepare(VkExtent2D anExtent, VkFormat aColorFormat, VkFormat aDepthFormat)
+	void DeferredPipeline::Prepare(const DeferredRenderPass& aRenderPass)
 	{
 		PrepareUBOs();
 
-		SetupRenderPass(anExtent, aColorFormat, aDepthFormat);
-
 		SetupDescriptorPool();
-		SetupDescriptorSets();
+		SetupDescriptorSetLayouts();
+		SetupDescriptorSets(aRenderPass);
 
-		SetupGBufferPipeline();
-		SetupLightingPipeline();
-		SetupTransparentPipeline();
+		SetupGBufferPipeline(aRenderPass);
+		SetupLightingPipeline(aRenderPass);
+		SetupTransparentPipeline(aRenderPass);
 	}
 
 	void DeferredPipeline::Update()
@@ -226,14 +39,18 @@ namespace Vulkan
 
 	void DeferredPipeline::Destroy()
 	{
+		vkDestroyDescriptorSetLayout(myDevice, myLightingDescriptorSetLayout, nullptr);
+		myLightingDescriptorSetLayout = VK_NULL_HANDLE;
+
+		vkDestroyDescriptorSetLayout(myDevice, myTransparentDescriptorSetLayout, nullptr);
+		myTransparentDescriptorSetLayout = VK_NULL_HANDLE;
+
 		vkDestroyDescriptorPool(myDevice, myDescriptorPool, nullptr);
 		myDescriptorPool = VK_NULL_HANDLE;
 
 		DestroyGBufferPipeline();
 		DestroyLightingPipeline();
 		DestroyTransparentPipeline();
-
-		DestroyRenderPass();
 
 		myLightsUBO.Destroy();
 	}
@@ -278,175 +95,6 @@ namespace Vulkan
 		}
 	}
 
-	void DeferredPipeline::SetupRenderPass(VkExtent2D anExtent, VkFormat aColorFormat, VkFormat aDepthFormat)
-	{
-		myPositionAttachement.Create(anExtent.width, anExtent.height,
-			VK_FORMAT_R16G16B16A16_SFLOAT,
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		myPositionAttachement.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		myPositionAttachement.SetupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		myNormalAttachement.Create(anExtent.width, anExtent.height,
-			VK_FORMAT_R16G16B16A16_SFLOAT,
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		myNormalAttachement.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		myNormalAttachement.SetupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		myAlbedoAttachement.Create(anExtent.width, anExtent.height,
-			VK_FORMAT_R8G8B8A8_UNORM,
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		myAlbedoAttachement.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		myAlbedoAttachement.SetupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		std::array<VkAttachmentDescription, 5> attachments{};
-		{
-			// Color attachment
-			attachments[0].format = aColorFormat;
-			attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
-			attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-			// Deferred attachments
-			// Position
-			attachments[1].format = myPositionAttachement.myFormat;
-			attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
-			attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[1].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			// Normals
-			attachments[2].format = myNormalAttachement.myFormat;
-			attachments[2].samples = VK_SAMPLE_COUNT_1_BIT;
-			attachments[2].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[2].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[2].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[2].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[2].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			// Albedo
-			attachments[3].format = myAlbedoAttachement.myFormat;
-			attachments[3].samples = VK_SAMPLE_COUNT_1_BIT;
-			attachments[3].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[3].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[3].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			attachments[3].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[3].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[3].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-			// Depth attachment
-			attachments[4].format = aDepthFormat;
-			attachments[4].samples = VK_SAMPLE_COUNT_1_BIT;
-			attachments[4].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[4].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[4].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			attachments[4].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			attachments[4].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			attachments[4].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		}
-
-		// Three subpasses
-		VkAttachmentReference colorReferences[4];
-		colorReferences[0] = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-		colorReferences[1] = { 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-		colorReferences[2] = { 2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-		colorReferences[3] = { 3, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-		
-		VkAttachmentReference depthReference  = { 4, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-
-		VkAttachmentReference inputReferences[3];
-		inputReferences[0] = { 1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-		inputReferences[1] = { 2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-		inputReferences[2] = { 3, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
-		
-		std::array<VkSubpassDescription, 3> subpassDescriptions{};
-		{
-			// First subpass: Fill G-Buffer components
-			subpassDescriptions[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpassDescriptions[0].colorAttachmentCount = 4;
-			subpassDescriptions[0].pColorAttachments = colorReferences;
-			subpassDescriptions[0].pDepthStencilAttachment = &depthReference;
-
-			// Second subpass: Final Lighting (using G-Buffer components)
-			subpassDescriptions[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpassDescriptions[1].colorAttachmentCount = 1;
-			subpassDescriptions[1].pColorAttachments = colorReferences;
-			subpassDescriptions[1].pDepthStencilAttachment = &depthReference;
-			subpassDescriptions[1].inputAttachmentCount = 3;
-			subpassDescriptions[1].pInputAttachments = inputReferences;
-
-			// Third subpass: Forward transparency
-			subpassDescriptions[2].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpassDescriptions[2].colorAttachmentCount = 1;
-			subpassDescriptions[2].pColorAttachments = colorReferences;
-			subpassDescriptions[2].pDepthStencilAttachment = &depthReference;
-			subpassDescriptions[2].inputAttachmentCount = 1;
-			subpassDescriptions[2].pInputAttachments = inputReferences;
-		}
-
-		// TODO: Understand subpass dependencies better!
-		// Subpass dependencies for layout transitions
-		std::array<VkSubpassDependency, 3> dependencies{};
-		{
-			dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependencies[0].dstSubpass = 0;
-			dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-			dependencies[0].srcAccessMask = 0;
-			dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-			dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-			// This dependency transitions the input attachment from color attachment to shader read
-			dependencies[1].srcSubpass = 0;
-			dependencies[1].dstSubpass = 1;
-			dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-			dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-			dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-			dependencies[2].srcSubpass = 1;
-			dependencies[2].dstSubpass = 2;
-			dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-			dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			dependencies[2].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-			dependencies[2].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-		}
-
-		VkRenderPassCreateInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = static_cast<uint>(attachments.size());
-		renderPassInfo.pAttachments = attachments.data();
-		renderPassInfo.subpassCount = static_cast<uint>(subpassDescriptions.size());
-		renderPassInfo.pSubpasses = subpassDescriptions.data();
-		renderPassInfo.dependencyCount = static_cast<uint>(dependencies.size());
-		renderPassInfo.pDependencies = dependencies.data();
-
-		VK_CHECK_RESULT(vkCreateRenderPass(myDevice, &renderPassInfo, nullptr, &myRenderPass), "Failed to create the render pass!");
-	}
-
-	void DeferredPipeline::DestroyRenderPass()
-	{
-		vkDestroyRenderPass(myDevice, myRenderPass, nullptr);
-		myRenderPass = VK_NULL_HANDLE;
-
-		myPositionAttachement.Destroy();
-		myNormalAttachement.Destroy();
-		myAlbedoAttachement.Destroy();
-	}
-
 	void DeferredPipeline::SetupDescriptorPool()
 	{
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
@@ -464,11 +112,65 @@ namespace Vulkan
 		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
 	}
 
-	void DeferredPipeline::SetupDescriptorSets()
+	void DeferredPipeline::SetupDescriptorSetLayouts()
 	{
 		// Lighting
 		{
-			std::array<VkDescriptorSetLayout, 1> layouts = { ourLightingDescriptorSetLayout };
+			std::array<VkDescriptorSetLayoutBinding, 4> bindings{};
+			// Binding 0 : Position attachment
+			bindings[0].binding = 0;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			bindings[0].descriptorCount = 1;
+			bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			// Binding 1 : Normal attachment
+			bindings[1].binding = 1;
+			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			bindings[1].descriptorCount = 1;
+			bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			// Binding 2 : Albedo attachment
+			bindings[2].binding = 2;
+			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			bindings[2].descriptorCount = 1;
+			bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			// Binding 3 : Lights
+			bindings[3].binding = 3;
+			bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			bindings[3].descriptorCount = 1;
+			bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
+			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
+			descriptorLayoutInfo.pBindings = bindings.data();
+			VK_CHECK_RESULT(
+				vkCreateDescriptorSetLayout(myDevice, &descriptorLayoutInfo, nullptr, &myLightingDescriptorSetLayout),
+				"Failed to create the Lighting descriptor set layout");
+		}
+
+		// Transparent
+		{
+			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
+			// Binding 0 : Position attachment
+			bindings[0].binding = 0;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			bindings[0].descriptorCount = 1;
+			bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
+			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
+			descriptorLayoutInfo.pBindings = bindings.data();
+			VK_CHECK_RESULT(
+				vkCreateDescriptorSetLayout(myDevice, &descriptorLayoutInfo, nullptr, &myTransparentDescriptorSetLayout),
+				"Failed to create the Transparent DescriptorSetLayout");
+		}
+	}
+
+	void DeferredPipeline::SetupDescriptorSets(const DeferredRenderPass& aRenderPass)
+	{
+		// Lighting
+		{
+			std::array<VkDescriptorSetLayout, 1> layouts = { myLightingDescriptorSetLayout };
 			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
@@ -481,19 +183,19 @@ namespace Vulkan
 			writeDescriptorSets[0].dstSet = myLightingDescriptorSet;
 			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 			writeDescriptorSets[0].dstBinding = 0;
-			writeDescriptorSets[0].pImageInfo = &myPositionAttachement.myDescriptor;
+			writeDescriptorSets[0].pImageInfo = &aRenderPass.myPositionAttachement.myDescriptor;
 			writeDescriptorSets[0].descriptorCount = 1;
 			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSets[1].dstSet = myLightingDescriptorSet;
 			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 			writeDescriptorSets[1].dstBinding = 1;
-			writeDescriptorSets[1].pImageInfo = &myNormalAttachement.myDescriptor;
+			writeDescriptorSets[1].pImageInfo = &aRenderPass.myNormalAttachement.myDescriptor;
 			writeDescriptorSets[1].descriptorCount = 1;
 			writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSets[2].dstSet = myLightingDescriptorSet;
 			writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 			writeDescriptorSets[2].dstBinding = 2;
-			writeDescriptorSets[2].pImageInfo = &myAlbedoAttachement.myDescriptor;
+			writeDescriptorSets[2].pImageInfo = &aRenderPass.myAlbedoAttachement.myDescriptor;
 			writeDescriptorSets[2].descriptorCount = 1;
 			writeDescriptorSets[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSets[3].dstSet = myLightingDescriptorSet;
@@ -506,7 +208,7 @@ namespace Vulkan
 
 		// Transparent
 		{
-			std::array<VkDescriptorSetLayout, 1> layouts = { ourTransparentDescriptorSetLayout };
+			std::array<VkDescriptorSetLayout, 1> layouts = { myTransparentDescriptorSetLayout };
 			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
 			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
@@ -519,17 +221,17 @@ namespace Vulkan
 			writeDescriptorSets[0].dstSet = myTransparentDescriptorSet;
 			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 			writeDescriptorSets[0].dstBinding = 0;
-			writeDescriptorSets[0].pImageInfo = &myPositionAttachement.myDescriptor;
+			writeDescriptorSets[0].pImageInfo = &aRenderPass.myPositionAttachement.myDescriptor;
 			writeDescriptorSets[0].descriptorCount = 1;
 			vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
 		}
 	}
 
-	void DeferredPipeline::SetupGBufferPipeline()
+	void DeferredPipeline::SetupGBufferPipeline(const DeferredRenderPass& aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
-			ourCameraDescriptorSetLayout,
-			ourObjectDescriptorSetLayout
+			ShaderHelpers::ourCameraDescriptorSetLayout,
+			ShaderHelpers::ourObjectDescriptorSetLayout
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -556,14 +258,14 @@ namespace Vulkan
 		shaderStages[1].module = fragModule;
 		shaderStages[1].pName = "main";
 
-		auto bindingDescription = Vertex::GetBindingDescription();
-		auto attributeDescriptions = Vertex::GetAttributeDescriptions({
-			VertexComponent::Position,
-			VertexComponent::Normal,
-			VertexComponent::UV,
-			VertexComponent::Color,
-			VertexComponent::Joint,
-			VertexComponent::Weight
+		auto bindingDescription = ShaderHelpers::Vertex::GetBindingDescription();
+		auto attributeDescriptions = ShaderHelpers::Vertex::GetAttributeDescriptions({
+			ShaderHelpers::VertexComponent::Position,
+			ShaderHelpers::VertexComponent::Normal,
+			ShaderHelpers::VertexComponent::UV,
+			ShaderHelpers::VertexComponent::Color,
+			ShaderHelpers::VertexComponent::Joint,
+			ShaderHelpers::VertexComponent::Weight
 		});
 
 		VkPipelineVertexInputStateCreateInfo vertexInputStateInfo{};
@@ -641,7 +343,7 @@ namespace Vulkan
 		pipelineInfo.pColorBlendState = &colorBlendState;
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = myGBufferPipelineLayout;
-		pipelineInfo.renderPass = myRenderPass;
+		pipelineInfo.renderPass = aRenderPass.myRenderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
@@ -663,10 +365,10 @@ namespace Vulkan
 		myGBufferPipelineLayout = VK_NULL_HANDLE;
 	}
 
-	void DeferredPipeline::SetupLightingPipeline()
+	void DeferredPipeline::SetupLightingPipeline(const DeferredRenderPass& aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
-			ourLightingDescriptorSetLayout
+			myLightingDescriptorSetLayout
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -763,7 +465,7 @@ namespace Vulkan
 		pipelineInfo.pColorBlendState = &colorBlendState;
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = myLightingPipelineLayout;
-		pipelineInfo.renderPass = myRenderPass;
+		pipelineInfo.renderPass = aRenderPass.myRenderPass;
 		pipelineInfo.subpass = 1;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
@@ -785,12 +487,12 @@ namespace Vulkan
 		myLightingPipelineLayout = VK_NULL_HANDLE;
 	}
 
-	void DeferredPipeline::SetupTransparentPipeline()
+	void DeferredPipeline::SetupTransparentPipeline(const DeferredRenderPass& aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = {
-			ourTransparentDescriptorSetLayout,
-			ourCameraDescriptorSetLayout,
-			ourObjectDescriptorSetLayout
+			myTransparentDescriptorSetLayout,
+			ShaderHelpers::ourCameraDescriptorSetLayout,
+			ShaderHelpers::ourObjectDescriptorSetLayout
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -817,11 +519,11 @@ namespace Vulkan
 		shaderStages[1].module = fragModule;
 		shaderStages[1].pName = "main";
 
-		auto bindingDescription = Vertex::GetBindingDescription();
-		auto attributeDescriptions = Vertex::GetAttributeDescriptions({
-			VertexComponent::Position,
-			VertexComponent::UV,
-			VertexComponent::Color
+		auto bindingDescription = ShaderHelpers::Vertex::GetBindingDescription();
+		auto attributeDescriptions = ShaderHelpers::Vertex::GetAttributeDescriptions({
+			ShaderHelpers::VertexComponent::Position,
+			ShaderHelpers::VertexComponent::UV,
+			ShaderHelpers::VertexComponent::Color
 		});
 
 		VkPipelineVertexInputStateCreateInfo vertexInputStateInfo{};
@@ -899,7 +601,7 @@ namespace Vulkan
 		pipelineInfo.pColorBlendState = &colorBlendState;
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = myTransparentPipelineLayout;
-		pipelineInfo.renderPass = myRenderPass;
+		pipelineInfo.renderPass = aRenderPass.myRenderPass;
 		pipelineInfo.subpass = 2;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;

@@ -1,8 +1,9 @@
 #pragma once
 
 #include "VulkanImage.h"
+#include "VulkanDeferredRenderPass.h"
 #include "VulkanDeferredPipeline.h"
-#include "VulkanImGuiOverlay.h"
+//#include "VulkanImGuiOverlay.h"
 
 struct GLFWwindow;
 
@@ -52,8 +53,9 @@ namespace Vulkan
 		VkExtent2D myExtent{ 0, 0 };
 		Image myDepthImage;
 
+		DeferredRenderPass myDeferredRenderPass;
 		DeferredPipeline myDeferredPipeline;
-		ImGuiOverlay myUIOverlay;
+		//ImGuiOverlay myUIOverlay;
 
 		// One per swapchain image
 		std::vector<VkCommandBuffer> myCommandBuffers;
