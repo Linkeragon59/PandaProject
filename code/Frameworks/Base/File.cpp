@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iostream>
 
-namespace File
+namespace FileHelpers
 {
 	bool ReadAsBuffer(const std::string& aFilePath, std::vector<char>& anOutBuffer)
 	{

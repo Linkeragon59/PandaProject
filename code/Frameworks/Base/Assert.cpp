@@ -1,6 +1,6 @@
 #include "Assert.h"
 
-#ifndef NDEBUG
+#if DEBUG_BUILD
 #include <cstdarg>
 #include <iostream>
 

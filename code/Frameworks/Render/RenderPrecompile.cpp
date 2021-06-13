@@ -1,4 +1,4 @@
-#ifdef __linux__
+#if LINUX_BUILD
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
@@ -10,16 +10,16 @@
 #include <tiny_gltf.h>
 //#include <stb_image.h>
 
-#ifdef __linux__
+#if LINUX_BUILD
 #pragma GCC diagnostic pop
 #endif
 
-#if defined(_WINDOWS)
+#if WINDOWS_BUILD
 #pragma warning(push)
 #pragma warning(disable:4100)
 #pragma warning(disable:4127)
 #pragma warning(disable:4324)
-#elif defined(__linux__)
+#elif LINUX_BUILD
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -30,8 +30,8 @@
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
-#if defined(_WINDOWS)
+#if WINDOWS_BUILD
 #pragma warning(pop)
-#elif defined(__linux__)
+#elif LINUX_BUILD
 #pragma GCC diagnostic pop
 #endif

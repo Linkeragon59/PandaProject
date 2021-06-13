@@ -1,6 +1,6 @@
 #pragma once
 
-namespace File
+namespace FileHelpers
 {
 	bool ReadAsBuffer(const std::string& aFilePath, std::vector<char>& anOutBuffer);
 	bool ReadAsString(const std::string& aFilePath, std::string& anOutString);

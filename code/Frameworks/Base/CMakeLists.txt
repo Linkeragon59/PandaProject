@@ -6,11 +6,13 @@ target_sources(Base
 		Assert.h
 		BasePrecompile.h
 		File.h
-		Types.h
 		Input.h
+		Thread.h
+		Types.h
 
 		Assert.cpp
 		File.cpp
+		Thread.cpp
 		Input.cpp
 
 		glm.natvis

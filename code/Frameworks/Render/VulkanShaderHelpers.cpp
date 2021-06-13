@@ -149,7 +149,7 @@ namespace ShaderHelpers
 		VkShaderModule shaderModule;
 
 		std::vector<char> shaderCode;
-		Verify(File::ReadAsBuffer(aFilename, shaderCode), "Couldn't read shader file: %s", aFilename.c_str());
+		Verify(FileHelpers::ReadAsBuffer(aFilename, shaderCode), "Couldn't read shader file: %s", aFilename.c_str());
 
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

@@ -3,6 +3,7 @@
 #include "Module.h"
 #include "Camera.h"
 
+#include "Thread.h"
 #include "Input.h"
 
 #include <GLFW/glfw3.h>
@@ -82,6 +83,60 @@ namespace GameWork
 
 	void GameWork::Run()
 	{
+		/*auto test = [](const char* aString, uint aMult)
+		{
+			std::cout << aString << " started" << std::endl;
+			uint counter = 0;
+			while (counter < (UINT_MAX - 1) / aMult)
+				counter++;
+			std::cout << aString << " done" << std::endl;
+		};
+
+		ThreadHelpers::WorkerPool* workerPool = new ThreadHelpers::WorkerPool();
+		ThreadHelpers::WorkerPool* workerPoolLow = new ThreadHelpers::WorkerPool(ThreadHelpers::WorkerPriority::Low);
+		{
+#if DEBUG_BUILD
+			workerPool->SetWorkersName("Short Task");
+			workerPoolLow->SetWorkersName("Long Task");
+#endif
+			workerPool->SetWorkersCount();
+			workerPoolLow->SetWorkersCount();
+
+			for (uint i = 0; i < 2; i++)
+			{
+				workerPool->RequestJob([test]() { test("Job 1", 1); });
+				workerPool->RequestJob([test]() { test("Job 2", 2); });
+				workerPool->RequestJob([test]() { test("Job 3", 3); });
+				workerPool->RequestJob([test]() { test("Job 4", 1); });
+				workerPool->RequestJob([test]() { test("Job 5", 2); });
+				workerPool->RequestJob([test]() { test("Job 6", 3); });
+				workerPool->RequestJob([test]() { test("Job 7", 1); });
+				workerPool->RequestJob([test]() { test("Job 8", 2); });
+				workerPool->RequestJob([test]() { test("Job 9", 3); });
+				workerPool->RequestJob([test]() { test("Job 10", 1); });
+				workerPool->RequestJob([test]() { test("Job 11", 2); });
+				workerPool->RequestJob([test]() { test("Job 12", 3); });
+
+				workerPoolLow->RequestJob([test]() { test("Low Job 1", 1); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 2", 2); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 3", 3); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 4", 1); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 5", 2); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 6", 3); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 7", 1); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 8", 2); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 9", 3); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 10", 1); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 11", 2); });
+				workerPoolLow->RequestJob([test]() { test("Low Job 12", 3); });
+
+				workerPool->Wait();
+				workerPoolLow->Wait();
+			}
+		}
+		delete workerPool;
+		delete workerPoolLow;*/
+
 		InputManager* inputManager = InputManager::GetInstance();
 		inputManager->SetupCallbacks();
 

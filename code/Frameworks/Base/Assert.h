@@ -1,6 +1,8 @@
 #pragma once
 
-#ifdef NDEBUG
+#include "Types.h"
+
+#if !DEBUG_BUILD
 #define Assert(X, ...) ((void)0)
 #define Verify(X, ...) ((void)X)
 #else

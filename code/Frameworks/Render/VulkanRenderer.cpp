@@ -21,7 +21,7 @@ namespace Vulkan
 	{
 		uint locVulkanApiVersion = VK_API_VERSION_1_0;
 
-#if defined(_WINDOWS) && !defined(NDEBUG)
+#if WINDOWS_BUILD && DEBUG_BUILD
 		constexpr bool locEnableValidationLayers = true;
 #else
 		constexpr bool locEnableValidationLayers = false;
