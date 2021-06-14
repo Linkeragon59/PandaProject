@@ -169,7 +169,6 @@ namespace ThreadHelpers
 
 	void WorkerPool::Wait()
 	{
-		// Must wait for waiting jobs too!!
 		for (uint i = 0; i < myWorkers.size(); ++i)
 		{
 			myWorkers[i]->WaitJobs();
