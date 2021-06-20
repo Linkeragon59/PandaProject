@@ -9,12 +9,14 @@ target_sources(GameWork
 		Gui.h
 		Module.h
 		Prop.h
+		PropManager.h
 		Window.h
 
 		Camera.cpp
 		GameWork.cpp
 		Gui.cpp
 		Prop.cpp
+		PropManager.cpp
 		Window.cpp
 )
 

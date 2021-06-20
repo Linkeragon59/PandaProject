@@ -21,6 +21,9 @@ namespace Vulkan
 		void Cleanup();
 		void Recreate();
 
+		void StartFrame();
+		void EndFrame();
+
 		void UpdateView(const glm::mat4& aView, const glm::mat4& aProjection);
 		void Update();
 
@@ -49,8 +52,11 @@ namespace Vulkan
 		bool myFramebufferResized = false;
 
 		VkSwapchainKHR myVkSwapChain = VK_NULL_HANDLE;
+		uint myCurrentImageIndex = 0;
 		std::vector<Image> myImages;
 		Image myDepthImage;
+		VkExtent2D myExtent = {};
+		VkFormat myColorFormat = VK_FORMAT_UNDEFINED;
 
 		std::vector<VkCommandBuffer> myCommandBuffers;
 
@@ -64,27 +70,6 @@ namespace Vulkan
 		std::vector<VkFence> myInFlightFrameFences;
 
 		Camera* myCamera = nullptr;
-
-		// Lights will be moved to a separate class later
-		static const uint ourNumLights = 64;
-		struct Light
-		{
-			glm::vec4 myPosition;
-			glm::vec3 myColor;
-			float myRadius;
-		};
-		struct LightData
-		{
-			glm::vec4 myViewPos;
-			Light myLights[ourNumLights];
-		} myLightsData;
-		Buffer myLightsUBO;
-		VkDescriptorPool myLightsDescriptorPool = VK_NULL_HANDLE;
-		VkDescriptorSet myLightsDescriptorSet = VK_NULL_HANDLE;
-		void UpdateLightsUBO();
-		void SetupRandomLights();
-		void SetupLightsDescriptorPool();
-		void SetupLightsDescriptorSets();
 	};
 }
 }

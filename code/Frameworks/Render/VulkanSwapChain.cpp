@@ -10,7 +10,6 @@
 #include "DummyModel.h"
 
 #include <GLFW/glfw3.h>
-#include <random>
 
 namespace Render
 {
@@ -27,13 +26,6 @@ namespace Vulkan
 		glfwSetFramebufferSizeCallback(myWindow, FramebufferResizedCallback);
 
 		myCamera = new Camera;
-		myLightsUBO.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		myLightsUBO.SetupDescriptor();
-		myLightsUBO.Map();
-		SetupRandomLights();
-		UpdateLightsUBO();
-		SetupLightsDescriptorPool();
-		SetupLightsDescriptorSets();
 
 		Setup();
 	}
@@ -43,8 +35,6 @@ namespace Vulkan
 		Cleanup();
 
 		delete myCamera;
-		myLightsUBO.Destroy();
-		vkDestroyDescriptorPool(myDevice, myLightsDescriptorPool, nullptr);
 
 		vkDestroySurfaceKHR(Renderer::GetInstance()->GetVkInstance(), mySurface, nullptr);
 	}
@@ -56,7 +46,7 @@ namespace Vulkan
 		CreateSyncObjects();
 		SetupCommandBuffers();
 
-		myDeferredRenderContext.Setup(myImages, myDepthImage);
+		myDeferredRenderContext.Setup(myExtent, myColorFormat, myDepthImage.myFormat);
 	}
 
 	void SwapChain::Cleanup()
@@ -86,10 +76,70 @@ namespace Vulkan
 		Setup();
 	}
 
+	void SwapChain::StartFrame()
+	{
+		vkWaitForFences(myDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame], VK_TRUE, UINT64_MAX);
+
+		VkSemaphore imageAvailableSemaphore = myImageAvailableSemaphores[myCurrentInFlightFrame];
+
+		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &myCurrentImageIndex);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			Recreate();
+			return;
+		}
+		else
+		{
+			Assert(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire a swapchain image!");
+		}
+	}
+
+	void SwapChain::EndFrame()
+	{
+		VkSemaphore imageAvailableSemaphore = myImageAvailableSemaphores[myCurrentInFlightFrame];
+		VkSemaphore renderCompleteSemaphore = myRenderFinishedSemaphores[myCurrentInFlightFrame];
+
+		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
+		submitInfo.pWaitDstStageMask = &waitStage;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &myCommandBuffers[myCurrentImageIndex];
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
+
+		vkResetFences(myDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame]);
+		VK_CHECK_RESULT(vkQueueSubmit(Renderer::GetInstance()->GetGraphicsQueue(), 1, &submitInfo, myInFlightFrameFences[myCurrentInFlightFrame]),
+			"Failed to submit a command buffer");
+
+		VkPresentInfoKHR presentInfo = {};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &renderCompleteSemaphore;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &myVkSwapChain;
+		presentInfo.pImageIndices = &myCurrentImageIndex;
+
+		VkResult result = vkQueuePresentKHR(Renderer::GetInstance()->GetGraphicsQueue(), &presentInfo);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || myFramebufferResized)
+		{
+			myFramebufferResized = false;
+			Recreate();
+		}
+		else
+		{
+			Assert(result == VK_SUCCESS, "Failed to present a swapchain image!");
+		}
+
+		myCurrentInFlightFrame = (myCurrentInFlightFrame + 1) % myMaxInFlightFrames;
+	}
+
 	void SwapChain::UpdateView(const glm::mat4& aView, const glm::mat4& aProjection)
 	{
 		myCamera->Update(aView, aProjection);
-		UpdateLightsUBO();
+		myDeferredRenderContext.UpdateLightsUBO(myCamera->GetView()[3]);
 	}
 
 	void SwapChain::Update()
@@ -119,19 +169,18 @@ namespace Vulkan
 			&presentSupport);
 		Assert(presentSupport, "The device doesn't support presenting on the graphics queue!");
 
-		VkExtent2D extent = {};
 		VkSurfaceCapabilitiesKHR capabilities = {};
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, mySurface, &capabilities);
 		if (capabilities.currentExtent.width != UINT32_MAX)
 		{
-			extent = capabilities.currentExtent;
+			myExtent = capabilities.currentExtent;
 		}
 		else
 		{
 			int width = 0, height = 0;
 			glfwGetWindowSize(myWindow, &width, &height);
-			extent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, (uint)width));
-			extent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, (uint)height));
+			myExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, (uint)width));
+			myExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, (uint)height));
 		}
 
 		uint formatCount = 0;
@@ -145,6 +194,7 @@ namespace Vulkan
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 				surfaceFormat = availableFormat;
 		}
+		myColorFormat = surfaceFormat.format;
 
 		uint presentModeCount = 0;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, mySurface, &presentModeCount, nullptr);
@@ -166,9 +216,9 @@ namespace Vulkan
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 		createInfo.surface = mySurface;
 		createInfo.minImageCount = imageCount;
-		createInfo.imageFormat = surfaceFormat.format;
+		createInfo.imageFormat = myColorFormat;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
-		createInfo.imageExtent = extent;
+		createInfo.imageExtent = myExtent;
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -188,8 +238,8 @@ namespace Vulkan
 		for (uint i = 0; i < imageCount; ++i)
 		{
 			myImages[i].myImage = images[i];
-			myImages[i].myFormat = surfaceFormat.format;
-			myImages[i].myExtent = { extent.width, extent.height, 1 };
+			myImages[i].myFormat = myColorFormat;
+			myImages[i].myExtent = { myExtent.width, myExtent.height, 1 };
 
 			VkImageViewCreateInfo viewCreateInfo{};
 			viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -210,8 +260,10 @@ namespace Vulkan
 
 			VK_CHECK_RESULT(vkCreateImageView(myDevice, &viewCreateInfo, nullptr, &myImages[i].myImageView), "Failed to create an image view for the swap chain!");
 		}
+		myCurrentImageIndex = 0;
 
 		myMaxInFlightFrames = imageCount - 1;
+		myCurrentInFlightFrame = 0;
 	}
 
 	void SwapChain::CleanupVkSwapChain()
@@ -308,126 +360,34 @@ namespace Vulkan
 
 	void SwapChain::DrawFrame()
 	{
-		vkWaitForFences(myDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame], VK_TRUE, UINT64_MAX);
+		StartFrame();
 
-		VkSemaphore imageAvailableSemaphore = myImageAvailableSemaphores[myCurrentInFlightFrame];
-		VkSemaphore renderCompleteSemaphore = myRenderFinishedSemaphores[myCurrentInFlightFrame];
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = (float)myExtent.width;
+		viewport.height = (float)myExtent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
 
-		uint imageIndex = 0;
-		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		VkRect2D scissor{};
+		scissor.extent = myExtent;
+		scissor.offset = { 0, 0 };
+
+		myDeferredRenderContext.Begin(myCommandBuffers[myCurrentImageIndex], myImages[myCurrentImageIndex].myImageView, myDepthImage.myImageView);
+		myDeferredRenderContext.SetViewport(viewport);
+		myDeferredRenderContext.SetScissor(scissor);
+		myDeferredRenderContext.BindCamera(myCamera);
+		for (uint i = 0, e = Renderer::GetInstance()->GetModelsCount(); i < e; ++i)
 		{
-			Recreate();
-			return;
+			if (Model* model = Renderer::GetInstance()->GetModel(i))
+			{
+				myDeferredRenderContext.DrawModel(model);
+			}
 		}
-		else
-		{
-			Assert(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire a swapchain image!");
-		}
-
-		myDeferredRenderContext.BuildCommandBuffers(myCommandBuffers[imageIndex], imageIndex, myCamera, myLightsDescriptorSet);
-
-		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
-		submitInfo.pWaitDstStageMask = &waitStage;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &myCommandBuffers[imageIndex];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
-
-		vkResetFences(myDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame]);
-		VK_CHECK_RESULT(vkQueueSubmit(Renderer::GetInstance()->GetGraphicsQueue(), 1, &submitInfo, myInFlightFrameFences[myCurrentInFlightFrame]),
-			"Failed to submit a command buffer");
-
-		VkPresentInfoKHR presentInfo = {};
-		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &renderCompleteSemaphore;
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = &myVkSwapChain;
-		presentInfo.pImageIndices = &imageIndex;
-
-		result = vkQueuePresentKHR(Renderer::GetInstance()->GetGraphicsQueue(), &presentInfo);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || myFramebufferResized)
-		{
-			myFramebufferResized = false;
-			Recreate();
-		}
-		else
-		{
-			Assert(result == VK_SUCCESS, "Failed to present a swapchain image!");
-		}
-
-		myCurrentInFlightFrame = (myCurrentInFlightFrame + 1) % myMaxInFlightFrames;
-	}
-
-	void SwapChain::UpdateLightsUBO()
-	{
-		glm::vec3 cameraPosition = myCamera->GetView()[3];
-		myLightsData.myViewPos = glm::vec4(cameraPosition, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
-		memcpy(myLightsUBO.myMappedData, &myLightsData, sizeof(LightData));
-	}
-
-	void SwapChain::SetupRandomLights()
-	{
-		std::vector<glm::vec3> colors =
-		{
-			glm::vec3(1.0f, 1.0f, 1.0f),
-			glm::vec3(1.0f, 0.0f, 0.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			glm::vec3(0.0f, 0.0f, 1.0f),
-			glm::vec3(1.0f, 1.0f, 0.0f),
-		};
-
-		std::default_random_engine rndGen((uint)time(nullptr));
-		std::uniform_real_distribution<float> rndDist(-10.0f, 10.0f);
-		std::uniform_int_distribution<uint> rndCol(0, static_cast<uint>(colors.size() - 1));
-
-		for (Light& light : myLightsData.myLights)
-		{
-			light.myPosition = glm::vec4(rndDist(rndGen) * 6.0f, 0.25f + std::abs(rndDist(rndGen)) * 4.0f, rndDist(rndGen) * 6.0f, 1.0f);
-			light.myColor = colors[rndCol(rndGen)];
-			light.myRadius = 1.0f + std::abs(rndDist(rndGen));
-		}
-	}
-
-	void SwapChain::SetupLightsDescriptorPool()
-	{
-		std::array<VkDescriptorPoolSize, 1> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = 1;
-
-		VkDescriptorPoolCreateInfo descriptorPoolInfo{};
-		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descriptorPoolInfo.poolSizeCount = (uint)poolSizes.size();
-		descriptorPoolInfo.pPoolSizes = poolSizes.data();
-		descriptorPoolInfo.maxSets = 1;
-
-		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myLightsDescriptorPool), "Failed to create the descriptor pool");
-	}
-
-	void SwapChain::SetupLightsDescriptorSets()
-	{
-		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::GetLightsDescriptorSetLayout() };
-		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
-		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descriptorSetAllocateInfo.descriptorPool = myLightsDescriptorPool;
-		descriptorSetAllocateInfo.pSetLayouts = layouts.data();
-		descriptorSetAllocateInfo.descriptorSetCount = (uint)layouts.size();
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(myDevice, &descriptorSetAllocateInfo, &myLightsDescriptorSet), "Failed to create the node descriptor set");
-
-		std::array<VkWriteDescriptorSet, 1> writeDescriptorSets{};
-		writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[0].dstSet = myLightsDescriptorSet;
-		writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		writeDescriptorSets[0].dstBinding = 0;
-		writeDescriptorSets[0].pBufferInfo = &myLightsUBO.myDescriptor;
-		writeDescriptorSets[0].descriptorCount = 1;
-		vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
+		myDeferredRenderContext.End();
+		
+		EndFrame();
 	}
 }
 }
