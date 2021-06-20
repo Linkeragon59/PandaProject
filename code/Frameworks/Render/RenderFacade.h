@@ -22,11 +22,12 @@ namespace Render
 
 		// Vulkan Renderer
 		Vulkan::Renderer* GetRenderer() const { return myVulkanRenderer; }
-		// TODO: We may want to support adding/removing windows dynamically
-		// TODO: We may want to be able to init the Vulkan Renderer without a window
-		void InitRenderer(GLFWwindow* aWindow);
-		void UpdateRenderer(const glm::mat4& aView, const glm::mat4& aProjection);
-		void FinalizeRenderer(GLFWwindow* aWindow);
+		void InitRenderer();
+		void UpdateRenderer();
+		void FinalizeRenderer();
+		void OpenWindow(GLFWwindow* aWindow);
+		void CloseWindow(GLFWwindow* aWindow);
+		void SetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
 
 		uint SpawnModel(const std::string& aFilePath, const RenderData& aRenderData);
 		void DespawnModel(uint anIndex);

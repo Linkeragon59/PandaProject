@@ -10,6 +10,7 @@
 #include "DummyModel.h"
 
 #include <GLFW/glfw3.h>
+#include <random>
 
 namespace Render
 {
@@ -25,12 +26,25 @@ namespace Vulkan
 		glfwSetWindowUserPointer(myWindow, this);
 		glfwSetFramebufferSizeCallback(myWindow, FramebufferResizedCallback);
 
+		myCamera = new Camera;
+		myLightsUBO.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		myLightsUBO.SetupDescriptor();
+		myLightsUBO.Map();
+		SetupRandomLights();
+		UpdateLightsUBO();
+		SetupLightsDescriptorPool();
+		SetupLightsDescriptorSets();
+
 		Setup();
 	}
 
 	SwapChain::~SwapChain()
 	{
 		Cleanup();
+
+		delete myCamera;
+		myLightsUBO.Destroy();
+		vkDestroyDescriptorPool(myDevice, myLightsDescriptorPool, nullptr);
 
 		vkDestroySurfaceKHR(Renderer::GetInstance()->GetVkInstance(), mySurface, nullptr);
 	}
@@ -39,53 +53,22 @@ namespace Vulkan
 	{
 		SetupVkSwapChain();
 		SetupDepthStencil();
-
-		myDeferredRenderPass.Setup(myExtent, myColorFormat, myDepthImage.myFormat);
-		myDeferredPipeline.Prepare(myDeferredRenderPass);
-		//myUIOverlay.Prepare(myDeferredPipeline.myRenderPass);
-
-		SetupCommandBuffers();
-		SetupFramebuffers();
-
-		for (uint i = 0; i < (uint)myCommandBuffers.size(); ++i)
-			BuildCommandBuffer(i);
-
 		CreateSyncObjects();
+		SetupCommandBuffers();
+
+		myDeferredRenderContext.Setup(myImages, myDepthImage);
 	}
 
 	void SwapChain::Cleanup()
 	{
 		vkDeviceWaitIdle(myDevice);
 
-		for (uint i = 0; i < myMaxInFlightFrames; ++i)
-		{
-			vkDestroyFence(myDevice, myInFlightFrameFences[i], nullptr);
-			vkDestroySemaphore(myDevice, myRenderFinishedSemaphores[i], nullptr);
-			vkDestroySemaphore(myDevice, myImageAvailableSemaphores[i], nullptr);
-		}
-		myInFlightFrameFences.clear();
-		myRenderFinishedSemaphores.clear();
-		myImageAvailableSemaphores.clear();
+		myDeferredRenderContext.Destroy();
 
-		for (auto framebuffer : myFramebuffers)
-			vkDestroyFramebuffer(myDevice, framebuffer, nullptr);
-		myFramebuffers.clear();
-
-		myCommandBuffers.clear();
-		myCommandBuffersDirty.clear();
-
-		//myUIOverlay.Destroy();
-		myDeferredPipeline.Destroy();
-		myDeferredRenderPass.Destroy();
-
-		myDepthImage.Destroy();
-		for (auto imageView : myImageViews)
-			vkDestroyImageView(myDevice, imageView, nullptr);
-		myImageViews.clear();
-		myImages.clear();
-
-		vkDestroySwapchainKHR(myDevice, myVkSwapChain, nullptr);
-		myVkSwapChain = VK_NULL_HANDLE;
+		CleanupCommandBuffers();
+		DestroySyncObjects();
+		CleanupDepthStencil();
+		CleanupVkSwapChain();
 	}
 
 	void SwapChain::Recreate()
@@ -98,22 +81,20 @@ namespace Vulkan
 			glfwGetFramebufferSize(myWindow, &width, &height);
 		}
 
-		// TODO: Maybe we don't have to recreate everything?
+		// TODO: Recreate only what's necessary
 		Cleanup();
 		Setup();
 	}
 
-	void SwapChain::Update()
+	void SwapChain::UpdateView(const glm::mat4& aView, const glm::mat4& aProjection)
 	{
-		myDeferredPipeline.Update();
-		//myUIOverlay.Update(myExtent.width, myExtent.height);
-		DrawFrame();
+		myCamera->Update(aView, aProjection);
+		UpdateLightsUBO();
 	}
 
-	void SwapChain::SetDirty()
+	void SwapChain::Update()
 	{
-		for (uint i = 0; i < (uint)myCommandBuffers.size(); ++i)
-			myCommandBuffersDirty[i] = true;
+		DrawFrame();
 	}
 
 	void SwapChain::FramebufferResizedCallback(GLFWwindow* aWindow, int aWidth, int aHeight)
@@ -138,18 +119,19 @@ namespace Vulkan
 			&presentSupport);
 		Assert(presentSupport, "The device doesn't support presenting on the graphics queue!");
 
+		VkExtent2D extent = {};
 		VkSurfaceCapabilitiesKHR capabilities = {};
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, mySurface, &capabilities);
 		if (capabilities.currentExtent.width != UINT32_MAX)
 		{
-			myExtent = capabilities.currentExtent;
+			extent = capabilities.currentExtent;
 		}
 		else
 		{
 			int width = 0, height = 0;
 			glfwGetWindowSize(myWindow, &width, &height);
-			myExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, (uint)width));
-			myExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, (uint)height));
+			extent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, (uint)width));
+			extent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, (uint)height));
 		}
 
 		uint formatCount = 0;
@@ -163,7 +145,6 @@ namespace Vulkan
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 				surfaceFormat = availableFormat;
 		}
-		myColorFormat = surfaceFormat.format;
 
 		uint presentModeCount = 0;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, mySurface, &presentModeCount, nullptr);
@@ -187,7 +168,7 @@ namespace Vulkan
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
-		createInfo.imageExtent = myExtent;
+		createInfo.imageExtent = extent;
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -200,17 +181,21 @@ namespace Vulkan
 		VK_CHECK_RESULT(vkCreateSwapchainKHR(myDevice, &createInfo, nullptr, &myVkSwapChain), "Failed to create a swap chain!");
 
 		vkGetSwapchainImagesKHR(myDevice, myVkSwapChain, &imageCount, nullptr);
-		myImages.resize(imageCount);
-		vkGetSwapchainImagesKHR(myDevice, myVkSwapChain, &imageCount, myImages.data());
+		std::vector<VkImage> images(imageCount);
+		vkGetSwapchainImagesKHR(myDevice, myVkSwapChain, &imageCount, images.data());
 
-		myImageViews.resize(myImages.size());
-		for (size_t i = 0, e = myImages.size(); i < e; ++i)
+		myImages.resize(imageCount);
+		for (uint i = 0; i < imageCount; ++i)
 		{
+			myImages[i].myImage = images[i];
+			myImages[i].myFormat = surfaceFormat.format;
+			myImages[i].myExtent = { extent.width, extent.height, 1 };
+
 			VkImageViewCreateInfo viewCreateInfo{};
 			viewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			viewCreateInfo.image = myImages[i];
+			viewCreateInfo.image = myImages[i].myImage;
 			viewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			viewCreateInfo.format = myColorFormat;
+			viewCreateInfo.format = myImages[i].myFormat;
 			viewCreateInfo.components = {
 				VK_COMPONENT_SWIZZLE_R,
 				VK_COMPONENT_SWIZZLE_G,
@@ -223,17 +208,30 @@ namespace Vulkan
 			viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 			viewCreateInfo.subresourceRange.layerCount = 1;
 
-			VK_CHECK_RESULT(vkCreateImageView(myDevice, &viewCreateInfo, nullptr, &myImageViews[i]), "Failed to create an image view for the swap chain!");
+			VK_CHECK_RESULT(vkCreateImageView(myDevice, &viewCreateInfo, nullptr, &myImages[i].myImageView), "Failed to create an image view for the swap chain!");
 		}
 
 		myMaxInFlightFrames = imageCount - 1;
+	}
+
+	void SwapChain::CleanupVkSwapChain()
+	{
+		for (uint i = 0, e = (uint)myImages.size(); i < e; ++i)
+		{
+			vkDestroyImageView(myDevice, myImages[i].myImageView, nullptr);
+			myImages[i].myImage = VK_NULL_HANDLE;
+		}
+		myImages.clear();
+
+		vkDestroySwapchainKHR(myDevice, myVkSwapChain, nullptr);
+		myVkSwapChain = VK_NULL_HANDLE;
 	}
 
 	void SwapChain::SetupDepthStencil()
 	{
 		VkFormat depthFormat = Renderer::GetInstance()->GetVulkanDevice()->FindBestDepthFormat();
 
-		myDepthImage.Create(myExtent.width, myExtent.height,
+		myDepthImage.Create(myImages[0].myExtent.width, myImages[0].myExtent.height,
 			depthFormat,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -251,43 +249,9 @@ namespace Vulkan
 		//	Renderer::GetInstance()->GetGraphicsQueue());
 	}
 
-	void SwapChain::SetupCommandBuffers()
+	void SwapChain::CleanupDepthStencil()
 	{
-		myCommandBuffers.resize(myImages.size());
-		myCommandBuffersDirty.resize(myImages.size(), true);
-		
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = Renderer::GetInstance()->GetGraphicsCommandPool();
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = (uint)myCommandBuffers.size();
-
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
-	}
-
-	void SwapChain::SetupFramebuffers()
-	{
-		myFramebuffers.resize(myImages.size());
-
-		std::array<VkImageView, 5> attachments{};
-		VkFramebufferCreateInfo framebufferInfo{};
-		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = myDeferredRenderPass.myRenderPass;
-		framebufferInfo.attachmentCount = static_cast<uint>(attachments.size());
-		framebufferInfo.pAttachments = attachments.data();
-		framebufferInfo.width = myExtent.width;
-		framebufferInfo.height = myExtent.height;
-		framebufferInfo.layers = 1;
-
-		for (size_t i = 0, e = myFramebuffers.size(); i < e; ++i)
-		{
-			attachments[0] = myImageViews[i];
-			attachments[1] = myDeferredRenderPass.myPositionAttachement.myImageView;
-			attachments[2] = myDeferredRenderPass.myNormalAttachement.myImageView;
-			attachments[3] = myDeferredRenderPass.myAlbedoAttachement.myImageView;
-			attachments[4] = myDepthImage.myImageView;
-			VK_CHECK_RESULT(vkCreateFramebuffer(myDevice, &framebufferInfo, nullptr, &myFramebuffers[i]), "Failed to create a framebuffer!");
-		}
+		myDepthImage.Destroy();
 	}
 
 	void SwapChain::CreateSyncObjects()
@@ -311,111 +275,35 @@ namespace Vulkan
 		}
 	}
 
-	void SwapChain::BuildCommandBuffer(uint anImageIndex)
+	void SwapChain::DestroySyncObjects()
 	{
-		VkCommandBufferBeginInfo cmdBufferBeginInfo{};
-		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		std::array<VkClearValue, 5> clearValues{};
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 0.0f };
-		clearValues[1].color = { 0.0f, 0.0f, 0.0f, 0.0f };
-		clearValues[2].color = { 0.0f, 0.0f, 0.0f, 0.0f };
-		clearValues[3].color = { 0.0f, 0.0f, 0.0f, 0.0f };
-		clearValues[4].depthStencil = { 1.0f, 0 };
-
-		VkRenderPassBeginInfo renderPassBeginInfo{};
-		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassBeginInfo.renderPass = myDeferredRenderPass.myRenderPass;
-		renderPassBeginInfo.renderArea.offset.x = 0;
-		renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width = myExtent.width;
-		renderPassBeginInfo.renderArea.extent.height = myExtent.height;
-		renderPassBeginInfo.clearValueCount = (uint)clearValues.size();
-		renderPassBeginInfo.pClearValues = clearValues.data();
-
-		// Set target frame buffer
-		renderPassBeginInfo.framebuffer = myFramebuffers[anImageIndex];
-
-		VK_CHECK_RESULT(vkBeginCommandBuffer(myCommandBuffers[anImageIndex], &cmdBufferBeginInfo), "Failed to begin a command buffer");
-
-		vkCmdBeginRenderPass(myCommandBuffers[anImageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)myExtent.width;
-		viewport.height = (float)myExtent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(myCommandBuffers[anImageIndex], 0, 1, &viewport);
-
-		VkRect2D scissor{};
-		scissor.extent = myExtent;
-		scissor.offset = { 0, 0 };
-		vkCmdSetScissor(myCommandBuffers[anImageIndex], 0, 1, &scissor);
-
-		Camera* camera = Renderer::GetInstance()->GetCamera();
-
-		// First sub pass
-		// Renders the components of the scene to the G-Buffer attachments
-		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 0: Deferred G-Buffer creation", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		for (uint i = 0; i < myMaxInFlightFrames; ++i)
 		{
-			vkCmdBindPipeline(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipeline);
-
-			camera->BindViewProj(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout, 0);
-			for (uint i = 0, e = Renderer::GetInstance()->GetModelsCount(); i < e; ++i)
-			{
-				if (Model* model = Renderer::GetInstance()->GetModel(i))
-				{
-					if (!model->IsTransparent())
-						model->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myGBufferPipelineLayout, 1);
-				}
-			}
+			vkDestroyFence(myDevice, myInFlightFrameFences[i], nullptr);
+			vkDestroySemaphore(myDevice, myRenderFinishedSemaphores[i], nullptr);
+			vkDestroySemaphore(myDevice, myImageAvailableSemaphores[i], nullptr);
 		}
-		Debug::EndRegion(myCommandBuffers[anImageIndex]);
+		myInFlightFrameFences.clear();
+		myRenderFinishedSemaphores.clear();
+		myImageAvailableSemaphores.clear();
+	}
 
-		// Second sub pass
-		// This subpass will use the G-Buffer components as input attachment for the lighting
-		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 1: Deferred composition", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-		{
-			vkCmdNextSubpass(myCommandBuffers[anImageIndex], VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipeline);
+	void SwapChain::SetupCommandBuffers()
+	{
+		myCommandBuffers.resize(myImages.size());
 
-			vkCmdBindDescriptorSets(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 0, 1, &myDeferredPipeline.myLightingDescriptorSet, 0, NULL);
-			vkCmdDraw(myCommandBuffers[anImageIndex], 4, 1, 0, 0);
-		}
-		Debug::EndRegion(myCommandBuffers[anImageIndex]);
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = Renderer::GetInstance()->GetGraphicsCommandPool();
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = (uint)myCommandBuffers.size();
 
-		// Third subpass
-		// Render transparent geometry using a forward pass that compares against depth generated during G-Buffer fill
-		Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 2: Forward transparency", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-		{
-			vkCmdNextSubpass(myCommandBuffers[anImageIndex], VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipeline);
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
+	}
 
-			vkCmdBindDescriptorSets(myCommandBuffers[anImageIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipelineLayout, 0, 1, &myDeferredPipeline.myTransparentDescriptorSet, 0, NULL);
-			camera->BindViewProj(myCommandBuffers[anImageIndex], myDeferredPipeline.myTransparentPipelineLayout, 1);
-			for (uint i = 0, e = Renderer::GetInstance()->GetModelsCount(); i < e; ++i)
-			{
-				if (Model* model = Renderer::GetInstance()->GetModel(i))
-				{
-					if (model->IsTransparent())
-						model->Draw(myCommandBuffers[anImageIndex], myDeferredPipeline.myTransparentPipelineLayout, 2);
-				}
-			}
-		}
-		Debug::EndRegion(myCommandBuffers[anImageIndex]);
-		//Debug::BeginRegion(myCommandBuffers[anImageIndex], "Subpass 2b: UI Overlay", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-		//{
-		//	myUIOverlay.Draw(myCommandBuffers[anImageIndex]);
-		//}
-		//Debug::EndRegion(myCommandBuffers[anImageIndex]);
-
-		vkCmdEndRenderPass(myCommandBuffers[anImageIndex]);
-
-		VK_CHECK_RESULT(vkEndCommandBuffer(myCommandBuffers[anImageIndex]), "Failed to end a command buffer");
-
-		myCommandBuffersDirty[anImageIndex] = false;
+	void SwapChain::CleanupCommandBuffers()
+	{
+		myCommandBuffers.clear();
 	}
 
 	void SwapChain::DrawFrame()
@@ -437,8 +325,7 @@ namespace Vulkan
 			Assert(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire a swapchain image!");
 		}
 
-		if (myCommandBuffersDirty[imageIndex])
-			BuildCommandBuffer(imageIndex);
+		myDeferredRenderContext.BuildCommandBuffers(myCommandBuffers[imageIndex], imageIndex, myCamera, myLightsDescriptorSet);
 
 		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
@@ -476,6 +363,71 @@ namespace Vulkan
 		}
 
 		myCurrentInFlightFrame = (myCurrentInFlightFrame + 1) % myMaxInFlightFrames;
+	}
+
+	void SwapChain::UpdateLightsUBO()
+	{
+		glm::vec3 cameraPosition = myCamera->GetView()[3];
+		myLightsData.myViewPos = glm::vec4(cameraPosition, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
+		memcpy(myLightsUBO.myMappedData, &myLightsData, sizeof(LightData));
+	}
+
+	void SwapChain::SetupRandomLights()
+	{
+		std::vector<glm::vec3> colors =
+		{
+			glm::vec3(1.0f, 1.0f, 1.0f),
+			glm::vec3(1.0f, 0.0f, 0.0f),
+			glm::vec3(0.0f, 1.0f, 0.0f),
+			glm::vec3(0.0f, 0.0f, 1.0f),
+			glm::vec3(1.0f, 1.0f, 0.0f),
+		};
+
+		std::default_random_engine rndGen((uint)time(nullptr));
+		std::uniform_real_distribution<float> rndDist(-10.0f, 10.0f);
+		std::uniform_int_distribution<uint> rndCol(0, static_cast<uint>(colors.size() - 1));
+
+		for (Light& light : myLightsData.myLights)
+		{
+			light.myPosition = glm::vec4(rndDist(rndGen) * 6.0f, 0.25f + std::abs(rndDist(rndGen)) * 4.0f, rndDist(rndGen) * 6.0f, 1.0f);
+			light.myColor = colors[rndCol(rndGen)];
+			light.myRadius = 1.0f + std::abs(rndDist(rndGen));
+		}
+	}
+
+	void SwapChain::SetupLightsDescriptorPool()
+	{
+		std::array<VkDescriptorPoolSize, 1> poolSizes{};
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[0].descriptorCount = 1;
+
+		VkDescriptorPoolCreateInfo descriptorPoolInfo{};
+		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		descriptorPoolInfo.poolSizeCount = (uint)poolSizes.size();
+		descriptorPoolInfo.pPoolSizes = poolSizes.data();
+		descriptorPoolInfo.maxSets = 1;
+
+		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myLightsDescriptorPool), "Failed to create the descriptor pool");
+	}
+
+	void SwapChain::SetupLightsDescriptorSets()
+	{
+		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::GetLightsDescriptorSetLayout() };
+		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
+		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		descriptorSetAllocateInfo.descriptorPool = myLightsDescriptorPool;
+		descriptorSetAllocateInfo.pSetLayouts = layouts.data();
+		descriptorSetAllocateInfo.descriptorSetCount = (uint)layouts.size();
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(myDevice, &descriptorSetAllocateInfo, &myLightsDescriptorSet), "Failed to create the node descriptor set");
+
+		std::array<VkWriteDescriptorSet, 1> writeDescriptorSets{};
+		writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		writeDescriptorSets[0].dstSet = myLightsDescriptorSet;
+		writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptorSets[0].dstBinding = 0;
+		writeDescriptorSets[0].pBufferInfo = &myLightsUBO.myDescriptor;
+		writeDescriptorSets[0].descriptorCount = 1;
+		vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
 	}
 }
 }

@@ -13,6 +13,7 @@ namespace ShaderHelpers
 {
 	VkDescriptorSetLayout locCameraDescriptorSetLayout = VK_NULL_HANDLE;
 	VkDescriptorSetLayout locObjectDescriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorSetLayout locLightsDescriptorSetLayout = VK_NULL_HANDLE;
 
 	void SetupDescriptorSetLayouts()
 	{
@@ -66,6 +67,24 @@ namespace ShaderHelpers
 				vkCreateDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &locObjectDescriptorSetLayout),
 				"Failed to create the Object DescriptorSetLayout");
 		}
+
+		// Lights
+		{
+			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
+			// Binding 0 : Lights
+			bindings[0].binding = 0;
+			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			bindings[0].descriptorCount = 1;
+			bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
+			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
+			descriptorLayoutInfo.pBindings = bindings.data();
+			VK_CHECK_RESULT(
+				vkCreateDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &locLightsDescriptorSetLayout),
+				"Failed to create the Lights DescriptorSetLayout");
+		}
 	}
 
 	void DestroyDescriptorSetLayouts()
@@ -75,6 +94,9 @@ namespace ShaderHelpers
 
 		vkDestroyDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), locObjectDescriptorSetLayout, nullptr);
 		locObjectDescriptorSetLayout = VK_NULL_HANDLE;
+
+		vkDestroyDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), locLightsDescriptorSetLayout, nullptr);
+		locLightsDescriptorSetLayout = VK_NULL_HANDLE;
 	}
 
 	VkDescriptorSetLayout GetCameraDescriptorSetLayout()
@@ -85,6 +107,11 @@ namespace ShaderHelpers
 	VkDescriptorSetLayout GetObjectDescriptorSetLayout()
 	{
 		return locObjectDescriptorSetLayout;
+	}
+
+	VkDescriptorSetLayout GetLightsDescriptorSetLayout()
+	{
+		return locLightsDescriptorSetLayout;
 	}
 
 	VkVertexInputBindingDescription Vertex::GetBindingDescription(uint aBinding /*= 0*/)

@@ -3,8 +3,6 @@
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
 
-struct ImGuiContext;
-
 namespace Render
 {
 namespace Vulkan
@@ -16,15 +14,12 @@ namespace Vulkan
 		~ImGuiOverlay();
 
 		void Prepare(VkRenderPass aRenderPass);
-		void Update(uint aWidth, uint aHeight);
 		void Destroy();
 
-		void Resize(uint aWidth, uint aHeight);
 		void Draw(const VkCommandBuffer aCommandBuffer);
 
 	private:
 		VkDevice myDevice = VK_NULL_HANDLE;
-		ImGuiContext* myContext = nullptr;
 
 		Image myFontTexture;
 

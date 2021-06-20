@@ -64,15 +64,10 @@ namespace Vulkan
 	{
 		ShaderHelpers::SetupDescriptorSetLayouts();
 		SetupEmptyTexture();
-
-		myCamera = new Camera;
 	}
 
 	void Renderer::Finalize()
 	{
-		delete myCamera;
-		myCamera = nullptr;
-
 		for (uint i = 0; i < (uint)myModels.size(); ++i)
 		{
 			if (myModels[i])
@@ -100,7 +95,7 @@ namespace Vulkan
 	{
 		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
 		{
-			if (mySwapChains[i]->GetWindow() == aWindow)
+			if (mySwapChains[i]->GetWindowHandle() == aWindow)
 			{
 				delete mySwapChains[i];
 				mySwapChains.erase(mySwapChains.begin() + i);
@@ -109,10 +104,20 @@ namespace Vulkan
 		}
 	}
 
-	void Renderer::Update(const glm::mat4& aView, const glm::mat4& aProjection)
+	void Renderer::OnSetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection)
 	{
-		myCamera->Update(aView, aProjection);
+		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
+		{
+			if (mySwapChains[i]->GetWindowHandle() == aWindow)
+			{
+				mySwapChains[i]->UpdateView(aView, aProjection);
+				break;
+			}
+		}
+	}
 
+	void Renderer::Update()
+	{
 		// TODO: This is slow, need optimization
 		for (uint i = 0; i < (uint)myModels.size(); ++i)
 		{
@@ -162,11 +167,6 @@ namespace Vulkan
 
 	uint Renderer::SpawnModel(const std::string& aFilePath, const RenderData& aRenderData)
 	{
-		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
-		{
-			mySwapChains[i]->SetDirty();
-		}
-
 		Model* model = nullptr;
 		if (aFilePath.empty())
 		{
@@ -192,11 +192,6 @@ namespace Vulkan
 
 	void Renderer::DespawnModel(uint anIndex)
 	{
-		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
-		{
-			mySwapChains[i]->SetDirty();
-		}
-
 		myDespawningModels.push_back({ myModels[anIndex], 3 });
 		myModels[anIndex] = nullptr;
 	}

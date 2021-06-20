@@ -15,7 +15,6 @@ namespace Vulkan
 {
 	struct Device;
 	class SwapChain;
-	class Camera;
 
 	class Renderer
 	{
@@ -31,8 +30,9 @@ namespace Vulkan
 
 		void OnWindowOpened(GLFWwindow* aWindow);
 		void OnWindowClosed(GLFWwindow* aWindow);
+		void OnSetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
 
-		void Update(const glm::mat4& aView, const glm::mat4& aProjection);
+		void Update();
 
 		VkInstance GetVkInstance() const { return myVkInstance; }
 
@@ -42,8 +42,6 @@ namespace Vulkan
 		VmaAllocator GetAllocator() const;
 		VkQueue GetGraphicsQueue() const;
 		VkCommandPool GetGraphicsCommandPool() const;
-
-		Camera* GetCamera() const { return myCamera; }
 
 		uint GetModelsCount() const { return (uint)myModels.size(); }
 		Model* GetModel(uint anIndex) const { return myModels[anIndex]; }
@@ -62,21 +60,19 @@ namespace Vulkan
 
 		Device* myDevice = nullptr;
 
+		Image myMissingTexture;
+
 		// One SwapChain per window/surface
 		std::vector<SwapChain*> mySwapChains;
 
-		Camera* myCamera = nullptr;
-
+		// This should be per swapchain
 		std::vector<Model*> myModels;
-
 		struct DespawningModel
 		{
 			Model* myModel = nullptr;
 			uint myFramesToKeep = 1;
 		};
 		std::vector<DespawningModel> myDespawningModels;
-
-		Image myMissingTexture;
 	};
 }
 }

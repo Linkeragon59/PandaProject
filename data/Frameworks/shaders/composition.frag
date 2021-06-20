@@ -1,8 +1,8 @@
 #version 450
 
-layout (input_attachment_index = 0, binding = 0) uniform subpassInput samplerPositionDepth;
-layout (input_attachment_index = 1, binding = 1) uniform subpassInput samplerNormal;
-layout (input_attachment_index = 2, binding = 2) uniform subpassInput samplerAlbedo;
+layout (set = 0, input_attachment_index = 0, binding = 0) uniform subpassInput samplerPositionDepth;
+layout (set = 0, input_attachment_index = 1, binding = 1) uniform subpassInput samplerNormal;
+layout (set = 0, input_attachment_index = 2, binding = 2) uniform subpassInput samplerAlbedo;
 
 layout (location = 0) in vec2 inUV;
 
@@ -16,7 +16,7 @@ struct Light {
 	float radius;
 };
 
-layout (binding = 3) uniform UBO 
+layout (set = 1, binding = 0) uniform UBO 
 {
 	vec4 viewPos;
 	Light lights[NUM_LIGHTS];

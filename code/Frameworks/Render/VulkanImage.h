@@ -17,6 +17,7 @@ namespace Vulkan
 		VkImage myImage = VK_NULL_HANDLE;
 		VmaAllocation myAllocation = VK_NULL_HANDLE;
 		VkFormat myFormat = VK_FORMAT_UNDEFINED;
+		VkExtent3D myExtent = { 0, 0, 0 };
 
 		void CreateImageView(VkImageAspectFlags someAspects);
 		VkImageView myImageView = VK_NULL_HANDLE;

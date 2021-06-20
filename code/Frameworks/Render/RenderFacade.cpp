@@ -20,24 +20,37 @@ namespace Render
 		ourInstance = nullptr;
 	}
 
-	void Facade::InitRenderer(GLFWwindow* aWindow)
+	void Facade::InitRenderer()
 	{
 		myVulkanRenderer = new Vulkan::Renderer;
 		myVulkanRenderer->Init();
-		myVulkanRenderer->OnWindowOpened(aWindow);
 	}
 
-	void Facade::UpdateRenderer(const glm::mat4& aView, const glm::mat4& aProjection)
+	void Facade::UpdateRenderer()
 	{
-		myVulkanRenderer->Update(aView, aProjection);
+		myVulkanRenderer->Update();
 	}
 
-	void Facade::FinalizeRenderer(GLFWwindow* aWindow)
+	void Facade::FinalizeRenderer()
 	{
-		myVulkanRenderer->OnWindowClosed(aWindow);
 		myVulkanRenderer->Finalize();
 		delete myVulkanRenderer;
 		myVulkanRenderer = nullptr;
+	}
+
+	void Facade::OpenWindow(GLFWwindow* aWindow)
+	{
+		myVulkanRenderer->OnWindowOpened(aWindow);
+	}
+
+	void Facade::CloseWindow(GLFWwindow* aWindow)
+	{
+		myVulkanRenderer->OnWindowClosed(aWindow);
+	}
+
+	void Facade::SetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection)
+	{
+		myVulkanRenderer->OnSetWindowView(aWindow, aView, aProjection);
 	}
 
 	uint Facade::SpawnModel(const std::string& aFilePath, const RenderData& aRenderData)

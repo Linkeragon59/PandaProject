@@ -11,7 +11,7 @@ target_sources(Render
 		VulkanCamera.h
 		VulkanDebugMessenger.h
 		VulkanDeferredPipeline.h
-		VulkanDeferredRenderPass.h
+		VulkanDeferredContext.h
 		VulkanDevice.h
 		VulkanglTFAnimation.h
 		VulkanglTFMaterial.h
@@ -36,7 +36,7 @@ target_sources(Render
 		VulkanCamera.cpp
 		VulkanDebugMessenger.cpp
 		VulkanDeferredPipeline.cpp
-		VulkanDeferredRenderPass.cpp
+		VulkanDeferredContext.cpp
 		VulkanDevice.cpp
 		VulkanglTFAnimation.cpp
 		VulkanglTFMaterial.cpp

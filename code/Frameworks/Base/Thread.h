@@ -8,44 +8,30 @@
 
 namespace ThreadHelpers
 {
+	class WorkerPool;
+
 	enum class WorkerPriority
 	{
 		High,
 		Low
 	};
 
-	class WorkerPool;
-
-	// Thread that run jobs one after the other
-	class Worker
+	struct JobData
 	{
-		friend class WorkerPool;
-	public:
-		Worker(WorkerPool* aPool);
-		~Worker();
-
-		void AssignJob(std::function<void()> aJob);
-		void NotifyWaitingJobs();
-		void WaitJobs();
-
 	private:
-		void RunJobs();
-		bool EvaluateWorkToDo();
+		friend class WorkerPool;
+		void OnDone();
+		void Wait();
 
-		WorkerPool* myPool;
-
-		std::thread myWorkerThread;
-
-		std::mutex myJobQueueMutex;
-		std::condition_variable myJobQueueCondition;
-		std::queue<std::function<void()>> myJobQueue;
-
-		bool myStopping = false;
+		std::function<void()> myFunction;
+		std::mutex myDoneMutex;
+		std::condition_variable myDoneCondition;
+		bool myDone = false;
 	};
+	typedef std::shared_ptr<JobData> JobHandle;
 
 	class WorkerPool
 	{
-		friend class Worker;
 	public:
 		WorkerPool(WorkerPriority aPriority = WorkerPriority::High);
 
@@ -55,11 +41,35 @@ namespace ThreadHelpers
 		void SetWorkersCount(uint aCount = UINT_MAX);
 		uint GetWorkersCount() const { return (uint)myWorkers.size(); }
 
-		void RequestJob(std::function<void()> aJob, uint aWorkIndex = UINT_MAX);
-		void Wait();
+		JobHandle RequestJob(std::function<void()> aJob, uint aWorkIndex = UINT_MAX);
+		void WaitForJob(JobHandle aJobHandle);
+		void WaitIdle();
 
 	private:
-		bool AssignJob(Worker* aWorker);
+		struct Worker
+		{
+			Worker(WorkerPool* aPool);
+			~Worker();
+
+			void AssignJob(JobHandle aJob);
+			void NotifyWaitingJobs();
+			void WaitJobs();
+			void RunJobs();
+			bool EvaluateWorkToDo();
+
+			WorkerPool* myPool;
+
+			std::thread myWorkerThread;
+
+			std::mutex myJobQueueMutex;
+			std::condition_variable myWorkToDoCondition;
+			std::condition_variable myWaitForJobsCondition;
+			std::queue<JobHandle> myJobQueue;
+
+			bool myStopping = false;
+		};
+
+		bool AssignJobTo(Worker* aWorker);
 
 #if DEBUG_BUILD
 		std::string myWorkersBaseName;
@@ -68,7 +78,7 @@ namespace ThreadHelpers
 		std::vector<std::unique_ptr<Worker>> myWorkers;
 
 		mutable std::mutex myWaitingJobQueueMutex;
-		std::queue<std::function<void()>> myWaitingJobQueue;
+		std::queue<JobHandle> myWaitingJobQueue;
 	};
 }
 

@@ -13,12 +13,10 @@ namespace Vulkan
 	ImGuiOverlay::ImGuiOverlay()
 	{
 		myDevice = Renderer::GetInstance()->GetDevice();
-		myContext = ImGui::CreateContext();
 	}
 
 	ImGuiOverlay::~ImGuiOverlay()
 	{
-		ImGui::DestroyContext(myContext);
 	}
 
 	void ImGuiOverlay::Prepare(VkRenderPass aRenderPass)
@@ -52,32 +50,30 @@ namespace Vulkan
 		SetupPipeline(aRenderPass);
 	}
 
-	void ImGuiOverlay::Update(uint aWidth, uint aHeight)
+	void ImGuiOverlay::Destroy()
 	{
-		// TODO - This part of the update should be called by the GameWork?
+		vkDestroyPipeline(myDevice, myPipeline, nullptr);
+		myPipeline = VK_NULL_HANDLE;
 
-		ImGuiIO& io = ImGui::GetIO();
-		io.DisplaySize = ImVec2((float)aWidth, (float)aHeight);
-		io.DeltaTime = 1.0f/60.0f;
+		vkDestroyPipelineLayout(myDevice, myPipelineLayout, nullptr);
+		myPipelineLayout = VK_NULL_HANDLE;
 
-		io.MousePos = ImVec2(0.0f, 0.0f);
-		//io.MouseDown[0] = mouseButtons.left;
-		//io.MouseDown[1] = mouseButtons.right;
+		vkDestroyDescriptorSetLayout(myDevice, myDescriptorSetLayout, nullptr);
+		myDescriptorSetLayout = VK_NULL_HANDLE;
 
-		ImGui::NewFrame();
+		vkDestroyDescriptorPool(myDevice, myDescriptorPool, nullptr);
+		myDescriptorPool = VK_NULL_HANDLE;
 
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-		ImGui::SetNextWindowPos(ImVec2(10, 10));
-		ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-		ImGui::Begin("UI Test", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-		ImGui::Text("Test");
+		myVertexBuffer.Destroy();
+		myIndexBuffer.Destroy();
 
-		ImGui::End();
-		ImGui::PopStyleVar();
-		ImGui::Render();
+		myFontTexture.Destroy();
+	}
 
+	void ImGuiOverlay::Draw(const VkCommandBuffer aCommandBuffer)
+	{
 		ImDrawData* imDrawData = ImGui::GetDrawData();
-		if (!imDrawData)
+		if (!imDrawData || imDrawData->CmdListsCount == 0)
 			return;
 
 		VkDeviceSize vertexBufferSize = imDrawData->TotalVtxCount * sizeof(ImDrawVert);
@@ -118,45 +114,11 @@ namespace Vulkan
 
 		myVertexBuffer.Flush();
 		myIndexBuffer.Flush();
-	}
-
-	void ImGuiOverlay::Destroy()
-	{
-		vkDestroyPipeline(myDevice, myPipeline, nullptr);
-		myPipeline = VK_NULL_HANDLE;
-
-		vkDestroyPipelineLayout(myDevice, myPipelineLayout, nullptr);
-		myPipelineLayout = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorSetLayout(myDevice, myDescriptorSetLayout, nullptr);
-		myDescriptorSetLayout = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorPool(myDevice, myDescriptorPool, nullptr);
-		myDescriptorPool = VK_NULL_HANDLE;
-
-		myVertexBuffer.Destroy();
-		myIndexBuffer.Destroy();
-
-		myFontTexture.Destroy();
-	}
-
-	void ImGuiOverlay::Resize(uint aWidth, uint aHeight)
-	{
-		ImGuiIO& io = ImGui::GetIO();
-		io.DisplaySize = ImVec2((float)aWidth, (float)aHeight);
-	}
-
-	void ImGuiOverlay::Draw(const VkCommandBuffer aCommandBuffer)
-	{
-		ImDrawData* imDrawData = ImGui::GetDrawData();
-		if (!imDrawData || imDrawData->CmdListsCount == 0)
-			return;
-
-		ImGuiIO& io = ImGui::GetIO();
 
 		vkCmdBindPipeline(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, myPipeline);
 		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, myPipelineLayout, 0, 1, &myDescriptorSet, 0, NULL);
 
+		ImGuiIO& io = ImGui::GetIO();
 		myPushConstBlock.myScale = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
 		myPushConstBlock.myTranslate = glm::vec2(-1.0f);
 		vkCmdPushConstants(aCommandBuffer, myPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstBlock), &myPushConstBlock);

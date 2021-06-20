@@ -3,12 +3,6 @@
 #include "VulkanHelpers.h"
 #include "VulkanShaderHelpers.h"
 #include "VulkanRenderer.h"
-#include "VulkanCamera.h"
-
-#include "VulkanglTFModel.h"
-#include "DummyModel.h"
-
-#include <random>
 
 namespace Render
 {
@@ -19,104 +13,29 @@ namespace Vulkan
 		myDevice = Renderer::GetInstance()->GetDevice();
 	}
 
-	void DeferredPipeline::Prepare(const DeferredRenderPass& aRenderPass)
+	void DeferredPipeline::Prepare(VkRenderPass aRenderPass)
 	{
-		PrepareUBOs();
-
-		SetupDescriptorPool();
 		SetupDescriptorSetLayouts();
-		SetupDescriptorSets(aRenderPass);
 
 		SetupGBufferPipeline(aRenderPass);
 		SetupLightingPipeline(aRenderPass);
 		SetupTransparentPipeline(aRenderPass);
 	}
 
-	void DeferredPipeline::Update()
-	{
-		UpdateLightsUBO();
-	}
-
 	void DeferredPipeline::Destroy()
 	{
-		vkDestroyDescriptorSetLayout(myDevice, myLightingDescriptorSetLayout, nullptr);
-		myLightingDescriptorSetLayout = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorSetLayout(myDevice, myTransparentDescriptorSetLayout, nullptr);
-		myTransparentDescriptorSetLayout = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorPool(myDevice, myDescriptorPool, nullptr);
-		myDescriptorPool = VK_NULL_HANDLE;
+		DestroyDescriptorSetLayouts();
 
 		DestroyGBufferPipeline();
 		DestroyLightingPipeline();
 		DestroyTransparentPipeline();
-
-		myLightsUBO.Destroy();
-	}
-
-	void DeferredPipeline::PrepareUBOs()
-	{
-		myLightsUBO.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		myLightsUBO.SetupDescriptor();
-		myLightsUBO.Map();
-
-		SetupRandomLights();
-		UpdateLightsUBO();
-	}
-
-	void DeferredPipeline::UpdateLightsUBO()
-	{
-		glm::vec3 cameraPosition = Renderer::GetInstance()->GetCamera()->GetView()[3];
-		myLightsData.myViewPos = glm::vec4(cameraPosition, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
-		memcpy(myLightsUBO.myMappedData, &myLightsData, sizeof(LightData));
-	}
-
-	void DeferredPipeline::SetupRandomLights()
-	{
-		std::vector<glm::vec3> colors =
-		{
-			glm::vec3(1.0f, 1.0f, 1.0f),
-			glm::vec3(1.0f, 0.0f, 0.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			glm::vec3(0.0f, 0.0f, 1.0f),
-			glm::vec3(1.0f, 1.0f, 0.0f),
-		};
-
-		std::default_random_engine rndGen((uint)time(nullptr));
-		std::uniform_real_distribution<float> rndDist(-10.0f, 10.0f);
-		std::uniform_int_distribution<uint> rndCol(0, static_cast<uint>(colors.size() - 1));
-
-		for (Light& light : myLightsData.myLights)
-		{
-			light.myPosition = glm::vec4(rndDist(rndGen) * 6.0f, 0.25f + std::abs(rndDist(rndGen)) * 4.0f, rndDist(rndGen) * 6.0f, 1.0f);
-			light.myColor = colors[rndCol(rndGen)];
-			light.myRadius = 1.0f + std::abs(rndDist(rndGen));
-		}
-	}
-
-	void DeferredPipeline::SetupDescriptorPool()
-	{
-		std::array<VkDescriptorPoolSize, 2> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = 1; //  1 - Lighting
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSizes[1].descriptorCount = 4; //  3 - Lighting, 1 - Transparent
-
-		VkDescriptorPoolCreateInfo descriptorPoolInfo{};
-		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descriptorPoolInfo.poolSizeCount = (uint)poolSizes.size();
-		descriptorPoolInfo.pPoolSizes = poolSizes.data();
-		descriptorPoolInfo.maxSets = 2; // Lighting, Transparent
-
-		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
 	}
 
 	void DeferredPipeline::SetupDescriptorSetLayouts()
 	{
 		// Lighting
 		{
-			std::array<VkDescriptorSetLayoutBinding, 4> bindings{};
+			std::array<VkDescriptorSetLayoutBinding, 3> bindings{};
 			// Binding 0 : Position attachment
 			bindings[0].binding = 0;
 			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
@@ -132,11 +51,6 @@ namespace Vulkan
 			bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 			bindings[2].descriptorCount = 1;
 			bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			// Binding 3 : Lights
-			bindings[3].binding = 3;
-			bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			bindings[3].descriptorCount = 1;
-			bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
 			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -166,68 +80,16 @@ namespace Vulkan
 		}
 	}
 
-	void DeferredPipeline::SetupDescriptorSets(const DeferredRenderPass& aRenderPass)
+	void DeferredPipeline::DestroyDescriptorSetLayouts()
 	{
-		// Lighting
-		{
-			std::array<VkDescriptorSetLayout, 1> layouts = { myLightingDescriptorSetLayout };
-			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
-			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
-			descriptorSetAllocateInfo.pSetLayouts = layouts.data();
-			descriptorSetAllocateInfo.descriptorSetCount = (uint)layouts.size();
-			VK_CHECK_RESULT(vkAllocateDescriptorSets(myDevice, &descriptorSetAllocateInfo, &myLightingDescriptorSet), "Failed to create the node descriptor set");
+		vkDestroyDescriptorSetLayout(myDevice, myLightingDescriptorSetLayout, nullptr);
+		myLightingDescriptorSetLayout = VK_NULL_HANDLE;
 
-			std::array<VkWriteDescriptorSet, 4> writeDescriptorSets{};
-			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = myLightingDescriptorSet;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			writeDescriptorSets[0].dstBinding = 0;
-			writeDescriptorSets[0].pImageInfo = &aRenderPass.myPositionAttachement.myDescriptor;
-			writeDescriptorSets[0].descriptorCount = 1;
-			writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[1].dstSet = myLightingDescriptorSet;
-			writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			writeDescriptorSets[1].dstBinding = 1;
-			writeDescriptorSets[1].pImageInfo = &aRenderPass.myNormalAttachement.myDescriptor;
-			writeDescriptorSets[1].descriptorCount = 1;
-			writeDescriptorSets[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[2].dstSet = myLightingDescriptorSet;
-			writeDescriptorSets[2].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			writeDescriptorSets[2].dstBinding = 2;
-			writeDescriptorSets[2].pImageInfo = &aRenderPass.myAlbedoAttachement.myDescriptor;
-			writeDescriptorSets[2].descriptorCount = 1;
-			writeDescriptorSets[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[3].dstSet = myLightingDescriptorSet;
-			writeDescriptorSets[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSets[3].dstBinding = 3;
-			writeDescriptorSets[3].pBufferInfo = &myLightsUBO.myDescriptor;
-			writeDescriptorSets[3].descriptorCount = 1;
-			vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
-		}
-
-		// Transparent
-		{
-			std::array<VkDescriptorSetLayout, 1> layouts = { myTransparentDescriptorSetLayout };
-			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
-			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
-			descriptorSetAllocateInfo.pSetLayouts = layouts.data();
-			descriptorSetAllocateInfo.descriptorSetCount = (uint)layouts.size();
-			VK_CHECK_RESULT(vkAllocateDescriptorSets(myDevice, &descriptorSetAllocateInfo, &myTransparentDescriptorSet), "Failed to create the node descriptor set");
-
-			std::array<VkWriteDescriptorSet, 1> writeDescriptorSets{};
-			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = myTransparentDescriptorSet;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			writeDescriptorSets[0].dstBinding = 0;
-			writeDescriptorSets[0].pImageInfo = &aRenderPass.myPositionAttachement.myDescriptor;
-			writeDescriptorSets[0].descriptorCount = 1;
-			vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
-		}
+		vkDestroyDescriptorSetLayout(myDevice, myTransparentDescriptorSetLayout, nullptr);
+		myTransparentDescriptorSetLayout = VK_NULL_HANDLE;
 	}
 
-	void DeferredPipeline::SetupGBufferPipeline(const DeferredRenderPass& aRenderPass)
+	void DeferredPipeline::SetupGBufferPipeline(VkRenderPass aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
 			ShaderHelpers::GetCameraDescriptorSetLayout(),
@@ -343,7 +205,7 @@ namespace Vulkan
 		pipelineInfo.pColorBlendState = &colorBlendState;
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = myGBufferPipelineLayout;
-		pipelineInfo.renderPass = aRenderPass.myRenderPass;
+		pipelineInfo.renderPass = aRenderPass;
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
@@ -365,10 +227,11 @@ namespace Vulkan
 		myGBufferPipelineLayout = VK_NULL_HANDLE;
 	}
 
-	void DeferredPipeline::SetupLightingPipeline(const DeferredRenderPass& aRenderPass)
+	void DeferredPipeline::SetupLightingPipeline(VkRenderPass aRenderPass)
 	{
-		std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
-			myLightingDescriptorSetLayout
+		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
+			myLightingDescriptorSetLayout,
+			ShaderHelpers::GetLightsDescriptorSetLayout()
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -465,7 +328,7 @@ namespace Vulkan
 		pipelineInfo.pColorBlendState = &colorBlendState;
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = myLightingPipelineLayout;
-		pipelineInfo.renderPass = aRenderPass.myRenderPass;
+		pipelineInfo.renderPass = aRenderPass;
 		pipelineInfo.subpass = 1;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
@@ -487,7 +350,7 @@ namespace Vulkan
 		myLightingPipelineLayout = VK_NULL_HANDLE;
 	}
 
-	void DeferredPipeline::SetupTransparentPipeline(const DeferredRenderPass& aRenderPass)
+	void DeferredPipeline::SetupTransparentPipeline(VkRenderPass aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = {
 			myTransparentDescriptorSetLayout,
@@ -601,7 +464,7 @@ namespace Vulkan
 		pipelineInfo.pColorBlendState = &colorBlendState;
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = myTransparentPipelineLayout;
-		pipelineInfo.renderPass = aRenderPass.myRenderPass;
+		pipelineInfo.renderPass = aRenderPass;
 		pipelineInfo.subpass = 2;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;

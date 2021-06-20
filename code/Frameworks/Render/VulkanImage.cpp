@@ -18,12 +18,13 @@ namespace Vulkan
 		myAllocator = Renderer::GetInstance()->GetAllocator();
 
 		myFormat = aFormat;
+		myExtent = { aWidth, aHeight, 1 };
 
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageInfo.format = myFormat;
-		imageInfo.extent = { aWidth, aHeight, 1 };
+		imageInfo.extent = myExtent;
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = 1;
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;

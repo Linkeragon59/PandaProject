@@ -7,7 +7,28 @@
 
 namespace ThreadHelpers
 {
-	Worker::Worker(WorkerPool* aPool)
+	void JobData::Wait()
+	{
+		// Avoid locking the mutex if we know we are done
+		if (myDone)
+			return;
+
+		std::unique_lock<std::mutex> lock(myDoneMutex);
+		myDoneCondition.wait(lock, [this] { return myDone; });
+	}
+
+	void JobData::OnDone()
+	{
+		{
+			std::lock_guard<std::mutex> lock(myDoneMutex);
+			myDone = true;
+		}
+
+		// In case some threads are waiting for us, tell them to re-evaluate the done state
+		myDoneCondition.notify_all();
+	}
+
+	WorkerPool::Worker::Worker(WorkerPool* aPool)
 		: myPool(aPool)
 	{
 		myWorkerThread = std::thread(&Worker::RunJobs, this);
@@ -43,57 +64,57 @@ namespace ThreadHelpers
 #endif
 	}
 
-	Worker::~Worker()
+	WorkerPool::Worker::~Worker()
 	{
 		if (myWorkerThread.joinable())
 		{
 			WaitJobs();
 
 			{
-				std::unique_lock<std::mutex> lock(myJobQueueMutex);
+				std::lock_guard<std::mutex> lock(myJobQueueMutex);
 				Assert(myJobQueue.empty(), "Jobs remaining in the queue!");
 				myStopping = true;
 			}
 
 			// Tell the worker it should run (so it can end)
-			myJobQueueCondition.notify_one();
+			myWorkToDoCondition.notify_one();
 
 			myWorkerThread.join();
 		}
 	}
 
-	void Worker::AssignJob(std::function<void()> aJob)
+	void WorkerPool::Worker::AssignJob(JobHandle aJob)
 	{
 		{
-			std::unique_lock<std::mutex> lock(myJobQueueMutex);
-			myJobQueue.push(std::move(aJob));
+			std::lock_guard<std::mutex> lock(myJobQueueMutex);
+			myJobQueue.push(aJob);
 		}
 
 		// Tell the worker it has work to do
-		myJobQueueCondition.notify_one();
+		myWorkToDoCondition.notify_one();
 	}
 
-	void Worker::NotifyWaitingJobs()
+	void WorkerPool::Worker::NotifyWaitingJobs()
 	{
 		// Tell the worker there is work waiting
-		myJobQueueCondition.notify_one();
+		myWorkToDoCondition.notify_one();
 	}
 
-	void Worker::WaitJobs()
+	void WorkerPool::Worker::WaitJobs()
 	{
 		std::unique_lock<std::mutex> lock(myJobQueueMutex);
-		myJobQueueCondition.wait(lock, [this] { return !EvaluateWorkToDo(); });
+		myWaitForJobsCondition.wait(lock, [this] { return !EvaluateWorkToDo(); });
 	}
 
-	void Worker::RunJobs()
+	void WorkerPool::Worker::RunJobs()
 	{
 		while (true)
 		{
-			std::function<void()> nextJob;
+			JobHandle nextJob;
 
 			{
 				std::unique_lock<std::mutex> lock(myJobQueueMutex);
-				myJobQueueCondition.wait(lock, [this] { return EvaluateWorkToDo(); });
+				myWorkToDoCondition.wait(lock, [this] { return EvaluateWorkToDo(); });
 				if (myStopping)
 				{
 					Assert(myJobQueue.empty(), "Jobs remaining in the queue!");
@@ -102,19 +123,20 @@ namespace ThreadHelpers
 				nextJob = myJobQueue.front();
 			}
 
-			nextJob();
+			nextJob->myFunction();
+			nextJob->OnDone();
 
 			{
 				std::lock_guard<std::mutex> lock(myJobQueueMutex);
 				myJobQueue.pop();
 			}
 
-			// In case a thread is waiting for jobs, tell it to re-evaluate the state of the queue
-			myJobQueueCondition.notify_one();
+			// In case some threads are waiting for our jobs, tell them to re-evaluate the state of the queue
+			myWaitForJobsCondition.notify_all();
 		}
 	}
 
-	bool Worker::EvaluateWorkToDo()
+	bool WorkerPool::Worker::EvaluateWorkToDo()
 	{
 		if (myStopping)
 			return true;
@@ -122,7 +144,7 @@ namespace ThreadHelpers
 		if (!myJobQueue.empty())
 			return true;
 
-		if (myPool->AssignJob(this))
+		if (myPool->AssignJobTo(this))
 			return true;
 
 		return false;
@@ -146,18 +168,21 @@ namespace ThreadHelpers
 		}
 	}
 
-	void WorkerPool::RequestJob(std::function<void()> aJob, uint aWorkIndex /*= UINT_MAX*/)
+	JobHandle WorkerPool::RequestJob(std::function<void()> aJob, uint aWorkIndex /*= UINT_MAX*/)
 	{
+		JobHandle jobHandle = std::make_shared<JobData>();
+		jobHandle->myFunction = std::move(aJob);
+		
 		if (aWorkIndex < myWorkers.size())
 		{
-			myWorkers[aWorkIndex]->AssignJob(aJob);
-			return;
+			myWorkers[aWorkIndex]->AssignJob(jobHandle);
+			return jobHandle;
 		}
 
 		// Put the job in a waiting queue, and the first worker that is done with its jobs will pick it.
 		{
-			std::unique_lock<std::mutex> lock(myWaitingJobQueueMutex);
-			myWaitingJobQueue.push(std::move(aJob));
+			std::lock_guard<std::mutex> lock(myWaitingJobQueueMutex);
+			myWaitingJobQueue.push(jobHandle);
 		}
 
 		// Notify the workers there is work waiting.
@@ -165,9 +190,16 @@ namespace ThreadHelpers
 		{
 			myWorkers[i]->NotifyWaitingJobs();
 		}
+
+		return jobHandle;
 	}
 
-	void WorkerPool::Wait()
+	void WorkerPool::WaitForJob(JobHandle aJobHandle)
+	{
+		aJobHandle->Wait();
+	}
+
+	void WorkerPool::WaitIdle()
 	{
 		for (uint i = 0; i < myWorkers.size(); ++i)
 		{
@@ -175,9 +207,9 @@ namespace ThreadHelpers
 		}
 	}
 
-	bool WorkerPool::AssignJob(Worker* aWorker)
+	bool WorkerPool::AssignJobTo(Worker* aWorker)
 	{
-		std::unique_lock<std::mutex> lock(myWaitingJobQueueMutex);
+		std::lock_guard<std::mutex> lock(myWaitingJobQueueMutex);
 
 		if (myWaitingJobQueue.empty())
 			return false;

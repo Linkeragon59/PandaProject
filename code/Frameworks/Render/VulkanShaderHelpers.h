@@ -10,6 +10,7 @@ namespace ShaderHelpers
 	void DestroyDescriptorSetLayouts();
 	VkDescriptorSetLayout GetCameraDescriptorSetLayout();
 	VkDescriptorSetLayout GetObjectDescriptorSetLayout();
+	VkDescriptorSetLayout GetLightsDescriptorSetLayout(); // Temp
 
 	enum class VertexComponent {
 		Position,

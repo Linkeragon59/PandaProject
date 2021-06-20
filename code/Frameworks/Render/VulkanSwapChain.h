@@ -1,9 +1,7 @@
 #pragma once
 
 #include "VulkanImage.h"
-#include "VulkanDeferredRenderPass.h"
-#include "VulkanDeferredPipeline.h"
-//#include "VulkanImGuiOverlay.h"
+#include "VulkanDeferredContext.h"
 
 struct GLFWwindow;
 
@@ -11,6 +9,8 @@ namespace Render
 {
 namespace Vulkan
 {
+	class Camera;
+
 	class SwapChain
 	{
 	public:
@@ -21,46 +21,40 @@ namespace Vulkan
 		void Cleanup();
 		void Recreate();
 
+		void UpdateView(const glm::mat4& aView, const glm::mat4& aProjection);
 		void Update();
-		void SetDirty();
 
-		GLFWwindow* GetWindow() const { return myWindow; }
-		VkSurfaceKHR GetSurface() const { return mySurface; }
+		GLFWwindow* GetWindowHandle() const { return myWindow; }
 
 	private:
 		static void FramebufferResizedCallback(GLFWwindow* aWindow, int aWidth, int aHeight);
 
 		void SetupVkSwapChain();
+		void CleanupVkSwapChain();
+
 		void SetupDepthStencil();
+		void CleanupDepthStencil();
+
+		void CreateSyncObjects();
+		void DestroySyncObjects();
 
 		void SetupCommandBuffers();
-		void SetupFramebuffers();
-		void CreateSyncObjects();
+		void CleanupCommandBuffers();
 
-		void BuildCommandBuffer(uint anImageIndex);
 		void DrawFrame();
 
 		GLFWwindow* myWindow = nullptr;
 		VkSurfaceKHR mySurface = VK_NULL_HANDLE;
 		VkDevice myDevice = VK_NULL_HANDLE;
-
 		bool myFramebufferResized = false;
 
 		VkSwapchainKHR myVkSwapChain = VK_NULL_HANDLE;
-		std::vector<VkImage> myImages;
-		std::vector<VkImageView> myImageViews;
-		VkFormat myColorFormat = VK_FORMAT_UNDEFINED;
-		VkExtent2D myExtent{ 0, 0 };
+		std::vector<Image> myImages;
 		Image myDepthImage;
 
-		DeferredRenderPass myDeferredRenderPass;
-		DeferredPipeline myDeferredPipeline;
-		//ImGuiOverlay myUIOverlay;
-
-		// One per swapchain image
 		std::vector<VkCommandBuffer> myCommandBuffers;
-		std::vector<bool> myCommandBuffersDirty;
-		std::vector<VkFramebuffer> myFramebuffers;
+
+		RenderContextDeferred myDeferredRenderContext;
 
 		// One per in flight frame
 		uint myMaxInFlightFrames = 0;
@@ -68,6 +62,29 @@ namespace Vulkan
 		std::vector<VkSemaphore> myImageAvailableSemaphores;
 		std::vector<VkSemaphore> myRenderFinishedSemaphores;
 		std::vector<VkFence> myInFlightFrameFences;
+
+		Camera* myCamera = nullptr;
+
+		// Lights will be moved to a separate class later
+		static const uint ourNumLights = 64;
+		struct Light
+		{
+			glm::vec4 myPosition;
+			glm::vec3 myColor;
+			float myRadius;
+		};
+		struct LightData
+		{
+			glm::vec4 myViewPos;
+			Light myLights[ourNumLights];
+		} myLightsData;
+		Buffer myLightsUBO;
+		VkDescriptorPool myLightsDescriptorPool = VK_NULL_HANDLE;
+		VkDescriptorSet myLightsDescriptorSet = VK_NULL_HANDLE;
+		void UpdateLightsUBO();
+		void SetupRandomLights();
+		void SetupLightsDescriptorPool();
+		void SetupLightsDescriptorSets();
 	};
 }
 }
