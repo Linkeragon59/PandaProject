@@ -120,7 +120,7 @@ namespace GameWork
 		Input::InputManager::GetInstance()->RemoveWindow(myWindow);
 
 		glfwDestroyWindow(myWindow);
-
+		
 		glfwTerminate();
 
 		Input::InputManager::Destroy();
@@ -130,13 +130,13 @@ namespace GameWork
 	{
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		bool escapePressed = inputManager->PollRawInput(Input::RawInput::KeyEscape) == Input::RawInputState::Pressed;
-
+		
 		// Update Modules
 		for (Module* mod : myModules)
 		{
 			mod->OnUpdate();
 		}
-
+		
 		Render::Facade::GetInstance()->StartFrame();
 
 		myRenderer->BindWindow(myWindow);
