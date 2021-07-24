@@ -1,50 +1,42 @@
 #pragma once
 
-#include "VulkanHelpers.h"
 #include "VulkanglTFMesh.h"
 
-#pragma warning(push)
-#pragma warning(disable:4201)
+#include "VulkanBuffer.h"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-#pragma warning(pop)
-
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#include "tiny_gltf.h"
-
-#include <string>
-
-namespace Render
+namespace Render::Vulkan::glTF
 {
-namespace VulkanglTF
-{
+	class Model;
+
 	struct Node
 	{
 		~Node();
 
-		void Load(const tinygltf::Model& aModel, uint32_t aNodeIndex, float aScale, std::vector<Vertex>& someOutVertices, std::vector<uint32_t>& someOutIndices);
+		void Load(const tinygltf::Model& aModel, uint aNodeIndex, float aScale, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices);
 
-		void Update();
+		void SetupDescriptorSet(Model* aContainer, VkDescriptorPool aDescriptorPool);
 
-		glm::mat4 GetLocalMatrix();
-		glm::mat4 GetMatrix();
+		void UpdateUBO();
+		void UpdateJoints(Model* aContainer);
+		void Draw(Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex);
+
+		glm::mat4 GetLocalMatrix() const;
+		glm::mat4 GetMatrix() const;
+
+		uint myIndex = 0;
+		std::string myName;
 
 		Node* myParent = nullptr;
 		std::vector<Node*> myChildren;
 
-		uint32_t myIndex = 0;
-		std::string myName;
+		Mesh myMesh;
+		int mySkinIndex = -1;
 
 		glm::vec3 myTranslation{};
 		glm::quat myRotation{};
 		glm::vec3 myScale{ 1.0f };
-		glm::mat4 myMatrix;
-
-		Mesh* myMesh = nullptr;
+		glm::mat4 myMatrix = glm::mat4(1.0f);
+		
+		Buffer myUBO;
 	};
-}
 }

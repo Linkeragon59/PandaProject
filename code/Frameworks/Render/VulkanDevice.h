@@ -1,15 +1,16 @@
 #pragma once
 
-#include "VulkanHelpers.h"
 #include <optional>
 
-namespace Render
+namespace Render::Vulkan
 {
 	// Wrapper for Physical and Logical device
-	struct VulkanDevice
+	struct Device
 	{
-		explicit VulkanDevice(VkPhysicalDevice aPhysicalDevice);
-		~VulkanDevice();
+		explicit Device(VkPhysicalDevice aPhysicalDevice);
+		~Device();
+
+		bool SupportsExtension(const char* anExtension);
 
 		void SetupLogicalDevice(
 			const VkPhysicalDeviceFeatures& someEnabledFeatures,
@@ -17,9 +18,9 @@ namespace Render
 			const std::vector<const char*>& someEnabledExtensions,
 			VkQueueFlags someRequestedQueueTypes);
 
-		void SetupVmaAllocator(VkInstance anInstance, uint32_t aVulkanAPIVersion);
+		void SetupVmaAllocator(VkInstance anInstance, uint aVulkanAPIVersion);
 
-		uint32_t GetQueueFamilyIndex(VkQueueFlagBits someQueueTypes) const;
+		uint GetQueueFamilyIndex(VkQueueFlagBits someQueueTypes) const;
 
 		VkFormat FindSupportedFormat(const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures);
 		VkFormat FindBestDepthFormat();
@@ -35,20 +36,14 @@ namespace Render
 		VkPhysicalDeviceFeatures myEnabledFeatures{};
 		struct QueueFamilyIndices
 		{
-			std::optional<uint32_t> myGraphicsFamily;
-			std::optional<uint32_t> myComputeFamily;
-			std::optional<uint32_t> myTransferFamily;
+			std::optional<uint> myGraphicsFamily;
+			std::optional<uint> myComputeFamily;
+			std::optional<uint> myTransferFamily;
 		} myQueueFamilyIndices;
 
 		VkQueue myGraphicsQueue = VK_NULL_HANDLE;
 		VkCommandPool myGraphicsCommandPool = VK_NULL_HANDLE;
 
 		VmaAllocator myVmaAllocator = VK_NULL_HANDLE;
-
-		// TODO : Remove
-		VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin = false);
-		VkCommandBuffer createCommandBuffer(VkCommandBufferLevel level, bool begin = false);
-		void            flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free = true);
-		void            flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free = true);
 	};
 }

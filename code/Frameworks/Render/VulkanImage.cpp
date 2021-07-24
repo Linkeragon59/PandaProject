@@ -1,21 +1,28 @@
 #include "VulkanImage.h"
 
-#include "VulkanRenderCore.h"
+#include "VulkanHelpers.h"
+#include "VulkanRender.h"
 
-namespace Render
+namespace Render::Vulkan
 {
-	void VulkanImage::Create(uint32_t aWidth, uint32_t aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
+	Image::~Image()
 	{
-		myDevice = VulkanRenderCore::GetInstance()->GetDevice();
-		myAllocator = VulkanRenderCore::GetInstance()->GetAllocator();
+		Assert(!myImage);
+	}
+
+	void Image::Create(uint aWidth, uint aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
+	{
+		myDevice = RenderCore::GetInstance()->GetDevice();
+		myAllocator = RenderCore::GetInstance()->GetAllocator();
 
 		myFormat = aFormat;
+		myExtent = { aWidth, aHeight, 1 };
 
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
 		imageInfo.format = myFormat;
-		imageInfo.extent = { aWidth, aHeight, 1 };
+		imageInfo.extent = myExtent;
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = 1;
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -33,14 +40,14 @@ namespace Render
 		}
 		else
 		{
-			throw std::runtime_error("Image allocation usage not supported yet.");
+			Assert(false, "Image allocation usage not supported yet.");
 		}
 		allocInfo.requiredFlags = someProperties;
 
 		VK_CHECK_RESULT(vmaCreateImage(myAllocator, &imageInfo, &allocInfo, &myImage, &myAllocation, nullptr), "Failed to create an image!");
 	}
 
-	void VulkanImage::CreateImageView(VkImageAspectFlags someAspects)
+	void Image::CreateImageView(VkImageAspectFlags someAspects)
 	{
 		VkImageViewCreateInfo viewInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -62,12 +69,38 @@ namespace Render
 		VK_CHECK_RESULT(vkCreateImageView(myDevice, &viewInfo, nullptr, &myImageView), "Failed to create an image view!");
 	}
 
-	void VulkanImage::TransitionLayout(VkImageLayout anOldLayout, VkImageLayout aNewLayout, VkQueue aQueue, VkCommandPool aCommandPool)
+	void Image::CreateImageSampler()
+	{
+		VkSamplerCreateInfo samplerInfo{};
+		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+		samplerInfo.magFilter = VK_FILTER_LINEAR;
+		samplerInfo.minFilter = VK_FILTER_LINEAR;
+		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.anisotropyEnable = VK_FALSE;
+		samplerInfo.maxAnisotropy = 1.0f;
+		samplerInfo.compareEnable = VK_FALSE;
+		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+		samplerInfo.unnormalizedCoordinates = VK_FALSE;
+
+		VK_CHECK_RESULT(vkCreateSampler(myDevice, &samplerInfo, nullptr, &myImageSampler), "Failed to create a sampler!");
+	}
+
+	void Image::SetupDescriptor(VkImageLayout aLayout)
+	{
+		myDescriptor.sampler = myImageSampler;
+		myDescriptor.imageView = myImageView;
+		myDescriptor.imageLayout = aLayout;
+	}
+
+	void Image::TransitionLayout(VkImageLayout anOldLayout, VkImageLayout aNewLayout, VkQueue aQueue, VkCommandPool aCommandPool)
 	{
 		VkCommandBuffer commandBuffer = BeginOneTimeCommand(aCommandPool);
 
-		VkPipelineStageFlags sourceStage;
-		VkPipelineStageFlags destinationStage;
+		VkPipelineStageFlags sourceStage = 0;
+		VkPipelineStageFlags destinationStage = 0;
 
 		VkImageMemoryBarrier barrier{};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -108,7 +141,7 @@ namespace Render
 		}
 		else
 		{
-			throw std::runtime_error("Image transition not supported yet!");
+			Assert(false, "Image transition not supported yet!");
 		}
 		
 		if (aNewLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
@@ -134,8 +167,17 @@ namespace Render
 		EndOneTimeCommand(commandBuffer, aQueue, aCommandPool);
 	}
 
-	void VulkanImage::Destroy()
+	void Image::Destroy()
 	{
+		myDescriptor = {};
+
+		if (myImageSampler)
+		{
+			vkDestroySampler(myDevice, myImageSampler, nullptr);
+			myImageSampler = VK_NULL_HANDLE;
+
+		}
+
 		if (myImageView)
 		{
 			vkDestroyImageView(myDevice, myImageView, nullptr);

@@ -1,18 +1,57 @@
 cmake_minimum_required(VERSION 3.6.2)
 
-file(GLOB Headers *.h)
-file(GLOB Sources *.cpp)
+add_library(Render "")
+target_sources(Render
+	PRIVATE
+		DummyModel.h
+		RenderData.h
+		RenderFacade.h
+		RenderPrecompile.h
+		VulkanBuffer.h
+		VulkanCamera.h
+		VulkanDebugMessenger.h
+		VulkanDeferredPipeline.h
+		VulkanDeferredContext.h
+		VulkanDevice.h
+		VulkanglTFAnimation.h
+		VulkanglTFMaterial.h
+		VulkanglTFMesh.h
+		VulkanglTFModel.h
+		VulkanglTFNode.h
+		VulkanglTFSkin.h
+		VulkanglTFTexture.h
+		VulkanHelpers.h
+		VulkanImage.h
+		VulkanImGuiOverlay.h
+		VulkanModel.h
+		VulkanRenderer.h
+		VulkanShaderHelpers.h
+		VulkanSwapChain.h
 
-set(KTX_DIR ${CMAKE_SOURCE_DIR}/code/Extern/ktx)
-set(KTX_SOURCES
-    ${KTX_DIR}/lib/texture.c
-    ${KTX_DIR}/lib/hashlist.c
-    ${KTX_DIR}/lib/checkheader.c
-    ${KTX_DIR}/lib/swap.c
-    ${KTX_DIR}/lib/memstream.c
-    ${KTX_DIR}/lib/filestream.c)
-
-add_library(Render STATIC ${Headers} ${Sources} ${KTX_SOURCES})
+		DummyModel.cpp
+		RenderData.cpp
+		RenderFacade.cpp
+		RenderPrecompile.cpp
+		VulkanBuffer.cpp
+		VulkanCamera.cpp
+		VulkanDebugMessenger.cpp
+		VulkanDeferredPipeline.cpp
+		VulkanDeferredContext.cpp
+		VulkanDevice.cpp
+		VulkanglTFAnimation.cpp
+		VulkanglTFMaterial.cpp
+		VulkanglTFMesh.cpp
+		VulkanglTFModel.cpp
+		VulkanglTFNode.cpp
+		VulkanglTFSkin.cpp
+		VulkanglTFTexture.cpp
+		VulkanHelpers.cpp
+		VulkanImage.cpp
+		VulkanImGuiOverlay.cpp
+		VulkanRenderer.cpp
+		VulkanShaderHelpers.cpp
+		VulkanSwapChain.cpp
+)
 
 target_compile_features(Render PRIVATE cxx_std_20)
 

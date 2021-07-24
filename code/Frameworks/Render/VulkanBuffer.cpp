@@ -1,12 +1,18 @@
 #include "VulkanBuffer.h"
 
-#include "VulkanRenderCore.h"
+#include "VulkanHelpers.h"
+#include "VulkanRender.h"
 
-namespace Render
+namespace Render::Vulkan
 {
-	void VulkanBuffer::Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
+	Buffer::~Buffer()
 	{
-		myAllocator = VulkanRenderCore::GetInstance()->GetAllocator();
+		Assert(!myBuffer);
+	}
+
+	void Buffer::Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
+	{
+		myAllocator = RenderCore::GetInstance()->GetAllocator();
 
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -35,37 +41,37 @@ namespace Render
 		}
 		else
 		{
-			throw std::runtime_error("Buffer allocation usage not supported yet.");
+			Assert(false, "Buffer allocation usage not supported yet.");
 		}
 		allocInfo.requiredFlags = someProperties;
 
 		VK_CHECK_RESULT(vmaCreateBuffer(myAllocator, &bufferInfo, &allocInfo, &myBuffer, &myAllocation, nullptr), "Failed to create a buffer!");
 	}
 
-	void VulkanBuffer::Map()
+	void Buffer::Map()
 	{
 		VK_CHECK_RESULT(vmaMapMemory(myAllocator, myAllocation, &myMappedData), "Failed to map a buffer allocation!");
 	}
 
-	void VulkanBuffer::Unmap()
+	void Buffer::Unmap()
 	{
 		vmaUnmapMemory(myAllocator, myAllocation);
 		myMappedData = nullptr;
 	}
 
-	void VulkanBuffer::Flush()
+	void Buffer::Flush()
 	{
 		VK_CHECK_RESULT(vmaFlushAllocation(myAllocator, myAllocation, 0, VK_WHOLE_SIZE), "Failed to flush a buffer allocation!");
 	}
 
-	void VulkanBuffer::SetupDescriptor(VkDeviceSize aSize, VkDeviceSize anOffset)
+	void Buffer::SetupDescriptor(VkDeviceSize aSize, VkDeviceSize anOffset)
 	{
 		myDescriptor.buffer = myBuffer;
 		myDescriptor.offset = anOffset;
 		myDescriptor.range = aSize;
 	}
 
-	void VulkanBuffer::Destroy()
+	void Buffer::Destroy()
 	{
 		myDescriptor = {};
 

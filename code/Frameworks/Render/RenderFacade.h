@@ -1,10 +1,17 @@
 #pragma once
 
+struct GLFWwindow;
+
+#include "RenderData.h"
+
 namespace Render
 {
-	class TriangleRenderer;
-	class BasicRendererTuto;
-	class BasicRenderer;
+	namespace Vulkan
+	{
+		class Renderer;
+	}
+	class Camera;
+	class Model;
 
 	class Facade
 	{
@@ -13,11 +20,24 @@ namespace Render
 		static void RunBasicRendererTuto();
 		static void RunBasicRenderer();
 
-		static void RunVulkanRenderer();
+		// Vulkan Renderer
+		Vulkan::Renderer* GetRenderer() const { return myVulkanRenderer; }
+		void InitRenderer();
+		void UpdateRenderer();
+		void FinalizeRenderer();
+		void OpenWindow(GLFWwindow* aWindow);
+		void CloseWindow(GLFWwindow* aWindow);
+		void SetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
+
+		uint SpawnModel(const std::string& aFilePath, const RenderData& aRenderData);
+		void DespawnModel(uint anIndex);
 
 	private:
-		static TriangleRenderer* ourTriangleRenderer;
-		static BasicRendererTuto* ourBasicRendererTuto;
-		static BasicRenderer* ourBasicRenderer;
+		static Facade* ourInstance;
+
+		Facade();
+		~Facade();
+
+		Vulkan::Renderer* myVulkanRenderer = nullptr;
 	};
 }

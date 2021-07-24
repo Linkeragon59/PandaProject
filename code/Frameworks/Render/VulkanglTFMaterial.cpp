@@ -1,60 +1,83 @@
 #include "VulkanglTFMaterial.h"
 
-#include "VulkanRenderCore.h"
-
-namespace Render
+namespace Render::Vulkan::glTF
 {
-namespace VulkanglTF
-{
-	void Material::Load(const tinygltf::Model& aModel, tinygltf::Material& aMaterial)
+	Material::~Material()
 	{
-		if (aMaterial.values.find("baseColorTexture") != aMaterial.values.end())
+		mySSBO.Destroy();
+	}
+
+	void Material::Load(const tinygltf::Model& aModel, uint aMaterialIndex)
+	{
+		const tinygltf::Material& gltfMaterial = aModel.materials[aMaterialIndex];
+
+		// TODO: values and additionalValues are deprecated, change to use the correct accessors
+		if (gltfMaterial.values.find("baseColorTexture") != gltfMaterial.values.end())
 		{
-			myBaseColorTexture = aModel.textures[aMaterial.values["baseColorTexture"].TextureIndex()].source;
+			myBaseColorTexture = gltfMaterial.values.at("baseColorTexture").TextureIndex();
 		}
-		if (aMaterial.values.find("baseColorFactor") != aMaterial.values.end())
+		if (gltfMaterial.values.find("baseColorFactor") != gltfMaterial.values.end())
 		{
-			myBaseColorFactor = glm::make_vec4(aMaterial.values["baseColorFactor"].ColorFactor().data());
+			myBaseColorFactor = glm::make_vec4(gltfMaterial.values.at("baseColorFactor").ColorFactor().data());
 		}
 
-		if (aMaterial.values.find("metallicRoughnessTexture") != aMaterial.values.end())
+		if (gltfMaterial.values.find("metallicRoughnessTexture") != gltfMaterial.values.end())
 		{
-			myMetallicRoughnessTexture = aModel.textures[aMaterial.values["metallicRoughnessTexture"].TextureIndex()].source;
+			myMetallicRoughnessTexture = gltfMaterial.values.at("metallicRoughnessTexture").TextureIndex();
 		}
-		if (aMaterial.values.find("metallicFactor") != aMaterial.values.end())
+		if (gltfMaterial.values.find("metallicFactor") != gltfMaterial.values.end())
 		{
-			myMetallicFactor = static_cast<float>(aMaterial.values["metallicFactor"].Factor());
+			myMetallicFactor = static_cast<float>(gltfMaterial.values.at("metallicFactor").Factor());
 		}
-		if (aMaterial.values.find("roughnessFactor") != aMaterial.values.end())
+		if (gltfMaterial.values.find("roughnessFactor") != gltfMaterial.values.end())
 		{
-			myRoughnessFactor = static_cast<float>(aMaterial.values["roughnessFactor"].Factor());
-		}
-		
-		if (aMaterial.additionalValues.find("normalTexture") != aMaterial.additionalValues.end())
-		{
-			myNormalTexture = aModel.textures[aMaterial.additionalValues["normalTexture"].TextureIndex()].source;
-		}
-		if (aMaterial.additionalValues.find("emissiveTexture") != aMaterial.additionalValues.end())
-		{
-			myEmissiveTexture = aModel.textures[aMaterial.additionalValues["emissiveTexture"].TextureIndex()].source;
-		}
-		if (aMaterial.additionalValues.find("occlusionTexture") != aMaterial.additionalValues.end())
-		{
-			myOcclusionTexture = aModel.textures[aMaterial.additionalValues["occlusionTexture"].TextureIndex()].source;
+			myRoughnessFactor = static_cast<float>(gltfMaterial.values.at("roughnessFactor").Factor());
 		}
 
-		if (aMaterial.additionalValues.find("alphaMode") != aMaterial.additionalValues.end())
+		if (gltfMaterial.additionalValues.find("normalTexture") != gltfMaterial.additionalValues.end())
 		{
-			tinygltf::Parameter param = aMaterial.additionalValues["alphaMode"];
+			myNormalTexture = gltfMaterial.additionalValues.at("normalTexture").TextureIndex();
+		}
+		if (gltfMaterial.additionalValues.find("emissiveTexture") != gltfMaterial.additionalValues.end())
+		{
+			myEmissiveTexture = gltfMaterial.additionalValues.at("emissiveTexture").TextureIndex();
+		}
+		if (gltfMaterial.additionalValues.find("occlusionTexture") != gltfMaterial.additionalValues.end())
+		{
+			myOcclusionTexture = gltfMaterial.additionalValues.at("occlusionTexture").TextureIndex();
+		}
+
+		if (gltfMaterial.additionalValues.find("alphaMode") != gltfMaterial.additionalValues.end())
+		{
+			tinygltf::Parameter param = gltfMaterial.additionalValues.at("alphaMode");
 			if (param.string_value == "BLEND")
 				myAlphaMode = AlphaMode::ALPHAMODE_BLEND;
 			else if (param.string_value == "MASK")
 				myAlphaMode = AlphaMode::ALPHAMODE_MASK;
 		}
-		if (aMaterial.additionalValues.find("alphaCutoff") != aMaterial.additionalValues.end())
+		if (gltfMaterial.additionalValues.find("alphaCutoff") != gltfMaterial.additionalValues.end())
 		{
-			myAlphaCutoff = static_cast<float>(aMaterial.additionalValues["alphaCutoff"].Factor());
+			myAlphaCutoff = static_cast<float>(gltfMaterial.additionalValues.at("alphaCutoff").Factor());
 		}
+
+		Load();
 	}
-}
+
+	void Material::LoadEmpty()
+	{
+		Load();
+	}
+
+	void Material::Load()
+	{
+		// Store material info in a shader storage buffer object (SSBO)
+		VkDeviceSize ssboSize = sizeof(glm::vec4);
+		mySSBO.Create(ssboSize,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		mySSBO.SetupDescriptor();
+		mySSBO.Map();
+		memcpy(mySSBO.myMappedData, &myBaseColorFactor, ssboSize);
+		mySSBO.Unmap();
+	}
 }

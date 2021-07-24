@@ -1,25 +1,25 @@
 #include "VulkanDevice.h"
 
-#include <assert.h>
+#include "VulkanHelpers.h"
 
-namespace Render
+namespace Render::Vulkan
 {
-	VulkanDevice::VulkanDevice(VkPhysicalDevice aPhysicalDevice)
+	Device::Device(VkPhysicalDevice aPhysicalDevice)
 		: myPhysicalDevice(aPhysicalDevice)
 	{
-		assert(myPhysicalDevice);
+		Assert(myPhysicalDevice);
 
 		vkGetPhysicalDeviceProperties(myPhysicalDevice, &myProperties);
 		vkGetPhysicalDeviceFeatures(myPhysicalDevice, &myFeatures);
 		vkGetPhysicalDeviceMemoryProperties(myPhysicalDevice, &myMemoryProperties);
 
-		uint32_t queueFamilyCount;
+		uint queueFamilyCount;
 		vkGetPhysicalDeviceQueueFamilyProperties(myPhysicalDevice, &queueFamilyCount, nullptr);
-		assert(queueFamilyCount > 0);
+		Assert(queueFamilyCount > 0);
 		myQueueFamilyProperties.resize(queueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(myPhysicalDevice, &queueFamilyCount, myQueueFamilyProperties.data());
 
-		uint32_t extensionsCount = 0;
+		uint extensionsCount = 0;
 		vkEnumerateDeviceExtensionProperties(myPhysicalDevice, nullptr, &extensionsCount, nullptr);
 		if (extensionsCount > 0)
 		{
@@ -28,7 +28,7 @@ namespace Render
 		}
 	}
 
-	VulkanDevice::~VulkanDevice()
+	Device::~Device()
 	{
 		if (myLogicalDevice)
 		{
@@ -42,7 +42,15 @@ namespace Render
 		}
 	}
 
-	void VulkanDevice::SetupLogicalDevice(
+	bool Device::SupportsExtension(const char* anExtension)
+	{
+		for (VkExtensionProperties extension : mySupportedExtensions)
+			if (strcmp(extension.extensionName, anExtension) == 0)
+				return true;
+		return false;
+	}
+
+	void Device::SetupLogicalDevice(
 		const VkPhysicalDeviceFeatures& someEnabledFeatures,
 		const std::vector<const char*>& someEnabledLayers,
 		const std::vector<const char*>& someEnabledExtensions,
@@ -104,11 +112,11 @@ namespace Render
 		// Logical Device creation
 		VkDeviceCreateInfo deviceCreateInfo{};
 		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+		deviceCreateInfo.queueCreateInfoCount = static_cast<uint>(queueCreateInfos.size());
 		deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(someEnabledLayers.size());
+		deviceCreateInfo.enabledLayerCount = static_cast<uint>(someEnabledLayers.size());
 		deviceCreateInfo.ppEnabledLayerNames = someEnabledLayers.data();
-		deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(someEnabledExtensions.size());
+		deviceCreateInfo.enabledExtensionCount = static_cast<uint>(someEnabledExtensions.size());
 		deviceCreateInfo.ppEnabledExtensionNames = someEnabledExtensions.data();
 		deviceCreateInfo.pEnabledFeatures = &myEnabledFeatures;
 
@@ -121,12 +129,13 @@ namespace Render
 			VkCommandPoolCreateInfo commandPoolInfo{};
 			commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 			commandPoolInfo.queueFamilyIndex = myQueueFamilyIndices.myGraphicsFamily.value();
+			commandPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
 			VK_CHECK_RESULT(vkCreateCommandPool(myLogicalDevice, &commandPoolInfo, nullptr, &myGraphicsCommandPool), "Failed to create the graphics command pool");
 		}
 	}
 
-	void VulkanDevice::SetupVmaAllocator(VkInstance anInstance, uint32_t aVulkanApiVersion)
+	void Device::SetupVmaAllocator(VkInstance anInstance, uint aVulkanApiVersion)
 	{
 		VmaAllocatorCreateInfo allocatorInfo{};
 		allocatorInfo.instance = anInstance;
@@ -137,13 +146,13 @@ namespace Render
 		VK_CHECK_RESULT(vmaCreateAllocator(&allocatorInfo, &myVmaAllocator), "Could not create the vma allocator");
 	}
 
-	uint32_t VulkanDevice::GetQueueFamilyIndex(VkQueueFlagBits someQueueTypes) const
+	uint Device::GetQueueFamilyIndex(VkQueueFlagBits someQueueTypes) const
 	{
 		if ((someQueueTypes & VK_QUEUE_COMPUTE_BIT) && !(someQueueTypes & VK_QUEUE_GRAPHICS_BIT))
 		{
 			// Dedicated queue for compute
 			// Try to find a queue family index that supports compute but not graphics
-			for (uint32_t i = 0; i < static_cast<uint32_t>(myQueueFamilyProperties.size()); ++i)
+			for (uint i = 0; i < static_cast<uint>(myQueueFamilyProperties.size()); ++i)
 			{
 				VkQueueFlags flags = myQueueFamilyProperties[i].queueFlags;
 				if ((flags & someQueueTypes) && !(flags & VK_QUEUE_GRAPHICS_BIT))
@@ -155,7 +164,7 @@ namespace Render
 		{
 			// Dedicated queue for transfer
 			// Try to find a queue family index that supports transfer but not graphics and compute
-			for (uint32_t i = 0; i < static_cast<uint32_t>(myQueueFamilyProperties.size()); ++i)
+			for (uint i = 0; i < static_cast<uint>(myQueueFamilyProperties.size()); ++i)
 			{
 				VkQueueFlags flags = myQueueFamilyProperties[i].queueFlags;
 				if ((flags & someQueueTypes) && !(flags & VK_QUEUE_GRAPHICS_BIT) && !(flags & VK_QUEUE_COMPUTE_BIT))
@@ -164,16 +173,17 @@ namespace Render
 		}
 
 		// For other queue types, return the first one to support the requested flags
-		for (uint32_t i = 0; i < static_cast<uint32_t>(myQueueFamilyProperties.size()); ++i)
+		for (uint i = 0; i < static_cast<uint>(myQueueFamilyProperties.size()); ++i)
 		{
 			if (myQueueFamilyProperties[i].queueFlags & someQueueTypes)
 				return i;
 		}
 
-		throw std::runtime_error("Couldn't find a matching queue family index");
+		Assert(false, "Couldn't find a matching queue family index");
+		return 0;
 	}
 
-	VkFormat VulkanDevice::FindSupportedFormat(const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures)
+	VkFormat Device::FindSupportedFormat(const std::vector<VkFormat>& someCandidateFormats, VkImageTiling aTiling, VkFormatFeatureFlags someFeatures)
 	{
 		for (VkFormat format : someCandidateFormats)
 		{
@@ -186,10 +196,11 @@ namespace Render
 				return format;
 		}
 
-		throw std::runtime_error("Couldn't find an available format!");
+		Assert(false, "Couldn't find an available format!");
+		return VK_FORMAT_UNDEFINED;
 	}
 
-	VkFormat VulkanDevice::FindBestDepthFormat()
+	VkFormat Device::FindBestDepthFormat()
 	{
 		// Start with the highest precision packed format
 		std::vector<VkFormat> depthFormats = {
@@ -201,86 +212,5 @@ namespace Render
 		};
 
 		return FindSupportedFormat(depthFormats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-	}
-
-#define DEFAULT_FENCE_TIMEOUT 100000000000
-
-	/**
-	* Allocate a command buffer from the command pool
-	*
-	* @param level Level of the new command buffer (primary or secondary)
-	* @param pool Command pool from which the command buffer will be allocated
-	* @param (Optional) begin If true, recording on the new command buffer will be started (vkBeginCommandBuffer) (Defaults to false)
-	*
-	* @return A handle to the allocated command buffer
-	*/
-	VkCommandBuffer VulkanDevice::createCommandBuffer(VkCommandBufferLevel level, VkCommandPool pool, bool begin)
-	{
-		VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
-		commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		commandBufferAllocateInfo.commandPool = pool;
-		commandBufferAllocateInfo.level = level;
-		commandBufferAllocateInfo.commandBufferCount = 1;
-		VkCommandBuffer cmdBuffer;
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(myLogicalDevice, &commandBufferAllocateInfo, &cmdBuffer), "Failed to alloc command buffer");
-		// If requested, also start recording for the new command buffer
-		if (begin)
-		{
-			VkCommandBufferBeginInfo cmdBufferBeginInfo{};
-			cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			VK_CHECK_RESULT(vkBeginCommandBuffer(cmdBuffer, &cmdBufferBeginInfo), "Failed to begin command buffer");
-		}
-		return cmdBuffer;
-	}
-
-	VkCommandBuffer VulkanDevice::createCommandBuffer(VkCommandBufferLevel level, bool begin)
-	{
-		return createCommandBuffer(level, myGraphicsCommandPool, begin);
-	}
-
-	/**
-	* Finish command buffer recording and submit it to a queue
-	*
-	* @param commandBuffer Command buffer to flush
-	* @param queue Queue to submit the command buffer to
-	* @param pool Command pool on which the command buffer has been created
-	* @param free (Optional) Free the command buffer once it has been submitted (Defaults to true)
-	*
-	* @note The queue that the command buffer is submitted to must be from the same family index as the pool it was allocated from
-	* @note Uses a fence to ensure command buffer has finished executing
-	*/
-	void VulkanDevice::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free)
-	{
-		if (commandBuffer == VK_NULL_HANDLE)
-		{
-			return;
-		}
-
-		VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer), "Failed to end command buffer");
-
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer;
-		// Create fence to ensure that the command buffer has finished executing
-		VkFenceCreateInfo fenceCreateInfo{};
-		fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceCreateInfo.flags = 0;
-		VkFence fence;
-		VK_CHECK_RESULT(vkCreateFence(myLogicalDevice, &fenceCreateInfo, nullptr, &fence), "Failed to create fence");
-		// Submit to the queue
-		VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, fence), "Failed to submit");
-		// Wait for the fence to signal that command buffer has finished executing
-		VK_CHECK_RESULT(vkWaitForFences(myLogicalDevice, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT), "Failed to wait fence");
-		vkDestroyFence(myLogicalDevice, fence, nullptr);
-		if (free)
-		{
-			vkFreeCommandBuffers(myLogicalDevice, pool, 1, &commandBuffer);
-		}
-	}
-
-	void VulkanDevice::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free)
-	{
-		return flushCommandBuffer(commandBuffer, queue, myGraphicsCommandPool, free);
 	}
 }

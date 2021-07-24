@@ -1,12 +1,11 @@
 #pragma once
 
-#include "vulkan/vulkan.h"
-#include "vk_mem_alloc.h"
-
-namespace Render
+namespace Render::Vulkan
 {
-	struct VulkanBuffer
+	struct Buffer
 	{
+		~Buffer();
+
 		void Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties);
 		VkBuffer myBuffer = VK_NULL_HANDLE;
 		VmaAllocation myAllocation = VK_NULL_HANDLE;

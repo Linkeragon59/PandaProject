@@ -1,23 +1,16 @@
 #pragma once
 
-#include "VulkanHelpers.h"
+#include "VulkanBuffer.h"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#include "tiny_gltf.h"
-
-namespace Render
-{
-namespace VulkanglTF
+namespace Render::Vulkan::glTF
 {
 	struct Material
 	{
-		void Load(const tinygltf::Model& aModel, tinygltf::Material& aMaterial);
+		~Material();
 
-		void CreateDescriptorSet(VkDescriptorPool aDescriptorPool);
+		void Load(const tinygltf::Model& aModel, uint aMaterialIndex);
+		void LoadEmpty();
+		void Load();
 
 		int myBaseColorTexture = -1;
 		glm::vec4 myBaseColorFactor = glm::vec4(1.0f);
@@ -38,6 +31,9 @@ namespace VulkanglTF
 		};
 		AlphaMode myAlphaMode = AlphaMode::ALPHAMODE_OPAQUE;
 		float myAlphaCutoff = 1.0f;
+
+		void SetupDescriptorSet(VkDescriptorPool aDescriptorPool);
+		Buffer mySSBO;
+		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
-}
 }

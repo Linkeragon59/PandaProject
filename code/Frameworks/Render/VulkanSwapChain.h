@@ -1,76 +1,45 @@
 #pragma once
 
-#include "VulkanHelpers.h"
-
-#include "VulkanBuffer.h"
+#include "RenderSwapChain.h"
 #include "VulkanImage.h"
-
-#include "VulkanRenderPassContainer.h"
-#include "VulkanPSOContainer.h"
 
 struct GLFWwindow;
 
-namespace Render
+namespace Render::Vulkan
 {
-	class VulkanSwapChain
+	class SwapChain : public Render::SwapChain
 	{
 	public:
-		VulkanSwapChain(GLFWwindow* aWindow);
-		~VulkanSwapChain();
+		SwapChain(GLFWwindow* aWindow);
+		~SwapChain();
 
-		void Setup();
-		void Cleanup();
-		void Recreate();
+		void Setup() override;
+		void Cleanup() override;
+		void Recreate() override;
 
-		void Update();
-
-		GLFWwindow* GetWindow() const { return myWindow; }
-		VkSurfaceKHR GetSurface() const { return mySurface; }
+		void AcquireNext() override;
+		void Present() override;
 
 	private:
-		static void FramebufferResizedCallback(GLFWwindow* aWindow, int aWidth, int aHeight);
-
 		void SetupVkSwapChain();
-		void SetupDepthStencil();
+		void CleanupVkSwapChain();
 
-		void PrepareUniformBuffers();
-		void SetupDescriptorSet();
-
-		void SetupCommandBuffers();
-		void SetupFramebuffers();
 		void CreateSyncObjects();
+		void DestroySyncObjects();
 
-		void BuildCommandBuffers();
-		void DrawFrame();
-
-		GLFWwindow* myWindow = nullptr;
-		VkSurfaceKHR mySurface = VK_NULL_HANDLE;
 		VkDevice myDevice = VK_NULL_HANDLE;
-
-		bool myFramebufferResized = false;
+		VkSurfaceKHR mySurface = VK_NULL_HANDLE;
 
 		VkSwapchainKHR myVkSwapChain = VK_NULL_HANDLE;
-		std::vector<VkImage> myImages;
-		std::vector<VkImageView> myImageViews;
+		uint myCurrentImageIndex = 0;
+		std::vector<Image> myImages;
+		VkExtent2D myExtent = {};
 		VkFormat myColorFormat = VK_FORMAT_UNDEFINED;
-		VkExtent2D myExtent{ 0, 0 };
-		VulkanImage myDepthImage;
 
-		VulkanRenderPassContainer* myRenderPassContainer = nullptr;
-		VulkanPSOContainer* myPSOContainer = nullptr;
-
-		VulkanBuffer myUniform;
-		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
-
-		// One per swapchain image
-		std::vector<VkCommandBuffer> myCommandBuffers;
-		std::vector<VkFramebuffer> myFramebuffers;
-		std::vector<VkFence> myImageFences;
-
-		// One per in flight image
+		// One per in flight frame
+		uint myMaxInFlightFrames = 0;
+		uint myCurrentInFlightFrame = 0;
 		std::vector<VkSemaphore> myImageAvailableSemaphores;
 		std::vector<VkSemaphore> myRenderFinishedSemaphores;
-		std::vector<VkFence> myInFlightFrameFences;
-		uint32_t myCurrentInFlightFrame = 0;
 	};
 }

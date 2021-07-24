@@ -1,12 +1,10 @@
 #pragma once
 
-#include "vulkan/vulkan.h"
-#include <vector>
-
-namespace Render
+namespace Render::Vulkan::Debug
 {
 	void PopulateValidationLayers(std::vector<const char*>& anOutLayerList);
 	void PopulateDebugExtensions(std::vector<const char*>& anOutExtensionList);
+	void PopulateDebugDeviceExtensions(std::vector<const char*>& anOutExtensionList);
 
 	VkResult CreateDebugMessenger(
 		VkInstance anInstance,
@@ -26,4 +24,8 @@ namespace Render
 		void* aUserData);
 
 	void FillDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& someOutInfo);
+
+	void SetupDebugMarkers(VkDevice aDevice);
+	void BeginRegion(VkCommandBuffer aCmdbuffer, const char* aMarkerName, glm::vec4 aColor);
+	void EndRegion(VkCommandBuffer aCmdbuffer);
 }
