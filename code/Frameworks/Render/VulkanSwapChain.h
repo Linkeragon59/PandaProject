@@ -12,7 +12,7 @@ namespace Render::Vulkan
 	public:
 		SwapChain(GLFWwindow* aWindow);
 		~SwapChain();
-
+		
 		void Setup() override;
 		void Cleanup() override;
 		void Recreate() override;
@@ -35,7 +35,7 @@ namespace Render::Vulkan
 		std::vector<Image> myImages;
 		VkExtent2D myExtent = {};
 		VkFormat myColorFormat = VK_FORMAT_UNDEFINED;
-
+		
 		// One per in flight frame
 		uint myMaxInFlightFrames = 0;
 		uint myCurrentInFlightFrame = 0;
