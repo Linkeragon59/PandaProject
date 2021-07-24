@@ -1,23 +1,39 @@
 #include <stdexcept>
 #include <iostream>
 
-#include "Types.h"
-
-#include "GameWork.h"
-#include "PandaModule.h"
+#include "RenderFacade.h"
+#include "DummyGameObject.h"
+#include "Perlin.h"
+#include "Map.h"
 
 int main()
 {
-	if (!GameWork::GameWork::Create())
+	DummyGameObject* object = new DummyGameObject();
+
+	int var = (object->GetVar() + 1) * 2;
+	while (object->TrySetVar(var))
+	{
+		var = (object->GetVar() + 1) * 2;
+	}
+
+	delete object;
+
+	try
+	{
+		//Render::Facade::RunTriangleRenderer();
+		//Render::Facade::RunBasicRendererTuto();
+		//Render::Facade::RunBasicRenderer();
+		Render::Facade::RunVulkanRenderer();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;
+	}
 
-	PandaModule::Register();
-
-	GameWork::GameWork::GetInstance()->Run();
-
-	PandaModule::Unregister();
-	
-	GameWork::GameWork::Destroy();
+	// Test Perlin and Map classes
+	Map map;
+	map.Print();
 
 	return EXIT_SUCCESS;
 }

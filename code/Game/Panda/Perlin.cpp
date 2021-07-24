@@ -35,13 +35,14 @@ Perlin::Perlin(int aNumberOctaves, double anOctavePersistence)
     std::mt19937 g(rd());
     std::shuffle(perm.begin(), perm.end(), g);
 
-    // Duplicating the permutation table makes the Perlin algorithm simpler
+    // Duplicate permutation for use in Perlin algorithm
     for(int i = 0; i < 256; i++)
     {
         myPerm.at(i) = perm.at(i);
         myPerm.at(256 + i) = perm.at(i);
     }
 
+    // Set attributes for fractal noise
     myNumberOctaves = aNumberOctaves;
     myOctavePersistence = anOctavePersistence;
 }

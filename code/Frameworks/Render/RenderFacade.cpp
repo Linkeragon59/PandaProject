@@ -3,22 +3,25 @@
 #include "VulkanCamera.h"
 #include "VulkanRenderer.h"
 
-namespace Render
-{
-	Facade* Facade::ourInstance = nullptr;
+//#define STB_IMAGE_IMPLEMENTATION
+//#include <stb_image.h>
 
-	void Facade::Create()
-	{
-		Assert(!ourInstance);
-		ourInstance = new Facade;
-	}
+#ifdef __linux__
+#pragma GCC diagnostic pop
+#endif
 
-	void Facade::Destroy()
-	{
-		Assert(ourInstance);
-		delete ourInstance;
-		ourInstance = nullptr;
-	}
+#if defined(_WINDOWS)
+#pragma warning(push)
+#pragma warning(disable:4100)
+#pragma warning(disable:4127)
+#pragma warning(disable:4324)
+#elif defined(__linux__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wtype-limits"
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
 
 	void Facade::InitRenderer()
 	{

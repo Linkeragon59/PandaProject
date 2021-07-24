@@ -16,9 +16,9 @@ namespace Render
 	class Facade
 	{
 	public:
-		static void Create();
-		static void Destroy();
-		static Facade* GetInstance() { return ourInstance; }
+		static void RunTriangleRenderer();
+		static void RunBasicRendererTuto();
+		static void RunBasicRenderer();
 
 		// Vulkan Renderer
 		Vulkan::Renderer* GetRenderer() const { return myVulkanRenderer; }

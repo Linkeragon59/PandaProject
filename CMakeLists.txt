@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.6.2)
 
 project(PandaProject)
 
@@ -12,6 +12,5 @@ else()
     add_compile_options(-Wall -Wextra -pedantic -Werror)
 endif()
 
-add_subdirectory(code/Extern)
 add_subdirectory(code/Frameworks)
 add_subdirectory(code/Game)

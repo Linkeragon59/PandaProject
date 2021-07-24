@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.6.2)
 
 add_subdirectory(Panda)
 add_subdirectory(PandaExe)
