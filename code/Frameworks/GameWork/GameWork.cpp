@@ -103,7 +103,7 @@ namespace GameWork
 		myCamera->SetPerspective(800.0f / 600.0f, 60.0f, 0.1f, 256.0f);
 
 		Render::Facade::Create();
-		Render::Facade::GetInstance()->InitRendering(Render::Facade::RenderAPI::Vulkan);
+		Render::Facade::GetInstance()->InitializeRendering();
 		Render::Facade::GetInstance()->RegisterWindow(myWindow);
 		myRenderer = Render::Facade::GetInstance()->CreateRenderer(Render::RendererType::Deferred);
 	}
@@ -139,7 +139,7 @@ namespace GameWork
 		
 		Render::Facade::GetInstance()->StartFrame();
 
-		myRenderer->BindWindow(myWindow);
+		//myRenderer->BindWindow(myWindow);
 
 		myCamera->Update();
 		myRenderer->UpdateView(myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());

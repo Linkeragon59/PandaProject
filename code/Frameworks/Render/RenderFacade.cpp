@@ -1,7 +1,6 @@
 #include "RenderFacade.h"
 
-#include "VulkanCamera.h"
-#include "VulkanRenderer.h"
+#include "VulkanRender.h"
 
 namespace Render
 {
@@ -20,55 +19,44 @@ namespace Render
 		ourInstance = nullptr;
 	}
 
-	void Facade::InitRenderer()
+	void Facade::InitializeRendering()
 	{
-		myVulkanRenderer = new Vulkan::Renderer;
-		myVulkanRenderer->Init();
+		Vulkan::RenderCore::Create();
 	}
 
-	void Facade::UpdateRenderer()
+	void Facade::FinalizeRendering()
 	{
-		myVulkanRenderer->Update();
+		Vulkan::RenderCore::Destroy();
 	}
 
-	void Facade::FinalizeRenderer()
+	void Facade::RegisterWindow(GLFWwindow* aWindow)
 	{
-		myVulkanRenderer->Finalize();
-		delete myVulkanRenderer;
-		myVulkanRenderer = nullptr;
+		Vulkan::RenderCore::GetInstance()->RegisterWindow(aWindow);
 	}
 
-	void Facade::OpenWindow(GLFWwindow* aWindow)
+	void Facade::UnregisterWindow(GLFWwindow* aWindow)
 	{
-		myVulkanRenderer->OnWindowOpened(aWindow);
+		Vulkan::RenderCore::GetInstance()->UnregisterWindow(aWindow);
 	}
 
-	void Facade::CloseWindow(GLFWwindow* aWindow)
+	Render::Renderer* Facade::CreateRenderer(RendererType aRendererType)
 	{
-		myVulkanRenderer->OnWindowClosed(aWindow);
+		return Vulkan::RenderCore::GetInstance()->CreateRenderer(aRendererType);
 	}
 
-	void Facade::SetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection)
+	void Facade::DestroyRenderer(Renderer* aRenderer)
 	{
-		myVulkanRenderer->OnSetWindowView(aWindow, aView, aProjection);
+		Vulkan::RenderCore::GetInstance()->DestroyRenderer(aRenderer);
 	}
 
-	uint Facade::SpawnModel(const std::string& aFilePath, const RenderData& aRenderData)
+	void Facade::StartFrame()
 	{
-		return myVulkanRenderer->SpawnModel(aFilePath, aRenderData);
+		Vulkan::RenderCore::GetInstance()->StartFrame();
 	}
 
-	void Facade::DespawnModel(uint anIndex)
+	void Facade::EndFrame()
 	{
-		myVulkanRenderer->DespawnModel(anIndex);
+		Vulkan::RenderCore::GetInstance()->EndFrame();
 	}
 
-	Facade::Facade()
-	{
-	}
-
-	Facade::~Facade()
-	{
-		Assert(!myVulkanRenderer);
-	}
 }

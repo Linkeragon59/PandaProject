@@ -56,11 +56,6 @@ namespace Render::Vulkan
 		myDepthFormat = VK_FORMAT_UNDEFINED;
 	}
 
-	void DeferrerRenderer::StartFrame(GLFWwindow* aWindow)
-	{
-
-	}
-
 	void DeferrerRenderer::StartFrame(VkImageView aColorAttachment)
 	{
 		vkWaitForFences(myDevice, 1, &myFrameFences[myCurrentFrame], VK_TRUE, UINT64_MAX);
@@ -153,11 +148,6 @@ namespace Render::Vulkan
 			vkCmdBindDescriptorSets(mySecondaryCommandBuffersTransparent[myCurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipelineLayout, 0, 1, &myTransparentDescriptorSet, 0, NULL);
 			myCamera->BindViewProj(mySecondaryCommandBuffersTransparent[myCurrentFrame], myDeferredPipeline.myTransparentPipelineLayout, 1);
 		}
-	}
-
-	void DeferrerRenderer::EndFrame()
-	{
-
 	}
 
 	void DeferrerRenderer::EndFrame(VkSemaphore aColorAttachmentAvailableSemaphore, VkSemaphore aRenderCompleteSemaphore)

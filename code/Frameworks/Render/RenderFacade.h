@@ -2,17 +2,10 @@
 
 struct GLFWwindow;
 
-#include "RenderData.h"
+#include "Renderer.h"
 
 namespace Render
 {
-	namespace Vulkan
-	{
-		class Renderer;
-	}
-	class Camera;
-	class Model;
-
 	class Facade
 	{
 	public:
@@ -20,24 +13,21 @@ namespace Render
 		static void Destroy();
 		static Facade* GetInstance() { return ourInstance; }
 
-		// Vulkan Renderer
-		Vulkan::Renderer* GetRenderer() const { return myVulkanRenderer; }
-		void InitRenderer();
-		void UpdateRenderer();
-		void FinalizeRenderer();
-		void OpenWindow(GLFWwindow* aWindow);
-		void CloseWindow(GLFWwindow* aWindow);
-		void SetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
+		void InitializeRendering();
+		void FinalizeRendering();
 
-		uint SpawnModel(const std::string& aFilePath, const RenderData& aRenderData);
-		void DespawnModel(uint anIndex);
+		void RegisterWindow(GLFWwindow* aWindow);
+		void UnregisterWindow(GLFWwindow* aWindow);
+
+		Renderer* CreateRenderer(RendererType aRendererType);
+		void DestroyRenderer(Renderer* aRenderer);
+
+		void StartFrame();
+		void EndFrame();
+
+		//Model* SpawnModel(const std::string& aFilePath, const Model::RenderData& aRenderData);
 
 	private:
 		static Facade* ourInstance;
-
-		Facade();
-		~Facade();
-
-		Vulkan::Renderer* myVulkanRenderer = nullptr;
 	};
 }

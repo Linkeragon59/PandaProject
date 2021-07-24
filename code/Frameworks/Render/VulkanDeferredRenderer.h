@@ -17,9 +17,9 @@ namespace Render::Vulkan
 		void Setup(uint aFramesCount, VkExtent2D anExtent, VkFormat aColorFormat, VkFormat aDepthFormat);
 		void Destroy();
 
-		void StartFrame(GLFWwindow* aWindow) override;
+		void StartFrame(GLFWwindow* /*aWindow*/) override {};
 		void StartFrame(VkImageView aColorAttachment);
-		void EndFrame() override;
+		void EndFrame() override {};
 		void EndFrame(VkSemaphore aColorAttachmentAvailableSemaphore, VkSemaphore aRenderCompleteSemaphore);
 
 		void UpdateView(const glm::mat4& aView, const glm::mat4& aProjection) override;
