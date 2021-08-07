@@ -1,8 +1,9 @@
 #pragma once
 
-struct GLFWwindow;
+#include "RenderModel.h"
+#include "RendererType.h"
 
-#include "Renderer.h"
+struct GLFWwindow;
 
 namespace Render
 {
@@ -16,16 +17,15 @@ namespace Render
 		void InitializeRendering();
 		void FinalizeRendering();
 
-		void RegisterWindow(GLFWwindow* aWindow);
+		void RegisterWindow(GLFWwindow* aWindow, RendererType aRendererType);
 		void UnregisterWindow(GLFWwindow* aWindow);
 
-		Renderer* CreateRenderer(RendererType aRendererType);
-		void DestroyRenderer(Renderer* aRenderer);
+		void SetViewProj(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
+		Model* SpawnModel(const glTFModelData& someData);
+		void DrawModel(GLFWwindow* aWindow, const Model* aModel, const glTFModelData& someData);
 
 		void StartFrame();
 		void EndFrame();
-
-		//Model* SpawnModel(const std::string& aFilePath, const Model::RenderData& aRenderData);
 
 	private:
 		static Facade* ourInstance;

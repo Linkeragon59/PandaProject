@@ -6,10 +6,10 @@
 
 namespace Render::Vulkan
 {
-	class DummyModel : public VulkanModel
+	/*class DummyModel : public Model
 	{
 	public:
-		DummyModel(const RenderData& someRenderData);
+		DummyModel();
 		~DummyModel();
 
 		void Update() override;
@@ -35,5 +35,5 @@ namespace Render::Vulkan
 		Buffer mySSBOMaterial;
 
 		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
-	};
+	};*/
 }

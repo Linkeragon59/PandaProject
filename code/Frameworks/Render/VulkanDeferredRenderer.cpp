@@ -1,71 +1,57 @@
 #include "VulkanDeferredRenderer.h"
 
 #include "VulkanRender.h"
+#include "VulkanDevice.h"
+#include "VulkanCamera.h"
+#include "VulkanSwapChain.h"
 #include "VulkanHelpers.h"
 #include "VulkanShaderHelpers.h"
 #include "VulkanDebug.h"
-#include "VulkanCamera.h"
 
 #include <random>
 
 namespace Render::Vulkan
 {
-	DeferrerRenderer::DeferrerRenderer()
+	void DeferredRenderer::Setup(SwapChain* aSwapChain)
 	{
-		myDevice = RenderCore::GetInstance()->GetDevice();
-	}
+		Renderer::Setup(aSwapChain);
 
-	void DeferrerRenderer::Setup(uint aFramesCount, VkExtent2D anExtent, VkFormat aColorFormat, VkFormat aDepthFormat)
-	{
-		myFramesCount = aFramesCount;
-		myCurrentFrame = 0;
-
-		myExtent = anExtent;
-		myColorFormat = aColorFormat;
-		myDepthFormat = aDepthFormat;
-
-		myCamera = new Camera();
+		myExtent = mySwapChain->GetExtent();
+		myColorFormat = mySwapChain->GetColorFormat();
+		myDepthFormat = RenderCore::GetInstance()->GetVulkanDevice()->FindBestDepthFormat();
 
 		SetupAttachments();
 		SetupRenderPass();
 		SetupPipeline();
 		SetupDescriptorSets();
-		SetupCommandBuffers();
 		SetupFrameBuffers();
-		SetupFrameFences();
+
+		SetupLights();
 	}
 
-	void DeferrerRenderer::Destroy()
+	void DeferredRenderer::Cleanup()
 	{
-		DestroyFrameFences();
+		DestroyLights();
+
 		DestroyFrameBuffers();
-		DestroyCommandBuffers();
 		DestroyDescriptorSets();
 		DestroyPipeline();
 		DestroyRenderPass();
 		DestroyAttachments();
 
-		delete myCamera;
-		myCamera = nullptr;
-
-		myFramesCount = 0;
-		myCurrentFrame = 0;
-
 		myExtent = {};
 		myColorFormat = VK_FORMAT_UNDEFINED;
 		myDepthFormat = VK_FORMAT_UNDEFINED;
+
+		Renderer::Cleanup();
 	}
 
-	void DeferrerRenderer::StartFrame(VkImageView aColorAttachment)
+	void DeferredRenderer::StartFrame()
 	{
-		vkWaitForFences(myDevice, 1, &myFrameFences[myCurrentFrame], VK_TRUE, UINT64_MAX);
-
-		VkCommandBufferBeginInfo cmdBufferBeginInfo{};
-		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		VK_CHECK_RESULT(vkBeginCommandBuffer(myCommandBuffers[myCurrentFrame], &cmdBufferBeginInfo), "Failed to begin a command buffer");
+		Renderer::StartFrame();
 
 		std::array<VkImageView, 5> attachments{};
-		attachments[0] = aColorAttachment;
+		attachments[0] = mySwapChain->GetCurrentRenderTarget();
 		attachments[1] = myPositionAttachment.myImageView;
 		attachments[2] = myNormalAttachment.myImageView;
 		attachments[3] = myAlbedoAttachment.myImageView;
@@ -80,12 +66,12 @@ namespace Render::Vulkan
 		framebufferInfo.height = myExtent.height;
 		framebufferInfo.layers = 1;
 
-		if (myFrameBuffers[myCurrentFrame] != VK_NULL_HANDLE)
+		if (myFrameBuffers[myCurrentFrameIndex] != VK_NULL_HANDLE)
 		{
 			// Recycle old frame buffers
-			vkDestroyFramebuffer(myDevice, myFrameBuffers[myCurrentFrame], nullptr);
+			vkDestroyFramebuffer(myDevice, myFrameBuffers[myCurrentFrameIndex], nullptr);
 		}
-		VK_CHECK_RESULT(vkCreateFramebuffer(myDevice, &framebufferInfo, nullptr, &myFrameBuffers[myCurrentFrame]), "Failed to create a framebuffer!");
+		VK_CHECK_RESULT(vkCreateFramebuffer(myDevice, &framebufferInfo, nullptr, &myFrameBuffers[myCurrentFrameIndex]), "Failed to create a framebuffer!");
 
 		std::array<VkClearValue, 5> clearValues{};
 		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -102,14 +88,14 @@ namespace Render::Vulkan
 		renderPassBeginInfo.renderArea.extent = myExtent;
 		renderPassBeginInfo.clearValueCount = (uint)clearValues.size();
 		renderPassBeginInfo.pClearValues = clearValues.data();
-		renderPassBeginInfo.framebuffer = myFrameBuffers[myCurrentFrame];
+		renderPassBeginInfo.framebuffer = myFrameBuffers[myCurrentFrameIndex];
 
-		vkCmdBeginRenderPass(myCommandBuffers[myCurrentFrame], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		vkCmdBeginRenderPass(myCommandBuffers[myCurrentFrameIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
 		VkCommandBufferInheritanceInfo cmdBufferInheritanceInfo{};
 		cmdBufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
 		cmdBufferInheritanceInfo.renderPass = myRenderPass;
-		cmdBufferInheritanceInfo.framebuffer = myFrameBuffers[myCurrentFrame];
+		cmdBufferInheritanceInfo.framebuffer = myFrameBuffers[myCurrentFrameIndex];
 
 		VkCommandBufferBeginInfo secondaryCmdBufferBeginInfo{};
 		secondaryCmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -117,111 +103,96 @@ namespace Render::Vulkan
 		secondaryCmdBufferBeginInfo.pInheritanceInfo = &cmdBufferInheritanceInfo;
 
 		cmdBufferInheritanceInfo.subpass = 0;
-		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersGBuffer[myCurrentFrame], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
-			Debug::BeginRegion(mySecondaryCommandBuffersGBuffer[myCurrentFrame], "Subpass 0: Deferred G-Buffer creation", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-
-			vkCmdBindPipeline(mySecondaryCommandBuffersGBuffer[myCurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipeline);
-
-			myCamera->BindViewProj(mySecondaryCommandBuffersGBuffer[myCurrentFrame], myDeferredPipeline.myGBufferPipelineLayout, 0);
-		}
+		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
+		Debug::BeginRegion(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], "Subpass 0: Deferred G-Buffer creation", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		cmdBufferInheritanceInfo.subpass = 1;
-		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersCombine[myCurrentFrame], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
-			Debug::BeginRegion(mySecondaryCommandBuffersCombine[myCurrentFrame], "Subpass 1: Deferred composition", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-			
-			vkCmdBindPipeline(mySecondaryCommandBuffersCombine[myCurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipeline);
-			
-			vkCmdBindDescriptorSets(mySecondaryCommandBuffersCombine[myCurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 0, 1, &myLightingDescriptorSet, 0, NULL);
-			// Temporary
-			vkCmdBindDescriptorSets(mySecondaryCommandBuffersCombine[myCurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 1, 1, &myLightsDescriptorSet, 0, NULL);
-		}
+		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
+		Debug::BeginRegion(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], "Subpass 1: Deferred composition", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		cmdBufferInheritanceInfo.subpass = 2;
-		{
-			VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersTransparent[myCurrentFrame], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
-			Debug::BeginRegion(mySecondaryCommandBuffersTransparent[myCurrentFrame], "Subpass 2: Forward transparency", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
-			
-			vkCmdBindPipeline(mySecondaryCommandBuffersTransparent[myCurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipeline);
-			
-			vkCmdBindDescriptorSets(mySecondaryCommandBuffersTransparent[myCurrentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipelineLayout, 0, 1, &myTransparentDescriptorSet, 0, NULL);
-			myCamera->BindViewProj(mySecondaryCommandBuffersTransparent[myCurrentFrame], myDeferredPipeline.myTransparentPipelineLayout, 1);
-		}
-	}
+		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
+		Debug::BeginRegion(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], "Subpass 2: Forward transparency", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-	void DeferrerRenderer::EndFrame(VkSemaphore aColorAttachmentAvailableSemaphore, VkSemaphore aRenderCompleteSemaphore)
-	{
-		Debug::EndRegion(mySecondaryCommandBuffersGBuffer[myCurrentFrame]);
-		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersGBuffer[myCurrentFrame]), "Failed to end a command buffer");
+		vkCmdBindPipeline(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipeline);
+		myCamera->BindViewProj(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 0);
 
-		vkCmdDraw(mySecondaryCommandBuffersCombine[myCurrentFrame], 4, 1, 0, 0);
-		Debug::EndRegion(mySecondaryCommandBuffersCombine[myCurrentFrame]);
-		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersCombine[myCurrentFrame]), "Failed to end a command buffer");
-
-		Debug::EndRegion(mySecondaryCommandBuffersTransparent[myCurrentFrame]);
-		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersTransparent[myCurrentFrame]), "Failed to end a command buffer");
-
-		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrame], 1, &mySecondaryCommandBuffersGBuffer[myCurrentFrame]);
-		vkCmdNextSubpass(myCommandBuffers[myCurrentFrame], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrame], 1, &mySecondaryCommandBuffersCombine[myCurrentFrame]);
-		vkCmdNextSubpass(myCommandBuffers[myCurrentFrame], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrame], 1, &mySecondaryCommandBuffersTransparent[myCurrentFrame]);
-
-		vkCmdEndRenderPass(myCommandBuffers[myCurrentFrame]);
-
-		VK_CHECK_RESULT(vkEndCommandBuffer(myCommandBuffers[myCurrentFrame]), "Failed to end a command buffer");
-
-		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &aColorAttachmentAvailableSemaphore;
-		submitInfo.pWaitDstStageMask = &waitStage;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &myCommandBuffers[myCurrentFrame];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &aRenderCompleteSemaphore;
-
-		vkResetFences(myDevice, 1, &myFrameFences[myCurrentFrame]);
-		VK_CHECK_RESULT(vkQueueSubmit(RenderCore::GetInstance()->GetGraphicsQueue(), 1, &submitInfo, myFrameFences[myCurrentFrame]),
-			"Failed to submit a command buffer");
-
-		myCurrentFrame = (myCurrentFrame + 1) % myFramesCount;
-	}
-
-	void DeferrerRenderer::UpdateView(const glm::mat4& aView, const glm::mat4& aProjection)
-	{
-		myCamera->Update(aView, aProjection);
-
+		vkCmdBindPipeline(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipeline);
+		vkCmdBindDescriptorSets(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 0, 1, &myLightingDescriptorSet, 0, NULL);
 		// Temporary
+		vkCmdBindDescriptorSets(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 1, 1, &myLightsDescriptorSet, 0, NULL);
+
+		vkCmdBindPipeline(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipeline);
+		vkCmdBindDescriptorSets(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipelineLayout, 0, 1, &myTransparentDescriptorSet, 0, NULL);
+		myCamera->BindViewProj(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], myDeferredPipeline.myTransparentPipelineLayout, 1);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = (float)myExtent.width;
+		viewport.height = (float)myExtent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		SetViewport(viewport);
+
+		VkRect2D scissor{};
+		scissor.extent = myExtent;
+		scissor.offset = { 0, 0 };
+		SetScissor(scissor);
+	}
+
+	void DeferredRenderer::EndFrame()
+	{
+		Debug::EndRegion(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex]);
+		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex]), "Failed to end a command buffer");
+
+		vkCmdDraw(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], 4, 1, 0, 0);
+		Debug::EndRegion(mySecondaryCommandBuffersCombine[myCurrentFrameIndex]);
+		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersCombine[myCurrentFrameIndex]), "Failed to end a command buffer");
+
+		Debug::EndRegion(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex]);
+		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex]), "Failed to end a command buffer");
+
+		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex]);
+		vkCmdNextSubpass(myCommandBuffers[myCurrentFrameIndex], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersCombine[myCurrentFrameIndex]);
+		vkCmdNextSubpass(myCommandBuffers[myCurrentFrameIndex], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersTransparent[myCurrentFrameIndex]);
+
+		vkCmdEndRenderPass(myCommandBuffers[myCurrentFrameIndex]);
+
+		Renderer::EndFrame();
+	}
+
+	void DeferredRenderer::SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection)
+	{
+		Renderer::SetViewProj(aView, aProjection);
 		UpdateLightsUBO(myCamera->GetView()[3]);
 	}
 
-	void DeferrerRenderer::SetViewport(VkViewport aViewport)
+	void DeferredRenderer::SetViewport(const VkViewport& aViewport)
 	{
-		vkCmdSetViewport(mySecondaryCommandBuffersGBuffer[myCurrentFrame], 0, 1, &aViewport);
-		vkCmdSetViewport(mySecondaryCommandBuffersCombine[myCurrentFrame], 0, 1, &aViewport);
-		vkCmdSetViewport(mySecondaryCommandBuffersTransparent[myCurrentFrame], 0, 1, &aViewport);
+		vkCmdSetViewport(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], 0, 1, &aViewport);
+		vkCmdSetViewport(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], 0, 1, &aViewport);
+		vkCmdSetViewport(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], 0, 1, &aViewport);
 	}
 
-	void DeferrerRenderer::SetScissor(VkRect2D aScissor)
+	void DeferredRenderer::SetScissor(const VkRect2D& aScissor)
 	{
-		vkCmdSetScissor(mySecondaryCommandBuffersGBuffer[myCurrentFrame], 0, 1, &aScissor);
-		vkCmdSetScissor(mySecondaryCommandBuffersCombine[myCurrentFrame], 0, 1, &aScissor);
-		vkCmdSetScissor(mySecondaryCommandBuffersTransparent[myCurrentFrame], 0, 1, &aScissor);
+		vkCmdSetScissor(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], 0, 1, &aScissor);
+		vkCmdSetScissor(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], 0, 1, &aScissor);
+		vkCmdSetScissor(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], 0, 1, &aScissor);
 	}
 
-	void DeferrerRenderer::DrawModel(Model* aModel)
+	void DeferredRenderer::DrawModel(const Model* aModel, const glTFModelData& someData)
 	{
-		VulkanModel* vulkanModel = static_cast<VulkanModel*>(aModel);
-		if (!vulkanModel->IsTransparent())
-			vulkanModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrame], myDeferredPipeline.myGBufferPipelineLayout, 1);
+		if (!someData.myIsTransparent)
+			aModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1);
 		else
-			vulkanModel->Draw(mySecondaryCommandBuffersTransparent[myCurrentFrame], myDeferredPipeline.myTransparentPipelineLayout, 2);
+			aModel->Draw(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], myDeferredPipeline.myTransparentPipelineLayout, 2);
 	}
 
-	void DeferrerRenderer::SetupAttachments()
+	void DeferredRenderer::SetupAttachments()
 	{
 		myPositionAttachment.Create(myExtent.width, myExtent.height,
 			VK_FORMAT_R16G16B16A16_SFLOAT,
@@ -258,7 +229,7 @@ namespace Render::Vulkan
 		myDepthAttachment.CreateImageView(aspects);
 	}
 
-	void DeferrerRenderer::DestroyAttachments()
+	void DeferredRenderer::DestroyAttachments()
 	{
 		myPositionAttachment.Destroy();
 		myNormalAttachment.Destroy();
@@ -266,7 +237,7 @@ namespace Render::Vulkan
 		myDepthAttachment.Destroy();
 	}
 
-	void DeferrerRenderer::SetupRenderPass()
+	void DeferredRenderer::SetupRenderPass()
 	{
 		std::array<VkAttachmentDescription, 5> attachments{};
 		{
@@ -401,23 +372,23 @@ namespace Render::Vulkan
 		VK_CHECK_RESULT(vkCreateRenderPass(myDevice, &renderPassInfo, nullptr, &myRenderPass), "Failed to create the render pass!");
 	}
 
-	void DeferrerRenderer::DestroyRenderPass()
+	void DeferredRenderer::DestroyRenderPass()
 	{
 		vkDestroyRenderPass(RenderCore::GetInstance()->GetDevice(), myRenderPass, nullptr);
 		myRenderPass = VK_NULL_HANDLE;
 	}
 
-	void DeferrerRenderer::SetupPipeline()
+	void DeferredRenderer::SetupPipeline()
 	{
 		myDeferredPipeline.Prepare(myRenderPass);
 	}
 
-	void DeferrerRenderer::DestroyPipeline()
+	void DeferredRenderer::DestroyPipeline()
 	{
 		myDeferredPipeline.Destroy();
 	}
 
-	void DeferrerRenderer::SetupDescriptorSets()
+	void DeferredRenderer::SetupDescriptorSets()
 	{
 		std::array<VkDescriptorPoolSize, 1> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
@@ -484,35 +455,37 @@ namespace Render::Vulkan
 		}
 	}
 
-	void DeferrerRenderer::DestroyDescriptorSets()
+	void DeferredRenderer::DestroyDescriptorSets()
 	{
 		vkDestroyDescriptorPool(myDevice, myDescriptorPool, nullptr);
 		myDescriptorPool = VK_NULL_HANDLE;
 	}
 
-	void DeferrerRenderer::SetupCommandBuffers()
+	void DeferredRenderer::SetupCommandBuffers()
 	{
+		uint framesCount = mySwapChain->GetImagesCount();
+
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.commandPool = RenderCore::GetInstance()->GetGraphicsCommandPool();
-		allocInfo.commandBufferCount = myFramesCount;
+		allocInfo.commandBufferCount = framesCount;
 
 		// Primary
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		myCommandBuffers.resize(myFramesCount);
+		myCommandBuffers.resize(framesCount);
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
 
 		// Secondary
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		mySecondaryCommandBuffersGBuffer.resize(myFramesCount);
-		mySecondaryCommandBuffersCombine.resize(myFramesCount);
-		mySecondaryCommandBuffersTransparent.resize(myFramesCount);
+		mySecondaryCommandBuffersGBuffer.resize(framesCount);
+		mySecondaryCommandBuffersCombine.resize(framesCount);
+		mySecondaryCommandBuffersTransparent.resize(framesCount);
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, mySecondaryCommandBuffersGBuffer.data()), "Failed to create command buffers!");
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, mySecondaryCommandBuffersCombine.data()), "Failed to create command buffers!");
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, mySecondaryCommandBuffersTransparent.data()), "Failed to create command buffers!");
 	}
 
-	void DeferrerRenderer::DestroyCommandBuffers()
+	void DeferredRenderer::DestroyCommandBuffers()
 	{
 		myCommandBuffers.clear();
 
@@ -521,14 +494,14 @@ namespace Render::Vulkan
 		mySecondaryCommandBuffersTransparent.clear();
 	}
 
-	void DeferrerRenderer::SetupFrameBuffers()
+	void DeferredRenderer::SetupFrameBuffers()
 	{
-		myFrameBuffers.resize(myFramesCount, VK_NULL_HANDLE);
+		myFrameBuffers.resize(mySwapChain->GetImagesCount(), VK_NULL_HANDLE);
 	}
 
-	void DeferrerRenderer::DestroyFrameBuffers()
+	void DeferredRenderer::DestroyFrameBuffers()
 	{
-		for (uint i = 0; i < myFramesCount; ++i)
+		for (uint i = 0; i < mySwapChain->GetImagesCount(); ++i)
 		{
 			if (myFrameBuffers[i] != VK_NULL_HANDLE)
 				vkDestroyFramebuffer(myDevice, myFrameBuffers[i], nullptr);
@@ -536,30 +509,8 @@ namespace Render::Vulkan
 		myFrameBuffers.clear();
 	}
 
-	void DeferrerRenderer::SetupFrameFences()
-	{
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-		myFrameFences.resize(myFramesCount);
-		for (uint i = 0; i < myFramesCount; ++i)
-		{
-			VK_CHECK_RESULT(vkCreateFence(myDevice, &fenceInfo, nullptr, &myFrameFences[i]), "Failed to create a fence");
-		}
-	}
-
-	void DeferrerRenderer::DestroyFrameFences()
-	{
-		for (uint i = 0; i < myFramesCount; ++i)
-		{
-			vkDestroyFence(myDevice, myFrameFences[i], nullptr);
-		}
-		myFrameFences.clear();
-	}
-
 	// Temporary
-	void DeferrerRenderer::SetupLights()
+	void DeferredRenderer::SetupLights()
 	{
 		myLightsUBO.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myLightsUBO.SetupDescriptor();
@@ -569,19 +520,19 @@ namespace Render::Vulkan
 		SetupLightsDescriptorSets();
 	}
 
-	void DeferrerRenderer::DestroyLights()
+	void DeferredRenderer::DestroyLights()
 	{
 		myLightsUBO.Destroy();
 		vkDestroyDescriptorPool(myDevice, myLightsDescriptorPool, nullptr);
 	}
 
-	void DeferrerRenderer::UpdateLightsUBO(const glm::vec3& aCameraPos)
+	void DeferredRenderer::UpdateLightsUBO(const glm::vec3& aCameraPos)
 	{
 		myLightsData.myViewPos = glm::vec4(aCameraPos, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
 		memcpy(myLightsUBO.myMappedData, &myLightsData, sizeof(LightData));
 	}
 
-	void DeferrerRenderer::SetupRandomLights()
+	void DeferredRenderer::SetupRandomLights()
 	{
 		std::vector<glm::vec3> colors =
 		{
@@ -604,7 +555,7 @@ namespace Render::Vulkan
 		}
 	}
 
-	void DeferrerRenderer::SetupLightsDescriptorPool()
+	void DeferredRenderer::SetupLightsDescriptorPool()
 	{
 		std::array<VkDescriptorPoolSize, 1> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -619,7 +570,7 @@ namespace Render::Vulkan
 		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myLightsDescriptorPool), "Failed to create the descriptor pool");
 	}
 
-	void DeferrerRenderer::SetupLightsDescriptorSets()
+	void DeferredRenderer::SetupLightsDescriptorSets()
 	{
 		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::GetLightsDescriptorSetLayout() };
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};

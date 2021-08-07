@@ -11,7 +11,7 @@
 
 namespace Render::Vulkan
 {
-	namespace
+	/*namespace
 	{
 		const std::vector<ShaderHelpers::Vertex> locVertices =
 		{
@@ -79,8 +79,7 @@ namespace Render::Vulkan
 		vkCmdDrawIndexed(aCommandBuffer, myIndexCount, 1, 0, 0, 0);
 	}
 
-	DummyModel::DummyModel(const RenderData& someRenderData)
-		: VulkanModel(someRenderData)
+	DummyModel::DummyModel()
 	{
 		myDevice = RenderCore::GetInstance()->GetDevice();
 
@@ -276,5 +275,5 @@ namespace Render::Vulkan
 		descriptorWrites[3].pBufferInfo = &mySSBOMaterial.myDescriptor;
 
 		vkUpdateDescriptorSets(myDevice, static_cast<uint>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-	}
+	}*/
 }

@@ -5,11 +5,10 @@
 
 namespace Render::Vulkan::glTF
 {
-	Model::Model(const std::string& aFilename, const RenderData& someRenderData)
-		: VulkanModel(someRenderData)
+	Model::Model(const glTFModelData& someData)
 	{
 		myDevice = RenderCore::GetInstance()->GetDevice();
-		LoadFromFile(aFilename, RenderCore::GetInstance()->GetGraphicsQueue(), myRenderData.myMatrix[3][3]);
+		LoadFromFile(someData.myFilename, RenderCore::GetInstance()->GetGraphicsQueue(), someData.myMatrix[3][3]);
 	}
 
 	Model::~Model()
@@ -35,7 +34,7 @@ namespace Render::Vulkan::glTF
 			node->UpdateUBO();
 	}
 
-	void Model::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
+	void Model::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const
 	{
 		// All vertices and indices are stored in a single buffer, so we only need to bind once
 		VkDeviceSize offsets[1] = { 0 };

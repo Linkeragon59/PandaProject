@@ -11,14 +11,14 @@
 
 namespace Render::Vulkan::glTF
 {
-	class Model : public VulkanModel
+	class Model : public Render::Vulkan::Model
 	{
 	public:
-		Model(const std::string& aFilename, const RenderData& someRenderData);
+		Model(const glTFModelData& someData);
 		~Model();
 
 		void Update() override;
-		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) override;
+		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const override;
 
 		Node* GetNodeByIndex(uint anIndex);
 		const Image* GetImage(uint anIndex) { return &myImages[anIndex]; }

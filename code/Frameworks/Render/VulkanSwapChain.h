@@ -1,45 +1,65 @@
 #pragma once
 
-#include "RenderSwapChain.h"
 #include "VulkanImage.h"
+#include "RendererType.h"
 
 struct GLFWwindow;
 
 namespace Render::Vulkan
 {
-	class SwapChain : public Render::SwapChain
+	class Renderer;
+
+	class SwapChain
 	{
 	public:
-		SwapChain(GLFWwindow* aWindow);
+		SwapChain(GLFWwindow* aWindow, RendererType aRendererType);
 		~SwapChain();
 		
-		void Setup() override;
-		void Cleanup() override;
-		void Recreate() override;
+		void Setup();
+		void Cleanup();
+		void Recreate();
 
-		void AcquireNext() override;
-		void Present() override;
+		void AcquireNext();
+		void Present();
+
+		GLFWwindow* GetWindowHandle() const { return myWindow; }
+
+		uint GetImagesCount() const { return (uint)myImages.size(); };
+		VkExtent2D GetExtent() const { return myExtent; }
+		VkFormat GetColorFormat() const { return myColorFormat; }
+		VkImageView GetCurrentRenderTarget() const { return myImages[myCurrentImageIndex].myImageView; }
+		VkSemaphore GetCurrentRenderTargetSemaphore() const { return myCurrentImageAvailableSemaphore; }
+
+		Renderer* GetRenderer() const { return myRenderer; }
 
 	private:
+		static void FramebufferResizedCallback(GLFWwindow* aWindow, int aWidth, int aHeight);
+
 		void SetupVkSwapChain();
 		void CleanupVkSwapChain();
 
 		void CreateSyncObjects();
 		void DestroySyncObjects();
 
+		void CreateRenderer();
+		void DestroyRenderer();
+
 		VkDevice myDevice = VK_NULL_HANDLE;
+
+		GLFWwindow* myWindow = nullptr;
+		bool myFramebufferResized = false;
 		VkSurfaceKHR mySurface = VK_NULL_HANDLE;
 
 		VkSwapchainKHR myVkSwapChain = VK_NULL_HANDLE;
-		uint myCurrentImageIndex = 0;
 		std::vector<Image> myImages;
+		uint myCurrentImageIndex = 0;
 		VkExtent2D myExtent = {};
 		VkFormat myColorFormat = VK_FORMAT_UNDEFINED;
-		
-		// One per in flight frame
-		uint myMaxInFlightFrames = 0;
-		uint myCurrentInFlightFrame = 0;
 		std::vector<VkSemaphore> myImageAvailableSemaphores;
-		std::vector<VkSemaphore> myRenderFinishedSemaphores;
+		VkSemaphore myCurrentImageAvailableSemaphore = VK_NULL_HANDLE;
+
+		// For now, one renderer per swapchain
+		RendererType myRendererType = RendererType::Invalid;
+		Renderer* myRenderer = nullptr;
 	};
 }

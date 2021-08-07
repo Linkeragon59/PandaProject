@@ -3,16 +3,20 @@
 #include "VulkanRender.h"
 #include "VulkanHelpers.h"
 #include "VulkanDevice.h"
+#include "VulkanDeferredRenderer.h"
 
 #include <GLFW/glfw3.h>
 
 namespace Render::Vulkan
 {
-	SwapChain::SwapChain(GLFWwindow* aWindow)
-		: Render::SwapChain(aWindow)
+	SwapChain::SwapChain(GLFWwindow* aWindow, RendererType aRendererType)
+		: myWindow(aWindow)
+		, myRendererType(aRendererType)
 	{
 		myDevice = RenderCore::GetInstance()->GetDevice();
 
+		glfwSetWindowUserPointer(myWindow, this);
+		glfwSetFramebufferSizeCallback(myWindow, FramebufferResizedCallback);
 		VK_CHECK_RESULT(glfwCreateWindowSurface(RenderCore::GetInstance()->GetVkInstance(), myWindow, nullptr, &mySurface), "Failed to create the surface!");
 
 		Setup();
@@ -29,14 +33,19 @@ namespace Render::Vulkan
 	{
 		SetupVkSwapChain();
 		CreateSyncObjects();
+		CreateRenderer();
 	}
 
 	void SwapChain::Cleanup()
 	{
 		vkDeviceWaitIdle(myDevice);
 
+		DestroyRenderer();
 		DestroySyncObjects();
 		CleanupVkSwapChain();
+
+		myCurrentImageIndex = 0;
+		myCurrentImageAvailableSemaphore = VK_NULL_HANDLE;
 	}
 
 	void SwapChain::Recreate()
@@ -56,11 +65,13 @@ namespace Render::Vulkan
 
 	void SwapChain::AcquireNext()
 	{
-		VkSemaphore imageAvailableSemaphore = myImageAvailableSemaphores[myCurrentInFlightFrame];
+		myCurrentImageAvailableSemaphore = myImageAvailableSemaphores[myCurrentImageIndex];
 
-		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &myCurrentImageIndex);
+		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, myCurrentImageAvailableSemaphore, VK_NULL_HANDLE, &myCurrentImageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
+			// TODO : What should we do here?
+			Assert(false);
 			Recreate();
 			return;
 		}
@@ -68,11 +79,15 @@ namespace Render::Vulkan
 		{
 			Assert(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire a swapchain image!");
 		}
+
+		myRenderer->StartFrame();
 	}
 
 	void SwapChain::Present()
 	{
-		VkSemaphore renderCompleteSemaphore = myRenderFinishedSemaphores[myCurrentInFlightFrame];
+		VkSemaphore renderCompleteSemaphore = myRenderer->GetCurrentRenderFinishedSemaphore();
+
+		myRenderer->EndFrame();
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -92,8 +107,14 @@ namespace Render::Vulkan
 		{
 			Assert(result == VK_SUCCESS, "Failed to present a swapchain image!");
 		}
+	}
 
-		myCurrentInFlightFrame = (myCurrentInFlightFrame + 1) % myMaxInFlightFrames;
+	void SwapChain::FramebufferResizedCallback(GLFWwindow* aWindow, int aWidth, int aHeight)
+	{
+		(void)aWidth;
+		(void)aHeight;
+		auto app = reinterpret_cast<SwapChain*>(glfwGetWindowUserPointer(aWindow));
+		app->myFramebufferResized = true;
 	}
 
 	void SwapChain::SetupVkSwapChain()
@@ -203,14 +224,11 @@ namespace Render::Vulkan
 			VK_CHECK_RESULT(vkCreateImageView(myDevice, &viewCreateInfo, nullptr, &myImages[i].myImageView), "Failed to create an image view for the swap chain!");
 		}
 		myCurrentImageIndex = 0;
-
-		myMaxInFlightFrames = imageCount - 1;
-		myCurrentInFlightFrame = 0;
 	}
 
 	void SwapChain::CleanupVkSwapChain()
 	{
-		for (uint i = 0, e = (uint)myImages.size(); i < e; ++i)
+		for (uint i = 0, e = GetImagesCount(); i < e; ++i)
 		{
 			vkDestroyImageView(myDevice, myImages[i].myImageView, nullptr);
 			myImages[i].myImage = VK_NULL_HANDLE;
@@ -223,27 +241,44 @@ namespace Render::Vulkan
 
 	void SwapChain::CreateSyncObjects()
 	{
-		myImageAvailableSemaphores.resize(myMaxInFlightFrames);
-		myRenderFinishedSemaphores.resize(myMaxInFlightFrames);
+		myImageAvailableSemaphores.resize(GetImagesCount());
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		for (size_t i = 0; i < myMaxInFlightFrames; ++i)
+		for (uint i = 0, e = GetImagesCount(); i < e; ++i)
 		{
 			VK_CHECK_RESULT(vkCreateSemaphore(myDevice, &semaphoreInfo, nullptr, &myImageAvailableSemaphores[i]), "Failed to create a semaphore");
-			VK_CHECK_RESULT(vkCreateSemaphore(myDevice, &semaphoreInfo, nullptr, &myRenderFinishedSemaphores[i]), "Failed to create a semaphore");
 		}
 	}
 
 	void SwapChain::DestroySyncObjects()
 	{
-		for (uint i = 0; i < myMaxInFlightFrames; ++i)
+		for (uint i = 0, e = GetImagesCount(); i < e; ++i)
 		{
-			vkDestroySemaphore(myDevice, myRenderFinishedSemaphores[i], nullptr);
 			vkDestroySemaphore(myDevice, myImageAvailableSemaphores[i], nullptr);
 		}
-		myRenderFinishedSemaphores.clear();
 		myImageAvailableSemaphores.clear();
+	}
+
+	void SwapChain::CreateRenderer()
+	{
+		switch (myRendererType)
+		{
+		case RendererType::Deferred:
+			myRenderer = new DeferredRenderer;
+			myRenderer->Setup(this);
+			break;
+		default:
+			Assert(false, "Unsupported renderer type");
+			break;
+		}
+	}
+
+	void SwapChain::DestroyRenderer()
+	{
+		myRenderer->Cleanup();
+		delete myRenderer;
+		myRenderer = nullptr;
 	}
 }

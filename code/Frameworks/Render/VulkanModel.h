@@ -4,13 +4,9 @@
 
 namespace Render::Vulkan
 {
-	class VulkanModel : public Model
+	class Model : public Render::Model
 	{
 	public:
-		VulkanModel(const RenderData& someRenderData)
-			: Model(someRenderData)
-		{}
-
-		virtual void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) = 0;
+		virtual void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const = 0;
 	};
 }

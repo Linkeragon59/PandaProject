@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Renderer.h"
+#include "RendererType.h"
 #include "VulkanImage.h"
 #include "VulkanModel.h"
 
@@ -24,12 +24,12 @@ namespace Render::Vulkan
 		void StartFrame();
 		void EndFrame();
 
-		void RegisterWindow(GLFWwindow* aWindow);
+		void RegisterWindow(GLFWwindow* aWindow, RendererType aType);
 		void UnregisterWindow(GLFWwindow* aWindow);
-		SwapChain* GetWindowSwapChain(GLFWwindow* aWindow);
 
-		Renderer* CreateRenderer(RendererType aType);
-		void DestroyRenderer(Renderer* aRenderer);
+		void SetViewProj(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
+		Render::Model* SpawnModel(const glTFModelData& someData);
+		void DrawModel(GLFWwindow* aWindow, const Render::Model* aModel, const glTFModelData& someData);
 
 		VkInstance GetVkInstance() const { return myVkInstance; }
 
@@ -40,9 +40,6 @@ namespace Render::Vulkan
 		VkQueue GetGraphicsQueue() const;
 		VkCommandPool GetGraphicsCommandPool() const;
 
-		uint SpawnModel(const std::string& aFilePath, const Model::RenderData& someRenderData);
-		void DespawnModel(uint anIndex);
-
 	private:
 		static RenderCore* ourInstance;
 
@@ -50,20 +47,14 @@ namespace Render::Vulkan
 		~RenderCore();
 
 		void CreateVkInstance();
-		void CreateDevice();
-
-		void SetupEmptyTexture();
-
-		int GetWindowSwapChainIndex(GLFWwindow* aWindow);
-
 		VkInstance myVkInstance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT myDebugMessenger = VK_NULL_HANDLE;
-
+		void CreateDevice();
 		Device* myDevice = nullptr;
 
+		void SetupEmptyTexture();
 		Image myMissingTexture;
 
-		// One SwapChain per window/surface
 		std::vector<SwapChain*> mySwapChains;
 	};
 }

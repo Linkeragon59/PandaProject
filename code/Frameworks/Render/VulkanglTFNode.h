@@ -18,7 +18,7 @@ namespace Render::Vulkan::glTF
 
 		void UpdateUBO();
 		void UpdateJoints(Model* aContainer);
-		void Draw(Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex);
+		void Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const;
 
 		glm::mat4 GetLocalMatrix() const;
 		glm::mat4 GetMatrix() const;

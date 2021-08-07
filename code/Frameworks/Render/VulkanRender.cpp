@@ -95,45 +95,55 @@ namespace Render::Vulkan
 			swapChain->Present();
 	}
 
-	void RenderCore::RegisterWindow(GLFWwindow* aWindow)
+	void RenderCore::RegisterWindow(GLFWwindow* aWindow, RendererType aType)
 	{
-		SwapChain* swapChain = new SwapChain(aWindow);
+		SwapChain* swapChain = new SwapChain(aWindow, aType);
 		mySwapChains.push_back(swapChain);
 	}
 
 	void RenderCore::UnregisterWindow(GLFWwindow* aWindow)
 	{
-		int index = GetWindowSwapChainIndex(aWindow);
-		if (index != -1)
+		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
 		{
-			delete mySwapChains[index];
-			mySwapChains.erase(mySwapChains.begin() + index);
-		}
-	}
-	
-	SwapChain* RenderCore::GetWindowSwapChain(GLFWwindow* aWindow)
-	{
-		int index = GetWindowSwapChainIndex(aWindow);
-		if (index != -1)
-			return mySwapChains[index];
-		return nullptr;
-	}
-
-	Renderer* RenderCore::CreateRenderer(RendererType aType)
-	{
-		switch (aType)
-		{
-		case Render::RendererType::Deferred:
-			return new DeferrerRenderer;
-		default:
-			Assert(false, "Unsupported renderer type")
-			return nullptr;
+			if (mySwapChains[i]->GetWindowHandle() == aWindow)
+			{
+				delete mySwapChains[i];
+				mySwapChains.erase(mySwapChains.begin() + i);
+			}
 		}
 	}
 
-	void RenderCore::DestroyRenderer(Renderer* aRenderer)
+	void RenderCore::SetViewProj(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection)
 	{
-		delete aRenderer;
+		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
+		{
+			if (mySwapChains[i]->GetWindowHandle() == aWindow)
+			{
+				if (Renderer* renderer = mySwapChains[i]->GetRenderer())
+				{
+					renderer->SetViewProj(aView, aProjection);
+				}
+			}
+		}
+	}
+
+	Render::Model* RenderCore::SpawnModel(const glTFModelData& someData)
+	{
+		return new glTF::Model(someData);
+	}
+
+	void RenderCore::DrawModel(GLFWwindow* aWindow, const Render::Model* aModel, const glTFModelData& someData)
+	{
+		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
+		{
+			if (mySwapChains[i]->GetWindowHandle() == aWindow)
+			{
+				if (Renderer* renderer = mySwapChains[i]->GetRenderer())
+				{
+					renderer->DrawModel(static_cast<const Model*>(aModel), someData);
+				}
+			}
+		}
 	}
 
 	VkPhysicalDevice RenderCore::GetPhysicalDevice() const
@@ -159,41 +169,6 @@ namespace Render::Vulkan
 	VkCommandPool RenderCore::GetGraphicsCommandPool() const
 	{
 		return myDevice->myGraphicsCommandPool;
-	}
-
-	uint RenderCore::SpawnModel(const std::string& aFilePath, const Model::RenderData& someRenderData)
-	{
-		(void)aFilePath;
-		(void)someRenderData;
-		/*Model* model = nullptr;
-		if (aFilePath.empty())
-		{
-			model = new DummyModel(aRenderData);
-		}
-		else
-		{
-			model = new glTF::Model(aFilePath, aRenderData);
-		}
-
-		for (uint i = 0; i < (uint)myModels.size(); ++i)
-		{
-			if (myModels[i] == nullptr)
-			{
-				myModels[i] = model;
-				return i;
-			}
-		}
-
-		myModels.push_back(model);
-		return (uint)myModels.size() - 1;*/
-		return 0;
-	}
-
-	void RenderCore::DespawnModel(uint anIndex)
-	{
-		(void)anIndex;
-		//myDespawningModels.push_back({ myModels[anIndex], 3 });
-		//myModels[anIndex] = nullptr;
 	}
 
 	void RenderCore::CreateVkInstance()
@@ -326,17 +301,5 @@ namespace Render::Vulkan
 		myMissingTexture.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		myMissingTexture.CreateImageSampler();
 		myMissingTexture.SetupDescriptor();
-	}
-
-	int RenderCore::GetWindowSwapChainIndex(GLFWwindow* aWindow)
-	{
-		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
-		{
-			if (mySwapChains[i]->GetWindowHandle() == aWindow)
-			{
-				return i;
-			}
-		}
-		return -1;
 	}
 }

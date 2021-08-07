@@ -2,7 +2,6 @@
 
 #include "Input.h"
 #include "RenderFacade.h"
-#include "Renderer.h"
 #include "RenderModel.h"
 
 #include "Module.h"
@@ -104,13 +103,15 @@ namespace GameWork
 
 		Render::Facade::Create();
 		Render::Facade::GetInstance()->InitializeRendering();
-		Render::Facade::GetInstance()->RegisterWindow(myWindow);
-		myRenderer = Render::Facade::GetInstance()->CreateRenderer(Render::RendererType::Deferred);
+		Render::Facade::GetInstance()->RegisterWindow(myWindow, Render::RendererType::Deferred);
+
+		myModels.resize(1);
+		myModels[0].second.myFilename = 
+		myModels[0].first = Render::Facade::GetInstance()->SpawnModel();
 	}
 
 	GameWork::~GameWork()
 	{
-		Render::Facade::GetInstance()->DestroyRenderer(myRenderer);
 		Render::Facade::GetInstance()->UnregisterWindow(myWindow);
 		Render::Facade::GetInstance()->FinalizeRendering();
 		Render::Facade::Destroy();
@@ -139,15 +140,13 @@ namespace GameWork
 		
 		Render::Facade::GetInstance()->StartFrame();
 
-		//myRenderer->BindWindow(myWindow);
-
 		myCamera->Update();
-		myRenderer->UpdateView(myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
+		Render::Facade::GetInstance()->SetViewProj(myWindow, myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
 
 		for (Render::Model* model : myModels)
 		{
 			model->Update();
-			myRenderer->DrawModel(model);
+			//myRenderer->DrawModel(model);
 		}
 
 		Render::Facade::GetInstance()->EndFrame();

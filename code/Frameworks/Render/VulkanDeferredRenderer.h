@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Renderer.h"
-#include "RenderModel.h"
+#include "VulkanRenderer.h"
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
 #include "VulkanDeferredPipeline.h"
@@ -10,34 +9,25 @@ namespace Render::Vulkan
 {
 	class Camera;
 
-	class DeferrerRenderer : public Renderer
+	class DeferredRenderer : public Renderer
 	{
 	public:
-		DeferrerRenderer();
-		void Setup(uint aFramesCount, VkExtent2D anExtent, VkFormat aColorFormat, VkFormat aDepthFormat);
-		void Destroy();
+		void Setup(SwapChain* aSwapChain) override;
+		void Cleanup() override;
 
-		void StartFrame(GLFWwindow* /*aWindow*/) override {};
-		void StartFrame(VkImageView aColorAttachment);
-		void EndFrame() override {};
-		void EndFrame(VkSemaphore aColorAttachmentAvailableSemaphore, VkSemaphore aRenderCompleteSemaphore);
+		void StartFrame() override;
+		void EndFrame() override;
 
-		void UpdateView(const glm::mat4& aView, const glm::mat4& aProjection) override;
+		void SetViewport(const VkViewport& aViewport);
+		void SetScissor(const VkRect2D& aScissor);
+		void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection) override;
 
-		void SetViewport(VkViewport aViewport);
-		void SetScissor(VkRect2D aScissor);
-		void DrawModel(Model* aModel) override;
+		void DrawModel(const Model* aModel, const glTFModelData& someData) override;
 
 	private:
-		VkDevice myDevice = VK_NULL_HANDLE;
-
-		uint myFramesCount = 0; // Keep resources alive for that number of frames
-		uint myCurrentFrame = 0;
 		VkExtent2D myExtent = {};
 		VkFormat myColorFormat = VK_FORMAT_UNDEFINED;
 		VkFormat myDepthFormat = VK_FORMAT_UNDEFINED;
-
-		Camera* myCamera = nullptr;
 
 		// Attachments - TODO : one per frame?
 		void SetupAttachments();
@@ -67,9 +57,8 @@ namespace Render::Vulkan
 		VkDescriptorSet myTransparentDescriptorSet = VK_NULL_HANDLE;
 
 		// Command Buffers - one per frame
-		void SetupCommandBuffers();
-		void DestroyCommandBuffers();
-		std::vector<VkCommandBuffer> myCommandBuffers;
+		void SetupCommandBuffers() override;
+		void DestroyCommandBuffers() override;
 		std::vector<VkCommandBuffer> mySecondaryCommandBuffersGBuffer;
 		std::vector<VkCommandBuffer> mySecondaryCommandBuffersCombine;
 		std::vector<VkCommandBuffer> mySecondaryCommandBuffersTransparent;
@@ -78,11 +67,6 @@ namespace Render::Vulkan
 		void SetupFrameBuffers();
 		void DestroyFrameBuffers();
 		std::vector<VkFramebuffer> myFrameBuffers;
-
-		// In-flight resources fences - one per frame
-		void SetupFrameFences();
-		void DestroyFrameFences();
-		std::vector<VkFence> myFrameFences;
 
 		// Temporary
 		// Lights will be moved to a separate class later

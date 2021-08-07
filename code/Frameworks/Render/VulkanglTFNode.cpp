@@ -184,7 +184,7 @@ namespace Render::Vulkan::glTF
 			child->UpdateJoints(aContainer);
 	}
 
-	void Node::Draw(Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
+	void Node::Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const
 	{
 		for (const Primitive& primitive : myMesh.myPrimitives)
 		{

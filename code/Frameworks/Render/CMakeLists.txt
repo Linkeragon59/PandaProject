@@ -3,11 +3,10 @@ cmake_minimum_required(VERSION 3.16)
 add_library(Render "")
 target_sources(Render
 	PRIVATE
-		Renderer.h
+		RendererType.h
 		RenderFacade.h
 		RenderModel.h
 		RenderPrecompile.h
-		RenderSwapChain.h
 		VulkanBuffer.h
 		VulkanCamera.h
 		VulkanDebug.h
@@ -27,12 +26,12 @@ target_sources(Render
 		VulkanImGuiOverlay.h
 		VulkanModel.h
 		VulkanRender.h
+		VulkanRenderer.h
 		VulkanShaderHelpers.h
 		VulkanSwapChain.h
 
 		RenderFacade.cpp
 		RenderPrecompile.cpp
-		RenderSwapChain.cpp
 		VulkanBuffer.cpp
 		VulkanCamera.cpp
 		VulkanDebug.cpp
@@ -51,6 +50,7 @@ target_sources(Render
 		VulkanImage.cpp
 		VulkanImGuiOverlay.cpp
 		VulkanRender.cpp
+		VulkanRenderer.cpp
 		VulkanShaderHelpers.cpp
 		VulkanSwapChain.cpp
 )
