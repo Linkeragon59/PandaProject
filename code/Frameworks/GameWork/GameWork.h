@@ -1,7 +1,5 @@
 #pragma once
 
-#include "RenderModel.h"
-
 struct GLFWwindow;
 
 namespace GameWork
@@ -32,6 +30,5 @@ namespace GameWork
 
 		GLFWwindow* myWindow = nullptr;
 		Camera* myCamera = nullptr;
-		std::vector<std::pair<Render::Model*, Render::glTFModelData>> myModels;
 	};
 }

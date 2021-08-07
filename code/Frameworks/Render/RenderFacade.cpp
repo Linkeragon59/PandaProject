@@ -49,6 +49,11 @@ namespace Render
 		return Vulkan::RenderCore::GetInstance()->SpawnModel(someData);
 	}
 
+	void Facade::DespawnModel(Model* aModel)
+	{
+		Vulkan::RenderCore::GetInstance()->DespawnModel(aModel);
+	}
+
 	void Facade::DrawModel(GLFWwindow* aWindow, const Model* aModel, const glTFModelData& someData)
 	{
 		Vulkan::RenderCore::GetInstance()->DrawModel(aWindow, aModel, someData);

@@ -6,6 +6,7 @@ target_sources(Base
 		Assert.h
 		BasePrecompile.h
 		File.h
+		glmInclude.h
 		Input.h
 		Thread.h
 		Types.h

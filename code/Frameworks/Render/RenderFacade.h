@@ -22,6 +22,7 @@ namespace Render
 
 		void SetViewProj(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
 		Model* SpawnModel(const glTFModelData& someData);
+		void DespawnModel(Model* aModel);
 		void DrawModel(GLFWwindow* aWindow, const Model* aModel, const glTFModelData& someData);
 
 		void StartFrame();

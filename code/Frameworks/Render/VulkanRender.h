@@ -29,6 +29,7 @@ namespace Render::Vulkan
 
 		void SetViewProj(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
 		Render::Model* SpawnModel(const glTFModelData& someData);
+		void DespawnModel(Render::Model* aModel);
 		void DrawModel(GLFWwindow* aWindow, const Render::Model* aModel, const glTFModelData& someData);
 
 		VkInstance GetVkInstance() const { return myVkInstance; }
@@ -56,5 +57,6 @@ namespace Render::Vulkan
 		Image myMissingTexture;
 
 		std::vector<SwapChain*> mySwapChains;
+		std::vector<Model*> myModelsToDelete;
 	};
 }

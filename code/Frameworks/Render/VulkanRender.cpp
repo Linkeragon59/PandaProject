@@ -79,6 +79,10 @@ namespace Render::Vulkan
 
 	void RenderCore::Finalize()
 	{
+		for (Model* model : myModelsToDelete)
+			delete model;
+		myModelsToDelete.clear();
+
 		myMissingTexture.Destroy();
 		ShaderHelpers::DestroyDescriptorSetLayouts();
 	}
@@ -130,6 +134,11 @@ namespace Render::Vulkan
 	Render::Model* RenderCore::SpawnModel(const glTFModelData& someData)
 	{
 		return new glTF::Model(someData);
+	}
+
+	void RenderCore::DespawnModel(Render::Model* aModel)
+	{
+		myModelsToDelete.push_back(static_cast<Model*>(aModel));
 	}
 
 	void RenderCore::DrawModel(GLFWwindow* aWindow, const Render::Model* aModel, const glTFModelData& someData)

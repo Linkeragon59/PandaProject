@@ -19,6 +19,8 @@ namespace GameWork
 	{
 		const uint locWindowWidth = 1280;
 		const uint locWindowHeight = 720;
+
+		std::vector<std::pair<Render::Model*, Render::glTFModelData>> locModels;
 	}
 
 	bool GameWork::Create()
@@ -105,15 +107,19 @@ namespace GameWork
 		Render::Facade::GetInstance()->InitializeRendering();
 		Render::Facade::GetInstance()->RegisterWindow(myWindow, Render::RendererType::Deferred);
 
-		myModels.resize(1);
-		myModels[0].second.myFilename = 
-		myModels[0].first = Render::Facade::GetInstance()->SpawnModel();
+		locModels.resize(1);
+		locModels[0].second.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
+		locModels[0].first = Render::Facade::GetInstance()->SpawnModel(locModels[0].second);
 	}
 
 	GameWork::~GameWork()
 	{
+		Render::Facade::GetInstance()->DespawnModel(locModels[0].first);
+		locModels.clear();
+
 		Render::Facade::GetInstance()->UnregisterWindow(myWindow);
 		Render::Facade::GetInstance()->FinalizeRendering();
+
 		Render::Facade::Destroy();
 
 		delete myCamera;
@@ -143,10 +149,10 @@ namespace GameWork
 		myCamera->Update();
 		Render::Facade::GetInstance()->SetViewProj(myWindow, myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
 
-		for (Render::Model* model : myModels)
+		for (const std::pair<Render::Model*, Render::glTFModelData>& model : locModels)
 		{
-			model->Update();
-			//myRenderer->DrawModel(model);
+			model.first->Update();
+			Render::Facade::GetInstance()->DrawModel(myWindow, model.first, model.second);
 		}
 
 		Render::Facade::GetInstance()->EndFrame();
