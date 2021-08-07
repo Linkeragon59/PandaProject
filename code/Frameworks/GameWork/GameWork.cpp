@@ -114,9 +114,9 @@ namespace GameWork
 
 		if (locModels.size() == 0)
 		{
-			locModels.resize(1);
-			locModels[0].second.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
-			locModels[0].first = Render::Facade::GetInstance()->SpawnModel(locModels[0].second);
+			Render::glTFModelData modelData;
+			modelData.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
+			locModels.push_back(std::make_pair(Render::Facade::GetInstance()->SpawnModel(modelData), modelData));
 		}
 	}
 
@@ -163,9 +163,9 @@ namespace GameWork
 		{
 			if (locModels.size() == 0)
 			{
-				locModels.resize(1);
-				locModels[0].second.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
-				locModels[0].first = Render::Facade::GetInstance()->SpawnModel(locModels[0].second);
+				Render::glTFModelData modelData;
+				modelData.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
+				locModels.push_back(std::make_pair(Render::Facade::GetInstance()->SpawnModel(modelData), modelData));
 			}
 		}
 		
