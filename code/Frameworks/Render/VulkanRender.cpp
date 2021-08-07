@@ -1,12 +1,13 @@
 #include "VulkanRender.h"
 
 #include "VulkanHelpers.h"
+#include "VulkanShaderHelpers.h"
 #include "VulkanDebug.h"
+#include "VulkanBuffer.h"
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
-#include "VulkanDeferredRenderer.h"
-
 #include "VulkanglTFModel.h"
+#include "VulkanRenderer.h"
 
 #include <GLFW/glfw3.h>
 
@@ -79,9 +80,8 @@ namespace Render::Vulkan
 
 	void RenderCore::Finalize()
 	{
-		for (Model* model : myModelsToDelete)
-			delete model;
-		myModelsToDelete.clear();
+		Assert(mySwapChains.empty(), "Renderering is being finalized while swapchains are still alive!");
+		DeleteUnusedModels(true);
 
 		myMissingTexture.Destroy();
 		ShaderHelpers::DestroyDescriptorSetLayouts();
@@ -89,6 +89,8 @@ namespace Render::Vulkan
 
 	void RenderCore::StartFrame()
 	{
+		DeleteUnusedModels();
+
 		for (SwapChain* swapChain : mySwapChains)
 			swapChain->AcquireNext();
 	}
@@ -113,22 +115,21 @@ namespace Render::Vulkan
 			{
 				delete mySwapChains[i];
 				mySwapChains.erase(mySwapChains.begin() + i);
+				break;
 			}
 		}
 	}
 
-	void RenderCore::SetViewProj(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection)
+	Render::Renderer* RenderCore::GetRenderer(GLFWwindow* aWindow)
 	{
 		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
 		{
 			if (mySwapChains[i]->GetWindowHandle() == aWindow)
 			{
-				if (Renderer* renderer = mySwapChains[i]->GetRenderer())
-				{
-					renderer->SetViewProj(aView, aProjection);
-				}
+				return mySwapChains[i]->GetRenderer();
 			}
 		}
+		return nullptr;
 	}
 
 	Render::Model* RenderCore::SpawnModel(const glTFModelData& someData)
@@ -138,21 +139,7 @@ namespace Render::Vulkan
 
 	void RenderCore::DespawnModel(Render::Model* aModel)
 	{
-		myModelsToDelete.push_back(static_cast<Model*>(aModel));
-	}
-
-	void RenderCore::DrawModel(GLFWwindow* aWindow, const Render::Model* aModel, const glTFModelData& someData)
-	{
-		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
-		{
-			if (mySwapChains[i]->GetWindowHandle() == aWindow)
-			{
-				if (Renderer* renderer = mySwapChains[i]->GetRenderer())
-				{
-					renderer->DrawModel(static_cast<const Model*>(aModel), someData);
-				}
-			}
-		}
+		myModelsToDelete.push_back(std::make_pair(static_cast<Model*>(aModel), GetModelsLifetime()));
 	}
 
 	VkPhysicalDevice RenderCore::GetPhysicalDevice() const
@@ -310,5 +297,29 @@ namespace Render::Vulkan
 		myMissingTexture.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		myMissingTexture.CreateImageSampler();
 		myMissingTexture.SetupDescriptor();
+	}
+
+	uint RenderCore::GetModelsLifetime() const
+	{
+		uint lifeTime = 0;
+		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
+		{
+			lifeTime = std::max(lifeTime, mySwapChains[i]->GetImagesCount());
+		}
+		return lifeTime;
+	}
+
+	void RenderCore::DeleteUnusedModels(bool aDeleteNow)
+	{
+		for (uint i = 0; i < myModelsToDelete.size();)
+		{
+			if (aDeleteNow || myModelsToDelete[i].second-- == 0)
+			{
+				delete myModelsToDelete[i].first;
+				myModelsToDelete.erase(myModelsToDelete.begin() + i);
+				continue;
+			}
+			i++;
+		}
 	}
 }

@@ -29,6 +29,16 @@ namespace Render
 		Vulkan::RenderCore::Destroy();
 	}
 
+	void Facade::StartFrame()
+	{
+		Vulkan::RenderCore::GetInstance()->StartFrame();
+	}
+
+	void Facade::EndFrame()
+	{
+		Vulkan::RenderCore::GetInstance()->EndFrame();
+	}
+
 	void Facade::RegisterWindow(GLFWwindow* aWindow, RendererType aRendererType)
 	{
 		Vulkan::RenderCore::GetInstance()->RegisterWindow(aWindow, aRendererType);
@@ -39,9 +49,9 @@ namespace Render
 		Vulkan::RenderCore::GetInstance()->UnregisterWindow(aWindow);
 	}
 
-	void Facade::SetViewProj(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection)
+	Renderer* Facade::GetRenderer(GLFWwindow* aWindow)
 	{
-		Vulkan::RenderCore::GetInstance()->SetViewProj(aWindow, aView, aProjection);
+		return Vulkan::RenderCore::GetInstance()->GetRenderer(aWindow);
 	}
 
 	Model* Facade::SpawnModel(const glTFModelData& someData)
@@ -52,20 +62,5 @@ namespace Render
 	void Facade::DespawnModel(Model* aModel)
 	{
 		Vulkan::RenderCore::GetInstance()->DespawnModel(aModel);
-	}
-
-	void Facade::DrawModel(GLFWwindow* aWindow, const Model* aModel, const glTFModelData& someData)
-	{
-		Vulkan::RenderCore::GetInstance()->DrawModel(aWindow, aModel, someData);
-	}
-
-	void Facade::StartFrame()
-	{
-		Vulkan::RenderCore::GetInstance()->StartFrame();
-	}
-
-	void Facade::EndFrame()
-	{
-		Vulkan::RenderCore::GetInstance()->EndFrame();
 	}
 }

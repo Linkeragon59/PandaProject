@@ -164,12 +164,6 @@ namespace Render::Vulkan
 		Renderer::EndFrame();
 	}
 
-	void DeferredRenderer::SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection)
-	{
-		Renderer::SetViewProj(aView, aProjection);
-		UpdateLightsUBO(myCamera->GetView()[3]);
-	}
-
 	void DeferredRenderer::SetViewport(const VkViewport& aViewport)
 	{
 		vkCmdSetViewport(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], 0, 1, &aViewport);
@@ -184,12 +178,19 @@ namespace Render::Vulkan
 		vkCmdSetScissor(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], 0, 1, &aScissor);
 	}
 
-	void DeferredRenderer::DrawModel(const Model* aModel, const glTFModelData& someData)
+	void DeferredRenderer::SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection)
 	{
+		Renderer::SetViewProj(aView, aProjection);
+		UpdateLightsUBO(myCamera->GetView()[3]);
+	}
+
+	void DeferredRenderer::DrawModel(const Render::Model* aModel, const glTFModelData& someData)
+	{
+		const Model* vulkanModel = static_cast<const Model*>(aModel);
 		if (!someData.myIsTransparent)
-			aModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1);
+			vulkanModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1);
 		else
-			aModel->Draw(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], myDeferredPipeline.myTransparentPipelineLayout, 2);
+			vulkanModel->Draw(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], myDeferredPipeline.myTransparentPipelineLayout, 2);
 	}
 
 	void DeferredRenderer::SetupAttachments()

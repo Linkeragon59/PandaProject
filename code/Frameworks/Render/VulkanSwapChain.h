@@ -1,7 +1,7 @@
 #pragma once
 
+#include "RenderRenderer.h"
 #include "VulkanImage.h"
-#include "RendererType.h"
 
 struct GLFWwindow;
 

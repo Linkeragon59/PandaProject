@@ -29,6 +29,7 @@ namespace GameWork
 		std::vector<Module*> myModules;
 
 		GLFWwindow* myWindow = nullptr;
+		GLFWwindow* myWindow2 = nullptr;
 		Camera* myCamera = nullptr;
 	};
 }

@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.16)
 add_library(Render "")
 target_sources(Render
 	PRIVATE
-		RendererType.h
 		RenderFacade.h
 		RenderModel.h
+		RenderRenderer.h
 		RenderPrecompile.h
 		VulkanBuffer.h
 		VulkanCamera.h

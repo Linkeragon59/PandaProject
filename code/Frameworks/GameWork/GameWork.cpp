@@ -20,6 +20,8 @@ namespace GameWork
 		const uint locWindowWidth = 1280;
 		const uint locWindowHeight = 720;
 
+		Render::Renderer* locRenderer;
+		Render::Renderer* locRenderer2;
 		std::vector<std::pair<Render::Model*, Render::glTFModelData>> locModels;
 	}
 
@@ -93,6 +95,7 @@ namespace GameWork
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		myWindow = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.1", nullptr, nullptr);
+		myWindow2 = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.12", nullptr, nullptr);
 
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		inputManager->AddWindow(myWindow);
@@ -107,16 +110,25 @@ namespace GameWork
 		Render::Facade::GetInstance()->InitializeRendering();
 		Render::Facade::GetInstance()->RegisterWindow(myWindow, Render::RendererType::Deferred);
 
-		locModels.resize(1);
-		locModels[0].second.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
-		locModels[0].first = Render::Facade::GetInstance()->SpawnModel(locModels[0].second);
+		Render::Facade::GetInstance()->RegisterWindow(myWindow2, Render::RendererType::Deferred);
+
+		if (locModels.size() == 0)
+		{
+			locModels.resize(1);
+			locModels[0].second.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
+			locModels[0].first = Render::Facade::GetInstance()->SpawnModel(locModels[0].second);
+		}
 	}
 
 	GameWork::~GameWork()
 	{
-		Render::Facade::GetInstance()->DespawnModel(locModels[0].first);
-		locModels.clear();
+		if (locModels.size() > 0)
+		{
+			Render::Facade::GetInstance()->DespawnModel(locModels[0].first);
+			locModels.clear();
+		}
 
+		Render::Facade::GetInstance()->UnregisterWindow(myWindow2);
 		Render::Facade::GetInstance()->UnregisterWindow(myWindow);
 		Render::Facade::GetInstance()->FinalizeRendering();
 
@@ -126,6 +138,7 @@ namespace GameWork
 
 		Input::InputManager::GetInstance()->RemoveWindow(myWindow);
 
+		glfwDestroyWindow(myWindow2);
 		glfwDestroyWindow(myWindow);
 		
 		glfwTerminate();
@@ -137,6 +150,24 @@ namespace GameWork
 	{
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		bool escapePressed = inputManager->PollRawInput(Input::RawInput::KeyEscape) == Input::RawInputState::Pressed;
+
+		if (inputManager->PollRawInput(Input::RawInput::KeyI) == Input::RawInputState::Pressed)
+		{
+			if (locModels.size() > 0)
+			{
+				Render::Facade::GetInstance()->DespawnModel(locModels[0].first);
+				locModels.clear();
+			}
+		}
+		if (inputManager->PollRawInput(Input::RawInput::KeyO) == Input::RawInputState::Pressed)
+		{
+			if (locModels.size() == 0)
+			{
+				locModels.resize(1);
+				locModels[0].second.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
+				locModels[0].first = Render::Facade::GetInstance()->SpawnModel(locModels[0].second);
+			}
+		}
 		
 		// Update Modules
 		for (Module* mod : myModules)
@@ -146,13 +177,20 @@ namespace GameWork
 		
 		Render::Facade::GetInstance()->StartFrame();
 
+		locRenderer = Render::Facade::GetInstance()->GetRenderer(myWindow);
+		locRenderer2 = Render::Facade::GetInstance()->GetRenderer(myWindow2);
+
 		myCamera->Update();
-		Render::Facade::GetInstance()->SetViewProj(myWindow, myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
+		locRenderer->SetViewProj(myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
+		myCamera->Rotate(glm::vec3(180.0f, 0.0f, 0.0f));
+		locRenderer2->SetViewProj(myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
+		myCamera->Rotate(glm::vec3(-180.0f, 0.0f, 0.0f));
 
 		for (const std::pair<Render::Model*, Render::glTFModelData>& model : locModels)
 		{
 			model.first->Update();
-			Render::Facade::GetInstance()->DrawModel(myWindow, model.first, model.second);
+			locRenderer->DrawModel(model.first, model.second);
+			locRenderer2->DrawModel(model.first, model.second);
 		}
 
 		Render::Facade::GetInstance()->EndFrame();

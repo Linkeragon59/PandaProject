@@ -1,6 +1,7 @@
 #pragma once
 
-#include "RendererType.h"
+#include "RenderModel.h"
+#include "RenderRenderer.h"
 #include "VulkanImage.h"
 #include "VulkanModel.h"
 
@@ -26,11 +27,10 @@ namespace Render::Vulkan
 
 		void RegisterWindow(GLFWwindow* aWindow, RendererType aType);
 		void UnregisterWindow(GLFWwindow* aWindow);
+		Render::Renderer* GetRenderer(GLFWwindow* aWindow);
 
-		void SetViewProj(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
 		Render::Model* SpawnModel(const glTFModelData& someData);
 		void DespawnModel(Render::Model* aModel);
-		void DrawModel(GLFWwindow* aWindow, const Render::Model* aModel, const glTFModelData& someData);
 
 		VkInstance GetVkInstance() const { return myVkInstance; }
 
@@ -57,6 +57,10 @@ namespace Render::Vulkan
 		Image myMissingTexture;
 
 		std::vector<SwapChain*> mySwapChains;
-		std::vector<Model*> myModelsToDelete;
+
+		uint GetModelsLifetime() const;
+		void DeleteUnusedModels(bool aDeleteNow = false);
+		typedef std::pair<Model*, uint> ModelLifeTime;
+		std::vector<ModelLifeTime> myModelsToDelete;
 	};
 }

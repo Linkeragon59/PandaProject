@@ -1,14 +1,14 @@
 #pragma once
 
 #include "RenderModel.h"
+#include "RenderRenderer.h"
 
 namespace Render::Vulkan
 {
 	class SwapChain;
 	class Camera;
-	class Model;
 
-	class Renderer
+	class Renderer : public Render::Renderer
 	{
 	public:
 		Renderer();
@@ -20,8 +20,7 @@ namespace Render::Vulkan
 		virtual void StartFrame();
 		virtual void EndFrame();
 
-		virtual void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection);
-		virtual void DrawModel(const Model* aModel, const glTFModelData& someData) = 0;
+		void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection) override;
 
 		VkSemaphore GetCurrentRenderFinishedSemaphore() const { return myRenderFinishedSemaphores[myCurrentFrameIndex]; }
 

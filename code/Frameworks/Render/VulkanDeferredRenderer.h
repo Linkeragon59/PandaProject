@@ -22,7 +22,7 @@ namespace Render::Vulkan
 		void SetScissor(const VkRect2D& aScissor);
 		void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection) override;
 
-		void DrawModel(const Model* aModel, const glTFModelData& someData) override;
+		void DrawModel(const Render::Model* aModel, const glTFModelData& someData) override;
 
 	private:
 		VkExtent2D myExtent = {};
