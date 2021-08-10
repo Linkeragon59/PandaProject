@@ -10,6 +10,9 @@
 #include "DynamicProp.h"
 #include "PointLight.h"
 
+#include "soloud.h"
+#include "soloud_wav.h"
+
 #include <GLFW/glfw3.h>
 #include <chrono>
 #include <iostream>
@@ -24,7 +27,7 @@ namespace GameWork
 		const uint locWindowHeight = 720;
 
 		Render::Renderer* locRenderer;
-		Render::Renderer* locRenderer2;
+		//Render::Renderer* locRenderer2;
 		
 		std::vector<Prop*> locProps;
 		std::vector<PointLight> locLights;
@@ -58,6 +61,7 @@ namespace GameWork
 
 		const std::string locTestTexture = "Frameworks/textures/panda.jpg";
 		const std::string locTestglTFModel = "Frameworks/models/CesiumMan/CesiumMan.gltf";
+		const std::string locTestWavFile = "Frameworks/audio/Ensoniq-ZR-76-01-Dope-77.wav";
 
 		void locSpawnModels()
 		{
@@ -102,6 +106,10 @@ namespace GameWork
 			locCamera->SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 			locCamera->SetPerspective(800.0f / 600.0f, 60.0f, 0.1f, 256.0f);
 		}
+
+		SoLoud::Soloud locSoloud; // SoLoud engine
+		SoLoud::Wav locWave;      // One wave file
+		bool locSoundPlaying = false;
 	}
 
 	bool GameWork::Create()
@@ -189,10 +197,15 @@ namespace GameWork
 
 		locSpawnModels();
 		locSetupLights();
+
+		locSoloud.init(); // Initialize SoLoud
+		locWave.load(locTestWavFile.c_str()); // Load a wave
 	}
 
 	GameWork::~GameWork()
 	{
+		locSoloud.deinit(); // Clean up!
+
 		locDespawnModels();
 
 		//Render::Facade::GetInstance()->UnregisterWindow(myWindow2);
@@ -224,6 +237,22 @@ namespace GameWork
 		if (inputManager->PollRawInput(Input::RawInput::KeyO) == Input::RawInputState::Pressed)
 		{
 			locSpawnModels();
+		}
+		if (inputManager->PollRawInput(Input::RawInput::KeyU) == Input::RawInputState::Pressed)
+		{
+			if (!locSoundPlaying)
+			{
+				locSoundPlaying = true;
+				locSoloud.play(locWave); // Play the wave
+			}
+		}
+		if (inputManager->PollRawInput(Input::RawInput::KeyY) == Input::RawInputState::Pressed)
+		{
+			if (locSoundPlaying)
+			{
+				locSoundPlaying = false;
+				locSoloud.stopAll(); // Stop the wave
+			}
 		}
 		
 		// Update Modules

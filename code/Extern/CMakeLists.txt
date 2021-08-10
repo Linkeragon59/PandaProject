@@ -12,3 +12,5 @@ add_subdirectory(VulkanSDK)
 # Compiled libs
 add_subdirectory(imgui)
 set_target_properties(ImGui PROPERTIES FOLDER "Extern")
+add_subdirectory(SoLoud)
+set_target_properties(SoLoud PROPERTIES FOLDER "Extern")
