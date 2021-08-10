@@ -1,10 +1,6 @@
 #pragma once
 
-#include "VulkanBuffer.h"
-
-namespace Render
-{
-namespace Vulkan
+namespace Render::Vulkan
 {
 	struct DeferredPipeline
 	{
@@ -39,5 +35,4 @@ namespace Vulkan
 		void SetupTransparentPipeline(VkRenderPass aRenderPass);
 		void DestroyTransparentPipeline();
 	};
-}
 }

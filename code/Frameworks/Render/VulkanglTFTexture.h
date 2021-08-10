@@ -2,11 +2,7 @@
 
 #include "VulkanImage.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	struct Image
 	{
@@ -24,6 +20,4 @@ namespace glTF
 	{
 		uint myImageIndex;
 	};
-}
-}
 }

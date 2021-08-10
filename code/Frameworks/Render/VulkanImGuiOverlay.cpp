@@ -1,18 +1,16 @@
 #include "VulkanImGuiOverlay.h"
 
-#include "VulkanRenderer.h"
+#include "VulkanRender.h"
 #include "VulkanHelpers.h"
 #include "VulkanShaderHelpers.h"
 
 #include "imgui.h"
 
-namespace Render
-{
-namespace Vulkan
+namespace Render::Vulkan
 {
 	ImGuiOverlay::ImGuiOverlay()
 	{
-		myDevice = Renderer::GetInstance()->GetDevice();
+		myDevice = RenderCore::GetInstance()->GetDevice();
 	}
 
 	ImGuiOverlay::~ImGuiOverlay()
@@ -175,7 +173,7 @@ namespace Vulkan
 
 		myFontTexture.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			Renderer::GetInstance()->GetGraphicsQueue());
+			RenderCore::GetInstance()->GetGraphicsQueue());
 
 		VkCommandBuffer commandBuffer = BeginOneTimeCommand();
 		{
@@ -187,13 +185,13 @@ namespace Vulkan
 			imageCopyRegion.imageExtent = { static_cast<uint>(texWidth), static_cast<uint>(texHeight), 1 };
 			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myFontTexture.myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
 		}
-		EndOneTimeCommand(commandBuffer, Renderer::GetInstance()->GetGraphicsQueue());
+		EndOneTimeCommand(commandBuffer, RenderCore::GetInstance()->GetGraphicsQueue());
 
 		textureStaging.Destroy();
 
 		myFontTexture.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			Renderer::GetInstance()->GetGraphicsQueue());
+			RenderCore::GetInstance()->GetGraphicsQueue());
 
 		myFontTexture.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		myFontTexture.CreateImageSampler();
@@ -395,5 +393,4 @@ namespace Vulkan
 		vkDestroyShaderModule(myDevice, vertModule, nullptr);
 		vkDestroyShaderModule(myDevice, fragModule, nullptr);
 	}
-}
 }

@@ -1,6 +1,6 @@
 #include "Camera.h"
 
-#include "RenderFacade.h"
+#include "RenderRenderer.h"
 #include "Input.h"
 
 namespace GameWork
@@ -46,28 +46,9 @@ namespace GameWork
 		prevMouseY = mouseY;
 	}
 
-	void Camera::SetPosition(const glm::vec3& aPosition)
+	void Camera::Bind(Render::Renderer* aRenderer)
 	{
-		myPosition = aPosition;
-		UpdateViewMatrix();
-	}
-
-	void Camera::Translate(const glm::vec3& aPositionDelta)
-	{
-		myPosition += aPositionDelta;
-		UpdateViewMatrix();
-	}
-
-	void Camera::SetRotation(const glm::vec3& aRotation)
-	{
-		myRotation = aRotation;
-		UpdateViewMatrix();
-	}
-
-	void Camera::Rotate(const glm::vec3& aRotationDelta)
-	{
-		myRotation += aRotationDelta;
-		UpdateViewMatrix();
+		aRenderer->SetViewProj(myView, myPerspective);
 	}
 
 	void Camera::SetPerspective(float anAspectRatio, float aFov, float aZNear, float aZFar)
@@ -77,6 +58,16 @@ namespace GameWork
 		myZNear = aZNear;
 		myZFar = aZFar;
 		UpdatePerspectiveMatrix();
+	}
+
+	void Camera::OnPositionChanged()
+	{
+		UpdateViewMatrix();
+	}
+
+	void Camera::OnRotationChanged()
+	{
+		UpdateViewMatrix();
 	}
 
 	void Camera::UpdateViewMatrix()

@@ -11,7 +11,8 @@ layout (set = 1, binding = 0) uniform UBOObject
     mat4 model;
 } uboObject;
 
-layout(std430, set = 1, binding = 1) readonly buffer JointMatrices {
+layout(std430, set = 1, binding = 1) readonly buffer JointMatrices
+{
 	mat4 jointMatrices[];
 };
 
@@ -40,14 +41,15 @@ void main()
 		inJointWeights.y * jointMatrices[int(inJointIndices.y)] +
 		inJointWeights.z * jointMatrices[int(inJointIndices.z)] +
 		inJointWeights.w * jointMatrices[int(inJointIndices.w)];
+	mat4 skinnedModel = uboObject.model * skinMat;
 	
-	gl_Position = uboScene.projection * uboScene.view * uboObject.model * skinMat * vec4(inPosition, 1.0);
+	gl_Position = uboScene.projection * uboScene.view * skinnedModel * vec4(inPosition, 1.0);
 	
 	// Vertex position in world space
-	outWorldPosition = vec3(uboObject.model * skinMat * vec4(inPosition, 1.0));
+	outWorldPosition = vec3(skinnedModel * vec4(inPosition, 1.0));
 	
 	// Normal in world space
-	mat3 mNormal = transpose(inverse(mat3(uboObject.model * skinMat)));
+	mat3 mNormal = transpose(inverse(mat3(skinnedModel)));
 	outWorldNormal = mNormal * normalize(inNormal);	
 	
 	outUV = inUV;

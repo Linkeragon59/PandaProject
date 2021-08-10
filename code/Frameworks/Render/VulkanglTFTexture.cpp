@@ -3,11 +3,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanHelpers.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	Image::~Image()
 	{
@@ -83,6 +79,4 @@ namespace glTF
 		myImage.CreateImageSampler();
 		myImage.SetupDescriptor();
 	}
-}
-}
 }

@@ -3,14 +3,10 @@
 #include "VulkanglTFModel.h"
 #include "VulkanglTFMesh.h"
 
-#include "VulkanRenderer.h"
+#include "VulkanRender.h"
 #include "VulkanHelpers.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	Node::~Node()
 	{
@@ -63,7 +59,7 @@ namespace glTF
 	{
 		if (myMesh.myPrimitives.size() > 0)
 		{
-			VkDevice device = Renderer::GetInstance()->GetDevice();
+			VkDevice device = RenderCore::GetInstance()->GetDevice();
 
 			std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::GetObjectDescriptorSetLayout() };
 
@@ -156,13 +152,13 @@ namespace glTF
 			child->SetupDescriptorSet(aContainer, aDescriptorPool);
 	}
 
-	void Node::UpdateUBO()
+	void Node::UpdateUBO(const glm::mat4& aMatrix)
 	{
-		glm::mat4 matrix = GetMatrix();
+		glm::mat4 matrix = aMatrix * GetMatrix();
 		memcpy(myUBO.myMappedData, &matrix, sizeof(glm::mat4));
 
 		for (Node* child : myChildren)
-			child->UpdateUBO();
+			child->UpdateUBO(aMatrix);
 	}
 
 	void Node::UpdateJoints(Model* aContainer)
@@ -188,7 +184,7 @@ namespace glTF
 			child->UpdateJoints(aContainer);
 	}
 
-	void Node::Draw(Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
+	void Node::Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const
 	{
 		for (const Primitive& primitive : myMesh.myPrimitives)
 		{
@@ -217,6 +213,4 @@ namespace glTF
 		}
 		return matrix;
 	}
-}
-}
 }

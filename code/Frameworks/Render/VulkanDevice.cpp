@@ -2,9 +2,7 @@
 
 #include "VulkanHelpers.h"
 
-namespace Render
-{
-namespace Vulkan
+namespace Render::Vulkan
 {
 	Device::Device(VkPhysicalDevice aPhysicalDevice)
 		: myPhysicalDevice(aPhysicalDevice)
@@ -215,5 +213,4 @@ namespace Vulkan
 
 		return FindSupportedFormat(depthFormats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	}
-}
 }

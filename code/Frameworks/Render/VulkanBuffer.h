@@ -1,8 +1,6 @@
 #pragma once
 
-namespace Render
-{
-namespace Vulkan
+namespace Render::Vulkan
 {
 	struct Buffer
 	{
@@ -24,5 +22,4 @@ namespace Vulkan
 
 		VmaAllocator myAllocator = VK_NULL_HANDLE;
 	};
-}
 }

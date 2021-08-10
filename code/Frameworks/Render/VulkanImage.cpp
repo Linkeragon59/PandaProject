@@ -1,11 +1,9 @@
 #include "VulkanImage.h"
 
 #include "VulkanHelpers.h"
-#include "VulkanRenderer.h"
+#include "VulkanRender.h"
 
-namespace Render
-{
-namespace Vulkan
+namespace Render::Vulkan
 {
 	Image::~Image()
 	{
@@ -14,8 +12,8 @@ namespace Vulkan
 
 	void Image::Create(uint aWidth, uint aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
 	{
-		myDevice = Renderer::GetInstance()->GetDevice();
-		myAllocator = Renderer::GetInstance()->GetAllocator();
+		myDevice = RenderCore::GetInstance()->GetDevice();
+		myAllocator = RenderCore::GetInstance()->GetAllocator();
 
 		myFormat = aFormat;
 		myExtent = { aWidth, aHeight, 1 };
@@ -194,5 +192,4 @@ namespace Vulkan
 			myFormat = VK_FORMAT_UNDEFINED;
 		}
 	}
-}
 }

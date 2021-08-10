@@ -1,10 +1,8 @@
 #include "VulkanHelpers.h"
 
-#include "VulkanRenderer.h"
+#include "VulkanRender.h"
 
-namespace Render
-{
-namespace Vulkan
+namespace Render::Vulkan
 {
 	bool CheckInstanceLayersSupport(const std::vector<const char*>& someLayers)
 	{
@@ -57,7 +55,7 @@ namespace Vulkan
 	VkCommandBuffer BeginOneTimeCommand(VkCommandPool aCommandPool)
 	{
 		if (aCommandPool == VK_NULL_HANDLE)
-			aCommandPool = Renderer::GetInstance()->GetGraphicsCommandPool();
+			aCommandPool = RenderCore::GetInstance()->GetGraphicsCommandPool();
 
 		VkCommandBuffer commandBuffer;
 
@@ -67,7 +65,7 @@ namespace Vulkan
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = 1;
 
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(Renderer::GetInstance()->GetDevice(), &allocInfo, &commandBuffer), "Failed to alloc a one time command buffer");
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(RenderCore::GetInstance()->GetDevice(), &allocInfo, &commandBuffer), "Failed to alloc a one time command buffer");
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -83,7 +81,7 @@ namespace Vulkan
 	void EndOneTimeCommand(VkCommandBuffer aCommandBuffer, VkQueue aQueue, VkCommandPool aCommandPool /*= VK_NULL_HANDLE*/)
 	{
 		if (aCommandPool == VK_NULL_HANDLE)
-			aCommandPool = Renderer::GetInstance()->GetGraphicsCommandPool();
+			aCommandPool = RenderCore::GetInstance()->GetGraphicsCommandPool();
 
 		VK_CHECK_RESULT(vkEndCommandBuffer(aCommandBuffer), "Failed to end a one time command buffer");
 
@@ -95,7 +93,6 @@ namespace Vulkan
 		vkQueueSubmit(aQueue, 1, &submitInfo, VK_NULL_HANDLE);
 		vkQueueWaitIdle(aQueue);
 
-		vkFreeCommandBuffers(Renderer::GetInstance()->GetDevice(), aCommandPool, 1, &aCommandBuffer);
+		vkFreeCommandBuffers(RenderCore::GetInstance()->GetDevice(), aCommandPool, 1, &aCommandBuffer);
 	}
-}
 }

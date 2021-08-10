@@ -3,16 +3,18 @@ cmake_minimum_required(VERSION 3.16)
 add_library(Render "")
 target_sources(Render
 	PRIVATE
-		DummyModel.h
-		RenderData.h
 		RenderFacade.h
+		RenderLight.h
+		RenderModel.h
+		RenderRenderer.h
 		RenderPrecompile.h
 		VulkanBuffer.h
 		VulkanCamera.h
-		VulkanDebugMessenger.h
+		VulkanDebug.h
 		VulkanDeferredPipeline.h
-		VulkanDeferredContext.h
+		VulkanDeferredRenderer.h
 		VulkanDevice.h
+		VulkanDynamicModel.h
 		VulkanglTFAnimation.h
 		VulkanglTFMaterial.h
 		VulkanglTFMesh.h
@@ -24,20 +26,21 @@ target_sources(Render
 		VulkanImage.h
 		VulkanImGuiOverlay.h
 		VulkanModel.h
+		VulkanPointLightsSet.h
+		VulkanRender.h
 		VulkanRenderer.h
 		VulkanShaderHelpers.h
 		VulkanSwapChain.h
 
-		DummyModel.cpp
-		RenderData.cpp
 		RenderFacade.cpp
 		RenderPrecompile.cpp
 		VulkanBuffer.cpp
 		VulkanCamera.cpp
-		VulkanDebugMessenger.cpp
+		VulkanDebug.cpp
 		VulkanDeferredPipeline.cpp
-		VulkanDeferredContext.cpp
+		VulkanDeferredRenderer.cpp
 		VulkanDevice.cpp
+		VulkanDynamicModel.cpp
 		VulkanglTFAnimation.cpp
 		VulkanglTFMaterial.cpp
 		VulkanglTFMesh.cpp
@@ -48,6 +51,8 @@ target_sources(Render
 		VulkanHelpers.cpp
 		VulkanImage.cpp
 		VulkanImGuiOverlay.cpp
+		VulkanPointLightsSet.cpp
+		VulkanRender.cpp
 		VulkanRenderer.cpp
 		VulkanShaderHelpers.cpp
 		VulkanSwapChain.cpp

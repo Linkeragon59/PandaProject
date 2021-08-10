@@ -2,11 +2,7 @@
 
 #include "VulkanShaderHelpers.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	struct Primitive
 	{
@@ -29,6 +25,4 @@ namespace glTF
 		std::string myName;
 		std::vector<Primitive> myPrimitives;
 	};
-}
-}
 }

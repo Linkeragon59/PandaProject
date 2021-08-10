@@ -1,46 +1,48 @@
 #pragma once
 
-#include <string>
+#include "Entity.h"
 
 namespace Render
 {
+	struct BaseModelData;
 	class Model;
+	class Renderer;
 }
 
 namespace GameWork
 {
-	class Prop
+	class Prop : public Entity
 	{
 	public:
-		Prop(const char* aFilepath, const glm::vec3& aPosition = glm::vec3(0.0f), const glm::vec3& anOrientation = glm::vec3(0.0f), float aScale = 1.0f);
-		~Prop();
+		Prop();
+		virtual ~Prop();
 
-		void Update();
+		void Update() override;
+		void Draw(Render::Renderer* aRenderer);
 
 		void Spawn();
-		void Unspawn();
+		void Despawn();
+
+		void SetScale(float aScale);
+		void Scale(float aScaleMultiplier);
+		float GetScale() const { return myScale; }
 
 		void Hide() { myIsVisible = false; }
 		void Show() { myIsVisible = true; }
+		bool IsVisible() const { return myIsVisible; }
 
-		void SetPosition(const glm::vec3& aPosition) { myPosition = aPosition; }
-		glm::vec3 GetPosition() const { return myPosition; }
+	protected:
+		void OnPositionChanged() override;
+		void OnRotationChanged() override;
 
-		void SetOrientation(const glm::vec3& anOrientation) { myOrientation = anOrientation; }
-		glm::vec3 GetOrientation() const { return myOrientation; }
+		void UpdateModelDataMatrix();
 
-		void SetScale(float aScale) { myScale = aScale; }
-		float GetScale() const { return myScale; }
+		Render::BaseModelData* myModelData = nullptr;
+		Render::Model* myModel = nullptr;
 
-	private:
-		std::string myFilepath;
-		Render::Model* myModel;
+		bool myIsSpawned = false;
 
-		bool myIsSpawned;
-		bool myIsVisible;
-
-		glm::vec3 myPosition;
-		glm::vec3 myOrientation;
-		float myScale;
+		float myScale = 1.0f;
+		bool myIsVisible = true;
 	};
 }

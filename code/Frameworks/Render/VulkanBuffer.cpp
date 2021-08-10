@@ -1,11 +1,9 @@
 #include "VulkanBuffer.h"
 
 #include "VulkanHelpers.h"
-#include "VulkanRenderer.h"
+#include "VulkanRender.h"
 
-namespace Render
-{
-namespace Vulkan
+namespace Render::Vulkan
 {
 	Buffer::~Buffer()
 	{
@@ -14,7 +12,7 @@ namespace Vulkan
 
 	void Buffer::Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
 	{
-		myAllocator = Renderer::GetInstance()->GetAllocator();
+		myAllocator = RenderCore::GetInstance()->GetAllocator();
 
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -89,5 +87,4 @@ namespace Vulkan
 			myAllocation = VK_NULL_HANDLE;
 		}
 	}
-}
 }

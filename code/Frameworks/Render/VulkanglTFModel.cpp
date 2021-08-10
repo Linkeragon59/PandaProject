@@ -1,19 +1,17 @@
 #include "VulkanglTFModel.h"
 
 #include "VulkanHelpers.h"
-#include "VulkanRenderer.h"
+#include "VulkanRender.h"
 
-namespace Render
+namespace Render::Vulkan::glTF
 {
-namespace Vulkan
-{
-namespace glTF
-{
-	Model::Model(const std::string& aFilename, const RenderData& aRenderData)
-		: Super(aRenderData)
+	Model::Model(const BaseModelData& someData)
 	{
-		myDevice = Renderer::GetInstance()->GetDevice();
-		LoadFromFile(aFilename, Renderer::GetInstance()->GetGraphicsQueue(), myRenderData.myMatrix[3][3]);
+		myDevice = RenderCore::GetInstance()->GetDevice();
+
+		Assert(someData.GetType() == BaseModelData::Type::glTF);
+		const glTFModelData& glTFData = static_cast<const glTFModelData&>(someData);
+		LoadFromFile(glTFData.myFilename, RenderCore::GetInstance()->GetGraphicsQueue(), someData.myMatrix);
 	}
 
 	Model::~Model()
@@ -27,7 +25,7 @@ namespace glTF
 			delete node;
 	}
 
-	void Model::Update()
+	void Model::Update(const BaseModelData& someData)
 	{
 		if (myAnimations.size() > 0)
 			myAnimations[0].Update(1.0f / 60.0f);
@@ -36,10 +34,10 @@ namespace glTF
 			node->UpdateJoints(this);
 
 		for (Node* node : myNodes)
-			node->UpdateUBO();
+			node->UpdateUBO(someData.myMatrix);
 	}
 
-	void Model::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
+	void Model::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const
 	{
 		// All vertices and indices are stored in a single buffer, so we only need to bind once
 		VkDeviceSize offsets[1] = { 0 };
@@ -50,7 +48,7 @@ namespace glTF
 			node->Draw(this, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex);
 	}
 
-	bool Model::LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, float aScale)
+	bool Model::LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const glm::mat4& aMatrix)
 	{
 		myTransferQueue = aTransferQueue;
 
@@ -69,7 +67,7 @@ namespace glTF
 
 		std::vector<Mesh::Vertex> vertexBuffer;
 		std::vector<uint> indexBuffer;
-		LoadNodes(gltfModel, aScale, vertexBuffer, indexBuffer);
+		LoadNodes(gltfModel, aMatrix[3][3], vertexBuffer, indexBuffer);
 
 		auto countNodes = [this](Node* aNode) { (void)aNode; myNodeCount++; };
 		IterateNodes(countNodes);
@@ -83,7 +81,7 @@ namespace glTF
 
 		// Fill initial matrices
 		for (Node* node : myNodes)
-			node->UpdateUBO();
+			node->UpdateUBO(aMatrix);
 
 		SetupDescriptorPool();
 		SetupDescriptorSets();
@@ -222,6 +220,4 @@ namespace glTF
 		IterateNodes(findNode);
 		return node;
 	}
-}
-}
 }

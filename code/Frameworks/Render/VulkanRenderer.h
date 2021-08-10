@@ -1,78 +1,45 @@
 #pragma once
 
-#include "VulkanImage.h"
-#include "VulkanModel.h"
+#include "RenderModel.h"
+#include "RenderRenderer.h"
 
-struct GLFWwindow;
-
-namespace Render
+namespace Render::Vulkan
 {
-namespace glTF
-{
-	class Model;
-}
-namespace Vulkan
-{
-	struct Device;
 	class SwapChain;
+	class Camera;
 
-	class Renderer
+	class Renderer : public Render::Renderer
 	{
 	public:
-		// Shortcut using the Facade singleton
-		static Renderer* GetInstance();
-
 		Renderer();
-		~Renderer();
+		virtual ~Renderer();
 
-		void Init();
-		void Finalize();
+		virtual void Setup(SwapChain* aSwapChain);
+		virtual void Cleanup();
 
-		void OnWindowOpened(GLFWwindow* aWindow);
-		void OnWindowClosed(GLFWwindow* aWindow);
-		void OnSetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
+		virtual void StartFrame();
+		virtual void EndFrame();
 
-		void Update();
+		void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection) override;
 
-		VkInstance GetVkInstance() const { return myVkInstance; }
+		VkSemaphore GetCurrentRenderFinishedSemaphore() const { return myRenderFinishedSemaphores[myCurrentFrameIndex]; }
 
-		Device* GetVulkanDevice() const { return myDevice; }
-		VkPhysicalDevice GetPhysicalDevice() const;
-		VkDevice GetDevice() const;
-		VmaAllocator GetAllocator() const;
-		VkQueue GetGraphicsQueue() const;
-		VkCommandPool GetGraphicsCommandPool() const;
+	protected:
+		VkDevice myDevice = VK_NULL_HANDLE;
+		Camera* myCamera = nullptr;
 
-		uint GetModelsCount() const { return (uint)myModels.size(); }
-		Model* GetModel(uint anIndex) const { return myModels[anIndex]; }
+		SwapChain* mySwapChain = nullptr;
+		uint myCurrentFrameIndex = 0;
 
-		uint SpawnModel(const std::string& aFilePath, const RenderData& aRenderData);
-		void DespawnModel(uint anIndex);
+		// In-flight resources fences - one per frame
+		void SetupSyncObjects();
+		void DestroySyncObjects();
+		std::vector<VkSemaphore> myRenderFinishedSemaphores;
+		std::vector<VkFence> myFrameFences;
 
-	private:
-		void CreateVkInstance();
-		void CreateDevice();
-
-		void SetupEmptyTexture();
-
-		VkInstance myVkInstance = VK_NULL_HANDLE;
-		VkDebugUtilsMessengerEXT myDebugMessenger = VK_NULL_HANDLE;
-
-		Device* myDevice = nullptr;
-
-		Image myMissingTexture;
-
-		// One SwapChain per window/surface
-		std::vector<SwapChain*> mySwapChains;
-
-		// This should be per swapchain
-		std::vector<Model*> myModels;
-		struct DespawningModel
-		{
-			Model* myModel = nullptr;
-			uint myFramesToKeep = 1;
-		};
-		std::vector<DespawningModel> myDespawningModels;
+		// Command Buffers - one per frame
+		virtual void SetupCommandBuffers();
+		virtual void DestroyCommandBuffers();
+		std::vector<VkCommandBuffer> myCommandBuffers;
 	};
-}
 }

@@ -3,9 +3,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
 
-namespace Render
-{
-namespace Vulkan
+namespace Render::Vulkan
 {
 	class ImGuiOverlay
 	{
@@ -46,5 +44,4 @@ namespace Vulkan
 		void SetupDescriptorSet();
 		void SetupPipeline(VkRenderPass aRenderPass);
 	};
-}
 }

@@ -1,331 +1,126 @@
 #include "VulkanRenderer.h"
 
-#include "RenderFacade.h"
-
+#include "VulkanRender.h"
 #include "VulkanHelpers.h"
-#include "VulkanDebugMessenger.h"
-#include "VulkanDevice.h"
-#include "VulkanSwapChain.h"
 #include "VulkanCamera.h"
+#include "VulkanSwapChain.h"
+#include "VulkanModel.h"
 
-#include "DummyModel.h"
-#include "VulkanglTFModel.h"
-
-#include <GLFW/glfw3.h>
-
-namespace Render
+namespace Render::Vulkan
 {
-namespace Vulkan
-{
-	namespace
-	{
-		uint locVulkanApiVersion = VK_API_VERSION_1_0;
-
-#if WINDOWS_BUILD && DEBUG_BUILD
-		constexpr bool locEnableValidationLayers = true;
-#else
-		constexpr bool locEnableValidationLayers = false;
-#endif
-	}
-
-	Renderer* Renderer::GetInstance()
-	{
-		return Facade::GetInstance()->GetRenderer();
-	}
-
 	Renderer::Renderer()
 	{
-		CreateVkInstance();
-
-		if (locEnableValidationLayers)
-		{
-			VkDebugUtilsMessengerCreateInfoEXT createInfo;
-			Debug::FillDebugMessengerCreateInfo(createInfo);
-			VK_CHECK_RESULT(Debug::CreateDebugMessenger(myVkInstance, &createInfo, nullptr, &myDebugMessenger), "Couldn't create a debug messenger!");
-		}
-
-		CreateDevice();
-
-		if (locEnableValidationLayers)
-			Debug::SetupDebugMarkers(myDevice->myLogicalDevice);
+		myDevice = RenderCore::GetInstance()->GetDevice();
+		myCamera = new Camera();
 	}
 
 	Renderer::~Renderer()
 	{
-		delete myDevice;
-
-		if (locEnableValidationLayers)
-			Debug::DestroyDebugMessenger(myVkInstance, myDebugMessenger, nullptr);
-
-		vkDestroyInstance(myVkInstance, nullptr);
+		delete myCamera;
 	}
 
-	void Renderer::Init()
+	void Renderer::Setup(SwapChain* aSwapChain)
 	{
-		ShaderHelpers::SetupDescriptorSetLayouts();
-		SetupEmptyTexture();
+		Assert(!mySwapChain && aSwapChain);
+		mySwapChain = aSwapChain;
+		SetupCommandBuffers();
+		SetupSyncObjects();
 	}
 
-	void Renderer::Finalize()
+	void Renderer::Cleanup()
 	{
-		for (uint i = 0; i < (uint)myModels.size(); ++i)
-		{
-			if (myModels[i])
-				delete myModels[i];
-		}
-		myModels.clear();
-
-		for (uint i = 0; i < (uint)myDespawningModels.size(); ++i)
-		{
-			delete myDespawningModels[i].myModel;
-		}
-		myDespawningModels.clear();
-
-		myMissingTexture.Destroy();
-		ShaderHelpers::DestroyDescriptorSetLayouts();
+		DestroySyncObjects();
+		DestroyCommandBuffers();
+		mySwapChain = nullptr;
+		myCurrentFrameIndex = 0;
 	}
 
-	void Renderer::OnWindowOpened(GLFWwindow* aWindow)
+	void Renderer::StartFrame()
 	{
-		SwapChain* swapChain = new SwapChain(aWindow);
-		mySwapChains.push_back(swapChain);
+		vkWaitForFences(myDevice, 1, &myFrameFences[myCurrentFrameIndex], VK_TRUE, UINT64_MAX);
+
+		VkCommandBufferBeginInfo cmdBufferBeginInfo{};
+		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		VK_CHECK_RESULT(vkBeginCommandBuffer(myCommandBuffers[myCurrentFrameIndex], &cmdBufferBeginInfo), "Failed to begin a command buffer");
 	}
 
-	void Renderer::OnWindowClosed(GLFWwindow* aWindow)
+	void Renderer::EndFrame()
 	{
-		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
-		{
-			if (mySwapChains[i]->GetWindowHandle() == aWindow)
-			{
-				delete mySwapChains[i];
-				mySwapChains.erase(mySwapChains.begin() + i);
-				break;
-			}
-		}
+		VK_CHECK_RESULT(vkEndCommandBuffer(myCommandBuffers[myCurrentFrameIndex]), "Failed to end a command buffer");
+
+		VkSemaphore waitSemaphore = mySwapChain->GetCurrentRenderTargetSemaphore();
+		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &waitSemaphore;
+		submitInfo.pWaitDstStageMask = &waitStage;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &myCommandBuffers[myCurrentFrameIndex];
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &myRenderFinishedSemaphores[myCurrentFrameIndex];
+
+		vkResetFences(myDevice, 1, &myFrameFences[myCurrentFrameIndex]);
+		VK_CHECK_RESULT(vkQueueSubmit(RenderCore::GetInstance()->GetGraphicsQueue(), 1, &submitInfo, myFrameFences[myCurrentFrameIndex]),
+			"Failed to submit a command buffer");
+
+		myCurrentFrameIndex = (myCurrentFrameIndex + 1) % mySwapChain->GetImagesCount();
 	}
 
-	void Renderer::OnSetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection)
+	void Renderer::SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection)
 	{
-		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
-		{
-			if (mySwapChains[i]->GetWindowHandle() == aWindow)
-			{
-				mySwapChains[i]->UpdateView(aView, aProjection);
-				break;
-			}
-		}
+		myCamera->Update(aView, aProjection);
 	}
 
-	void Renderer::Update()
+	void Renderer::SetupSyncObjects()
 	{
-		// TODO: This is slow, need optimization
-		for (uint i = 0; i < (uint)myModels.size(); ++i)
-		{
-			if (myModels[i])
-				myModels[i]->Update();
-		}
+		VkSemaphoreCreateInfo semaphoreInfo{};
+		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		for (int i = (int)myDespawningModels.size() - 1; i >= 0; --i)
-		{
-			if (--myDespawningModels[i].myFramesToKeep == 0)
-			{
-				delete myDespawningModels[i].myModel;
-				myDespawningModels.erase(myDespawningModels.begin() + i);
-			}
-		}
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
+		uint framesCount = mySwapChain->GetImagesCount();
+		myRenderFinishedSemaphores.resize(framesCount);
+		myFrameFences.resize(framesCount);
+
+		for (uint i = 0; i < framesCount; ++i)
 		{
-			mySwapChains[i]->Update();
+			VK_CHECK_RESULT(vkCreateSemaphore(myDevice, &semaphoreInfo, nullptr, &myRenderFinishedSemaphores[i]), "Failed to create a semaphore");
+			VK_CHECK_RESULT(vkCreateFence(myDevice, &fenceInfo, nullptr, &myFrameFences[i]), "Failed to create a fence");
 		}
 	}
 
-	VkPhysicalDevice Renderer::GetPhysicalDevice() const
+	void Renderer::DestroySyncObjects()
 	{
-		return myDevice->myPhysicalDevice;
-	}
-
-	VkDevice Renderer::GetDevice() const
-	{
-		return myDevice->myLogicalDevice;
-	}
-
-	VmaAllocator Renderer::GetAllocator() const
-	{
-		return myDevice->myVmaAllocator;
-	}
-
-	VkQueue Renderer::GetGraphicsQueue() const
-	{
-		return myDevice->myGraphicsQueue;
-	}
-
-	VkCommandPool Renderer::GetGraphicsCommandPool() const
-	{
-		return myDevice->myGraphicsCommandPool;
-	}
-
-	uint Renderer::SpawnModel(const std::string& aFilePath, const RenderData& aRenderData)
-	{
-		Model* model = nullptr;
-		if (aFilePath.empty())
+		uint framesCount = mySwapChain->GetImagesCount();
+		for (uint i = 0; i < framesCount; ++i)
 		{
-			model = new DummyModel(aRenderData);
-		}
-		else
-		{
-			model = new glTF::Model(aFilePath, aRenderData);
+			vkDestroySemaphore(myDevice, myRenderFinishedSemaphores[i], nullptr);
+			vkDestroyFence(myDevice, myFrameFences[i], nullptr);
 		}
 
-		for (uint i = 0; i < (uint)myModels.size(); ++i)
-		{
-			if (myModels[i] == nullptr)
-			{
-				myModels[i] = model;
-				return i;
-			}
-		}
-
-		myModels.push_back(model);
-		return (uint)myModels.size() - 1;
+		myRenderFinishedSemaphores.clear();
+		myFrameFences.clear();
 	}
 
-	void Renderer::DespawnModel(uint anIndex)
+	void Renderer::SetupCommandBuffers()
 	{
-		myDespawningModels.push_back({ myModels[anIndex], 3 });
-		myModels[anIndex] = nullptr;
+		uint framesCount = mySwapChain->GetImagesCount();
+
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = RenderCore::GetInstance()->GetGraphicsCommandPool();
+		allocInfo.commandBufferCount = framesCount;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+		myCommandBuffers.resize(framesCount);
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
 	}
 
-	void Renderer::CreateVkInstance()
+	void Renderer::DestroyCommandBuffers()
 	{
-		std::vector<const char*> layers;
-		if (locEnableValidationLayers)
-			Debug::PopulateValidationLayers(layers);
-
-		Verify(CheckInstanceLayersSupport(layers), "Validation layers are enabled but not supported!");
-
-		uint glfwExtensionCount = 0;
-		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-		if (locEnableValidationLayers)
-			Debug::PopulateDebugExtensions(extensions);
-
-		Verify(CheckInstanceExtensionsSupport(extensions), "Required extensions are not available!");
-
-		// TODO: Have more parameters when creating the RenderCore
-		VkApplicationInfo appInfo{};
-		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pApplicationName = "Application";
-		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.pEngineName = "Engine";
-		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion = locVulkanApiVersion;
-
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-
-		VkInstanceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		createInfo.pApplicationInfo = &appInfo;
-		if (locEnableValidationLayers)
-		{
-			Debug::FillDebugMessengerCreateInfo(debugCreateInfo);
-			createInfo.pNext = &debugCreateInfo;
-		}
-		createInfo.enabledLayerCount = static_cast<uint>(layers.size());
-		createInfo.ppEnabledLayerNames = layers.data();
-		createInfo.enabledExtensionCount = static_cast<uint>(extensions.size());
-		createInfo.ppEnabledExtensionNames = extensions.data();
-
-		VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &myVkInstance), "Failed to create Vulkan instance!");
+		myCommandBuffers.clear();
 	}
-
-	void Renderer::CreateDevice()
-	{
-		uint deviceCount = 0;
-		vkEnumeratePhysicalDevices(myVkInstance, &deviceCount, nullptr);
-		Assert(deviceCount > 0, "No physical device supporting Vulkan was found!");
-
-		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(myVkInstance, &deviceCount, devices.data());
-
-		// TODO: Select the physical device based on requirements.
-		// For now, just take the first one.
-		myDevice = new Device(devices[0]);
-
-		// Choose Device features to enable
-		VkPhysicalDeviceFeatures enabledFeatures{};
-		if (myDevice->myFeatures.samplerAnisotropy == VK_TRUE)
-		{
-			enabledFeatures.samplerAnisotropy = VK_TRUE;
-		}
-		if (myDevice->myFeatures.fillModeNonSolid)
-		{
-			enabledFeatures.fillModeNonSolid = VK_TRUE;
-			if (myDevice->myFeatures.wideLines)
-			{
-				enabledFeatures.wideLines = VK_TRUE;
-			}
-		};
-
-		std::vector<const char*> layers;
-		if (locEnableValidationLayers)
-			Debug::PopulateValidationLayers(layers);
-
-		std::vector<const char*> extensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-		if (myDevice->SupportsExtension(VK_EXT_DEBUG_MARKER_EXTENSION_NAME))
-			extensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
-
-		myDevice->SetupLogicalDevice(
-			enabledFeatures,
-			layers,
-			extensions,
-			VK_QUEUE_GRAPHICS_BIT);
-		myDevice->SetupVmaAllocator(myVkInstance, locVulkanApiVersion);
-	}
-
-	void Renderer::SetupEmptyTexture()
-	{
-		myMissingTexture.Create(1, 1,
-			VK_FORMAT_R8G8B8A8_SRGB,
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		myMissingTexture.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			Renderer::GetInstance()->GetGraphicsQueue());
-
-		Buffer textureStaging;
-		textureStaging.Create(4,
-			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		textureStaging.Map();
-		{
-			uint8_t empty[4] = { 0xff, 0x14, 0x93, 0xff };
-			memcpy(textureStaging.myMappedData, empty, 4);
-		}
-		textureStaging.Unmap();
-
-		VkCommandBuffer commandBuffer = BeginOneTimeCommand();
-		{
-			VkBufferImageCopy imageCopyRegion{};
-			imageCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			imageCopyRegion.imageSubresource.mipLevel = 0;
-			imageCopyRegion.imageSubresource.baseArrayLayer = 0;
-			imageCopyRegion.imageSubresource.layerCount = 1;
-			imageCopyRegion.imageExtent = { 1, 1, 1 };
-			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myMissingTexture.myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
-		}
-		EndOneTimeCommand(commandBuffer, Renderer::GetInstance()->GetGraphicsQueue());
-
-		textureStaging.Destroy();
-
-		myMissingTexture.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			Renderer::GetInstance()->GetGraphicsQueue());
-		myMissingTexture.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		myMissingTexture.CreateImageSampler();
-		myMissingTexture.SetupDescriptor();
-	}
-}
 }

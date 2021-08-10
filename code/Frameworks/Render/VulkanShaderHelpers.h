@@ -1,10 +1,6 @@
 #pragma once
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace ShaderHelpers
+namespace Render::Vulkan::ShaderHelpers
 {
 	void SetupDescriptorSetLayouts();
 	void DestroyDescriptorSetLayouts();
@@ -43,12 +39,15 @@ namespace ShaderHelpers
 		glm::mat4 myView;
 	};
 
+	struct NearFarData
+	{
+		glm::vec2 myPlanes;
+	};
+
 	struct ModelData
 	{
 		glm::mat4 myModel;
 	};
 
 	VkShaderModule CreateShaderModule(const std::string& aFilename);
-}
-}
 }

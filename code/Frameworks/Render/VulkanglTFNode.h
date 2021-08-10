@@ -4,11 +4,7 @@
 
 #include "VulkanBuffer.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	class Model;
 
@@ -20,9 +16,9 @@ namespace glTF
 
 		void SetupDescriptorSet(Model* aContainer, VkDescriptorPool aDescriptorPool);
 
-		void UpdateUBO();
+		void UpdateUBO(const glm::mat4& aMatrix);
 		void UpdateJoints(Model* aContainer);
-		void Draw(Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex);
+		void Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const;
 
 		glm::mat4 GetLocalMatrix() const;
 		glm::mat4 GetMatrix() const;
@@ -43,6 +39,4 @@ namespace glTF
 		
 		Buffer myUBO;
 	};
-}
-}
 }

@@ -1,31 +1,24 @@
 ﻿#include "VulkanSwapChain.h"
 
+#include "VulkanRender.h"
 #include "VulkanHelpers.h"
-#include "VulkanRenderer.h"
 #include "VulkanDevice.h"
-#include "VulkanDebugMessenger.h"
-#include "VulkanCamera.h"
-
-#include "VulkanglTFModel.h"
-#include "DummyModel.h"
+#include "VulkanRenderer.h"
+#include "VulkanDeferredRenderer.h"
 
 #include <GLFW/glfw3.h>
 
-namespace Render
+namespace Render::Vulkan
 {
-namespace Vulkan
-{
-	SwapChain::SwapChain(GLFWwindow* aWindow)
+	SwapChain::SwapChain(GLFWwindow* aWindow, RendererType aRendererType)
 		: myWindow(aWindow)
+		, myRendererType(aRendererType)
 	{
-		myDevice = Renderer::GetInstance()->GetDevice();
-
-		VK_CHECK_RESULT(glfwCreateWindowSurface(Renderer::GetInstance()->GetVkInstance(), myWindow, nullptr, &mySurface), "Failed to create the surface!");
+		myDevice = RenderCore::GetInstance()->GetDevice();
 
 		glfwSetWindowUserPointer(myWindow, this);
 		glfwSetFramebufferSizeCallback(myWindow, FramebufferResizedCallback);
-
-		myCamera = new Camera;
+		VK_CHECK_RESULT(glfwCreateWindowSurface(RenderCore::GetInstance()->GetVkInstance(), myWindow, nullptr, &mySurface), "Failed to create the surface!");
 
 		Setup();
 	}
@@ -34,31 +27,26 @@ namespace Vulkan
 	{
 		Cleanup();
 
-		delete myCamera;
-
-		vkDestroySurfaceKHR(Renderer::GetInstance()->GetVkInstance(), mySurface, nullptr);
+		vkDestroySurfaceKHR(RenderCore::GetInstance()->GetVkInstance(), mySurface, nullptr);
 	}
 
 	void SwapChain::Setup()
 	{
 		SetupVkSwapChain();
-		SetupDepthStencil();
 		CreateSyncObjects();
-		SetupCommandBuffers();
-
-		myDeferredRenderContext.Setup(myExtent, myColorFormat, myDepthImage.myFormat);
+		CreateRenderer();
 	}
 
 	void SwapChain::Cleanup()
 	{
 		vkDeviceWaitIdle(myDevice);
 
-		myDeferredRenderContext.Destroy();
-
-		CleanupCommandBuffers();
+		DestroyRenderer();
 		DestroySyncObjects();
-		CleanupDepthStencil();
 		CleanupVkSwapChain();
+
+		myCurrentImageIndex = 0;
+		myCurrentImageAvailableSemaphore = VK_NULL_HANDLE;
 	}
 
 	void SwapChain::Recreate()
@@ -76,15 +64,15 @@ namespace Vulkan
 		Setup();
 	}
 
-	void SwapChain::StartFrame()
+	void SwapChain::AcquireNext()
 	{
-		vkWaitForFences(myDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame], VK_TRUE, UINT64_MAX);
+		myCurrentImageAvailableSemaphore = myImageAvailableSemaphores[myCurrentImageIndex];
 
-		VkSemaphore imageAvailableSemaphore = myImageAvailableSemaphores[myCurrentInFlightFrame];
-
-		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &myCurrentImageIndex);
+		VkResult result = vkAcquireNextImageKHR(myDevice, myVkSwapChain, UINT64_MAX, myCurrentImageAvailableSemaphore, VK_NULL_HANDLE, &myCurrentImageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR)
 		{
+			// TODO : What should we do here?
+			Assert(false);
 			Recreate();
 			return;
 		}
@@ -92,27 +80,15 @@ namespace Vulkan
 		{
 			Assert(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire a swapchain image!");
 		}
+
+		myRenderer->StartFrame();
 	}
 
-	void SwapChain::EndFrame()
+	void SwapChain::Present()
 	{
-		VkSemaphore imageAvailableSemaphore = myImageAvailableSemaphores[myCurrentInFlightFrame];
-		VkSemaphore renderCompleteSemaphore = myRenderFinishedSemaphores[myCurrentInFlightFrame];
+		VkSemaphore renderCompleteSemaphore = myRenderer->GetCurrentRenderFinishedSemaphore();
 
-		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
-		submitInfo.pWaitDstStageMask = &waitStage;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &myCommandBuffers[myCurrentImageIndex];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
-
-		vkResetFences(myDevice, 1, &myInFlightFrameFences[myCurrentInFlightFrame]);
-		VK_CHECK_RESULT(vkQueueSubmit(Renderer::GetInstance()->GetGraphicsQueue(), 1, &submitInfo, myInFlightFrameFences[myCurrentInFlightFrame]),
-			"Failed to submit a command buffer");
+		myRenderer->EndFrame();
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -122,7 +98,7 @@ namespace Vulkan
 		presentInfo.pSwapchains = &myVkSwapChain;
 		presentInfo.pImageIndices = &myCurrentImageIndex;
 
-		VkResult result = vkQueuePresentKHR(Renderer::GetInstance()->GetGraphicsQueue(), &presentInfo);
+		VkResult result = vkQueuePresentKHR(RenderCore::GetInstance()->GetGraphicsQueue(), &presentInfo);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || myFramebufferResized)
 		{
 			myFramebufferResized = false;
@@ -132,19 +108,6 @@ namespace Vulkan
 		{
 			Assert(result == VK_SUCCESS, "Failed to present a swapchain image!");
 		}
-
-		myCurrentInFlightFrame = (myCurrentInFlightFrame + 1) % myMaxInFlightFrames;
-	}
-
-	void SwapChain::UpdateView(const glm::mat4& aView, const glm::mat4& aProjection)
-	{
-		myCamera->Update(aView, aProjection);
-		myDeferredRenderContext.UpdateLightsUBO(myCamera->GetView()[3]);
-	}
-
-	void SwapChain::Update()
-	{
-		DrawFrame();
 	}
 
 	void SwapChain::FramebufferResizedCallback(GLFWwindow* aWindow, int aWidth, int aHeight)
@@ -157,14 +120,14 @@ namespace Vulkan
 
 	void SwapChain::SetupVkSwapChain()
 	{
-		VkPhysicalDevice physicalDevice = Renderer::GetInstance()->GetPhysicalDevice();
+		VkPhysicalDevice physicalDevice = RenderCore::GetInstance()->GetPhysicalDevice();
 
 		// TODO: Support separate queues for graphics and present.
-		Assert(Renderer::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.has_value());
+		Assert(RenderCore::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.has_value());
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(
 			physicalDevice,
-			Renderer::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.value(),
+			RenderCore::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.value(),
 			mySurface,
 			&presentSupport);
 		Assert(presentSupport, "The device doesn't support presenting on the graphics queue!");
@@ -178,6 +141,7 @@ namespace Vulkan
 		else
 		{
 			int width = 0, height = 0;
+			// TODO : use glfwGetFramebufferSize instead ?
 			glfwGetWindowSize(myWindow, &width, &height);
 			myExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, (uint)width));
 			myExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, (uint)height));
@@ -261,14 +225,11 @@ namespace Vulkan
 			VK_CHECK_RESULT(vkCreateImageView(myDevice, &viewCreateInfo, nullptr, &myImages[i].myImageView), "Failed to create an image view for the swap chain!");
 		}
 		myCurrentImageIndex = 0;
-
-		myMaxInFlightFrames = imageCount - 1;
-		myCurrentInFlightFrame = 0;
 	}
 
 	void SwapChain::CleanupVkSwapChain()
 	{
-		for (uint i = 0, e = (uint)myImages.size(); i < e; ++i)
+		for (uint i = 0, e = GetImagesCount(); i < e; ++i)
 		{
 			vkDestroyImageView(myDevice, myImages[i].myImageView, nullptr);
 			myImages[i].myImage = VK_NULL_HANDLE;
@@ -279,115 +240,46 @@ namespace Vulkan
 		myVkSwapChain = VK_NULL_HANDLE;
 	}
 
-	void SwapChain::SetupDepthStencil()
-	{
-		VkFormat depthFormat = Renderer::GetInstance()->GetVulkanDevice()->FindBestDepthFormat();
-
-		myDepthImage.Create(myImages[0].myExtent.width, myImages[0].myExtent.height,
-			depthFormat,
-			VK_IMAGE_TILING_OPTIMAL,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-		VkImageAspectFlags aspects = VK_IMAGE_ASPECT_DEPTH_BIT;
-		if (Image::DepthFormatHasStencilAspect(depthFormat))
-			aspects |= VK_IMAGE_ASPECT_STENCIL_BIT;
-		myDepthImage.CreateImageView(aspects);
-
-		// optional
-		//myDepthImage.TransitionLayout(
-		//	VK_IMAGE_LAYOUT_UNDEFINED,
-		//	VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		//	Renderer::GetInstance()->GetGraphicsQueue());
-	}
-
-	void SwapChain::CleanupDepthStencil()
-	{
-		myDepthImage.Destroy();
-	}
-
 	void SwapChain::CreateSyncObjects()
 	{
-		myImageAvailableSemaphores.resize(myMaxInFlightFrames);
-		myRenderFinishedSemaphores.resize(myMaxInFlightFrames);
-		myInFlightFrameFences.resize(myMaxInFlightFrames);
+		myImageAvailableSemaphores.resize(GetImagesCount());
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-		for (size_t i = 0; i < myMaxInFlightFrames; ++i)
+		for (uint i = 0, e = GetImagesCount(); i < e; ++i)
 		{
 			VK_CHECK_RESULT(vkCreateSemaphore(myDevice, &semaphoreInfo, nullptr, &myImageAvailableSemaphores[i]), "Failed to create a semaphore");
-			VK_CHECK_RESULT(vkCreateSemaphore(myDevice, &semaphoreInfo, nullptr, &myRenderFinishedSemaphores[i]), "Failed to create a semaphore");
-			VK_CHECK_RESULT(vkCreateFence(myDevice, &fenceInfo, nullptr, &myInFlightFrameFences[i]), "Failed to create a fence");
 		}
 	}
 
 	void SwapChain::DestroySyncObjects()
 	{
-		for (uint i = 0; i < myMaxInFlightFrames; ++i)
+		for (uint i = 0, e = GetImagesCount(); i < e; ++i)
 		{
-			vkDestroyFence(myDevice, myInFlightFrameFences[i], nullptr);
-			vkDestroySemaphore(myDevice, myRenderFinishedSemaphores[i], nullptr);
 			vkDestroySemaphore(myDevice, myImageAvailableSemaphores[i], nullptr);
 		}
-		myInFlightFrameFences.clear();
-		myRenderFinishedSemaphores.clear();
 		myImageAvailableSemaphores.clear();
 	}
 
-	void SwapChain::SetupCommandBuffers()
+	void SwapChain::CreateRenderer()
 	{
-		myCommandBuffers.resize(myImages.size());
-
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = Renderer::GetInstance()->GetGraphicsCommandPool();
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = (uint)myCommandBuffers.size();
-
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
-	}
-
-	void SwapChain::CleanupCommandBuffers()
-	{
-		myCommandBuffers.clear();
-	}
-
-	void SwapChain::DrawFrame()
-	{
-		StartFrame();
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)myExtent.width;
-		viewport.height = (float)myExtent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor{};
-		scissor.extent = myExtent;
-		scissor.offset = { 0, 0 };
-
-		myDeferredRenderContext.Begin(myCommandBuffers[myCurrentImageIndex], myImages[myCurrentImageIndex].myImageView, myDepthImage.myImageView);
-		myDeferredRenderContext.SetViewport(viewport);
-		myDeferredRenderContext.SetScissor(scissor);
-		myDeferredRenderContext.BindCamera(myCamera);
-		for (uint i = 0, e = Renderer::GetInstance()->GetModelsCount(); i < e; ++i)
+		switch (myRendererType)
 		{
-			if (Model* model = Renderer::GetInstance()->GetModel(i))
-			{
-				myDeferredRenderContext.DrawModel(model);
-			}
+		case RendererType::Deferred:
+			myRenderer = new DeferredRenderer();
+			myRenderer->Setup(this);
+			break;
+		default:
+			Assert(false, "Unsupported renderer type");
+			break;
 		}
-		myDeferredRenderContext.End();
-		
-		EndFrame();
 	}
-}
+
+	void SwapChain::DestroyRenderer()
+	{
+		myRenderer->Cleanup();
+		delete myRenderer;
+		myRenderer = nullptr;
+	}
 }

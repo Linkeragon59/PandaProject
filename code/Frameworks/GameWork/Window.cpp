@@ -35,7 +35,7 @@ namespace GameWork
 
 	void Window::Init()
 	{
-		Render::Facade::GetInstance()->OpenWindow(myWindow);
+		//Render::Facade::GetInstance()->OpenWindow(myWindow);
 
 		// Temp
 		LoadTestAssets();
@@ -44,7 +44,7 @@ namespace GameWork
 	bool Window::Update()
 	{
 		myCamera->Update();
-		Render::Facade::GetInstance()->SetWindowView(myWindow, myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
+		//Render::Facade::GetInstance()->SetWindowView(myWindow, myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
 
 		return !ShouldClose();
 	}
@@ -54,7 +54,7 @@ namespace GameWork
 		// Temp
 		UnloadTestAssets();
 
-		Render::Facade::GetInstance()->CloseWindow(myWindow);
+		//Render::Facade::GetInstance()->CloseWindow(myWindow);
 	}
 
 	bool Window::ShouldClose() const
@@ -72,7 +72,7 @@ namespace GameWork
 		if (myTempAssetsLoaded)
 			return;
 
-		{
+		/*{
 			Render::RenderData data;
 			myCastleModel = Render::Facade::GetInstance()->SpawnModel("Frameworks/models/samplebuilding.gltf", data);
 		}
@@ -101,7 +101,7 @@ namespace GameWork
 			data.myMatrix[3][1] = 1.0f;
 			data.myMatrix[3][2] = -1.0f;
 			myDummyModel = Render::Facade::GetInstance()->SpawnModel("", data);
-		}
+		}*/
 	}
 
 	void Window::UnloadTestAssets()
@@ -109,7 +109,7 @@ namespace GameWork
 		if (!myTempAssetsLoaded)
 			return;
 
-		Render::Facade::GetInstance()->DespawnModel(myCastleModel);
+		/*Render::Facade::GetInstance()->DespawnModel(myCastleModel);
 		myCastleModel = UINT_MAX;
 		Render::Facade::GetInstance()->DespawnModel(myCastleWindows);
 		myCastleWindows = UINT_MAX;
@@ -118,6 +118,6 @@ namespace GameWork
 		Render::Facade::GetInstance()->DespawnModel(myAnimatedModel);
 		myAnimatedModel = UINT_MAX;
 		Render::Facade::GetInstance()->DespawnModel(myDummyModel);
-		myDummyModel = UINT_MAX;
+		myDummyModel = UINT_MAX;*/
 	}
 }

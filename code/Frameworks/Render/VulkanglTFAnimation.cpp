@@ -3,11 +3,7 @@
 #include "VulkanglTFModel.h"
 #include "VulkanglTFNode.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	void Animation::Load(Model* aContainer, const tinygltf::Model& aModel, uint anAnimationIndex)
 	{
@@ -144,6 +140,4 @@ namespace glTF
 			}
 		}
 	}
-}
-}
 }

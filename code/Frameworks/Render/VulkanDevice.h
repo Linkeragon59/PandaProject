@@ -2,9 +2,7 @@
 
 #include <optional>
 
-namespace Render
-{
-namespace Vulkan
+namespace Render::Vulkan
 {
 	// Wrapper for Physical and Logical device
 	struct Device
@@ -48,5 +46,4 @@ namespace Vulkan
 
 		VmaAllocator myVmaAllocator = VK_NULL_HANDLE;
 	};
-}
 }

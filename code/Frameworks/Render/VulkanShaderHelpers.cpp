@@ -1,15 +1,11 @@
 #include "VulkanShaderHelpers.h"
 
 #include "VulkanHelpers.h"
-#include "VulkanRenderer.h"
+#include "VulkanRender.h"
 
 #include "File.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace ShaderHelpers
+namespace Render::Vulkan::ShaderHelpers
 {
 	VkDescriptorSetLayout locCameraDescriptorSetLayout = VK_NULL_HANDLE;
 	VkDescriptorSetLayout locObjectDescriptorSetLayout = VK_NULL_HANDLE;
@@ -19,19 +15,24 @@ namespace ShaderHelpers
 	{
 		// Camera
 		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
+			std::array<VkDescriptorSetLayoutBinding, 2> bindings{};
 			// Binding 0 : ViewProj
 			bindings[0].binding = 0;
 			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			bindings[0].descriptorCount = 1;
 			bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			// Binding 1 : Near/Far Planes
+			bindings[1].binding = 1;
+			bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bindings[1].descriptorCount = 1;
+			bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
 			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
 			descriptorLayoutInfo.pBindings = bindings.data();
 			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &locCameraDescriptorSetLayout),
+				vkCreateDescriptorSetLayout(RenderCore::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &locCameraDescriptorSetLayout),
 				"Failed to create the Camera DescriptorSetLayout");
 		}
 
@@ -64,7 +65,7 @@ namespace ShaderHelpers
 			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
 			descriptorLayoutInfo.pBindings = bindings.data();
 			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &locObjectDescriptorSetLayout),
+				vkCreateDescriptorSetLayout(RenderCore::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &locObjectDescriptorSetLayout),
 				"Failed to create the Object DescriptorSetLayout");
 		}
 
@@ -82,20 +83,20 @@ namespace ShaderHelpers
 			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
 			descriptorLayoutInfo.pBindings = bindings.data();
 			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &locLightsDescriptorSetLayout),
+				vkCreateDescriptorSetLayout(RenderCore::GetInstance()->GetDevice(), &descriptorLayoutInfo, nullptr, &locLightsDescriptorSetLayout),
 				"Failed to create the Lights DescriptorSetLayout");
 		}
 	}
 
 	void DestroyDescriptorSetLayouts()
 	{
-		vkDestroyDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), locCameraDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(RenderCore::GetInstance()->GetDevice(), locCameraDescriptorSetLayout, nullptr);
 		locCameraDescriptorSetLayout = VK_NULL_HANDLE;
 
-		vkDestroyDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), locObjectDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(RenderCore::GetInstance()->GetDevice(), locObjectDescriptorSetLayout, nullptr);
 		locObjectDescriptorSetLayout = VK_NULL_HANDLE;
 
-		vkDestroyDescriptorSetLayout(Renderer::GetInstance()->GetDevice(), locLightsDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(RenderCore::GetInstance()->GetDevice(), locLightsDescriptorSetLayout, nullptr);
 		locLightsDescriptorSetLayout = VK_NULL_HANDLE;
 	}
 
@@ -183,10 +184,8 @@ namespace ShaderHelpers
 		createInfo.codeSize = shaderCode.size();
 		createInfo.pCode = reinterpret_cast<const uint*>(shaderCode.data());
 
-		VK_CHECK_RESULT(vkCreateShaderModule(Renderer::GetInstance()->GetDevice(), &createInfo, nullptr, &shaderModule), "Failed to create a module shader!");
+		VK_CHECK_RESULT(vkCreateShaderModule(RenderCore::GetInstance()->GetDevice(), &createInfo, nullptr, &shaderModule), "Failed to create a module shader!");
 
 		return shaderModule;
 	}
-}
-}
 }

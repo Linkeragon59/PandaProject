@@ -2,11 +2,7 @@
 
 #include "VulkanBuffer.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	class Model;
 	struct Node;
@@ -26,6 +22,4 @@ namespace glTF
 
 		Buffer mySSBO;
 	};
-}
-}
 }

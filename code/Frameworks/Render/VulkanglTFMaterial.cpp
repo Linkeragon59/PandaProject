@@ -1,12 +1,7 @@
 #include "VulkanglTFMaterial.h"
 
-namespace Render
+namespace Render::Vulkan::glTF
 {
-namespace Vulkan
-{
-namespace glTF
-{
-
 	Material::~Material()
 	{
 		mySSBO.Destroy();
@@ -85,6 +80,4 @@ namespace glTF
 		memcpy(mySSBO.myMappedData, &myBaseColorFactor, ssboSize);
 		mySSBO.Unmap();
 	}
-}
-}
 }

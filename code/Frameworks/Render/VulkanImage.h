@@ -1,8 +1,6 @@
 #pragma once
 
-namespace Render
-{
-namespace Vulkan
+namespace Render::Vulkan
 {
 	struct Image
 	{
@@ -35,5 +33,4 @@ namespace Vulkan
 		VkDevice myDevice = VK_NULL_HANDLE;
 		VmaAllocator myAllocator = VK_NULL_HANDLE;
 	};
-}
 }

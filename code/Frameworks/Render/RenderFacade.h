@@ -1,18 +1,12 @@
 #pragma once
 
-struct GLFWwindow;
+#include "RenderModel.h"
+#include "RenderRenderer.h"
 
-#include "RenderData.h"
+struct GLFWwindow;
 
 namespace Render
 {
-	namespace Vulkan
-	{
-		class Renderer;
-	}
-	class Camera;
-	class Model;
-
 	class Facade
 	{
 	public:
@@ -20,24 +14,20 @@ namespace Render
 		static void Destroy();
 		static Facade* GetInstance() { return ourInstance; }
 
-		// Vulkan Renderer
-		Vulkan::Renderer* GetRenderer() const { return myVulkanRenderer; }
-		void InitRenderer();
-		void UpdateRenderer();
-		void FinalizeRenderer();
-		void OpenWindow(GLFWwindow* aWindow);
-		void CloseWindow(GLFWwindow* aWindow);
-		void SetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection);
+		void InitializeRendering();
+		void FinalizeRendering();
 
-		uint SpawnModel(const std::string& aFilePath, const RenderData& aRenderData);
-		void DespawnModel(uint anIndex);
+		void StartFrame();
+		void EndFrame();
+
+		void RegisterWindow(GLFWwindow* aWindow, RendererType aRendererType);
+		void UnregisterWindow(GLFWwindow* aWindow);
+		Renderer* GetRenderer(GLFWwindow* aWindow);
+
+		Model* SpawnModel(const BaseModelData& someData);
+		void DespawnModel(Model* aModel);
 
 	private:
 		static Facade* ourInstance;
-
-		Facade();
-		~Facade();
-
-		Vulkan::Renderer* myVulkanRenderer = nullptr;
 	};
 }

@@ -3,14 +3,10 @@
 #include "VulkanglTFModel.h"
 #include "VulkanglTFNode.h"
 
-#include "VulkanRenderer.h"
+#include "VulkanRender.h"
 #include "VulkanHelpers.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	Skin::~Skin()
 	{
@@ -65,6 +61,4 @@ namespace glTF
 		mySSBO.Map();
 		memcpy(mySSBO.myMappedData, &identity, ssboSize);
 	}
-}
-}
 }

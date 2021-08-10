@@ -1,7 +1,6 @@
 #include "RenderFacade.h"
 
-#include "VulkanCamera.h"
-#include "VulkanRenderer.h"
+#include "VulkanRender.h"
 
 namespace Render
 {
@@ -20,55 +19,48 @@ namespace Render
 		ourInstance = nullptr;
 	}
 
-	void Facade::InitRenderer()
+	void Facade::InitializeRendering()
 	{
-		myVulkanRenderer = new Vulkan::Renderer;
-		myVulkanRenderer->Init();
+		Vulkan::RenderCore::Create();
 	}
 
-	void Facade::UpdateRenderer()
+	void Facade::FinalizeRendering()
 	{
-		myVulkanRenderer->Update();
+		Vulkan::RenderCore::Destroy();
 	}
 
-	void Facade::FinalizeRenderer()
+	void Facade::StartFrame()
 	{
-		myVulkanRenderer->Finalize();
-		delete myVulkanRenderer;
-		myVulkanRenderer = nullptr;
+		Vulkan::RenderCore::GetInstance()->StartFrame();
 	}
 
-	void Facade::OpenWindow(GLFWwindow* aWindow)
+	void Facade::EndFrame()
 	{
-		myVulkanRenderer->OnWindowOpened(aWindow);
+		Vulkan::RenderCore::GetInstance()->EndFrame();
 	}
 
-	void Facade::CloseWindow(GLFWwindow* aWindow)
+	void Facade::RegisterWindow(GLFWwindow* aWindow, RendererType aRendererType)
 	{
-		myVulkanRenderer->OnWindowClosed(aWindow);
+		Vulkan::RenderCore::GetInstance()->RegisterWindow(aWindow, aRendererType);
 	}
 
-	void Facade::SetWindowView(GLFWwindow* aWindow, const glm::mat4& aView, const glm::mat4& aProjection)
+	void Facade::UnregisterWindow(GLFWwindow* aWindow)
 	{
-		myVulkanRenderer->OnSetWindowView(aWindow, aView, aProjection);
+		Vulkan::RenderCore::GetInstance()->UnregisterWindow(aWindow);
 	}
 
-	uint Facade::SpawnModel(const std::string& aFilePath, const RenderData& aRenderData)
+	Renderer* Facade::GetRenderer(GLFWwindow* aWindow)
 	{
-		return myVulkanRenderer->SpawnModel(aFilePath, aRenderData);
+		return Vulkan::RenderCore::GetInstance()->GetRenderer(aWindow);
 	}
 
-	void Facade::DespawnModel(uint anIndex)
+	Model* Facade::SpawnModel(const BaseModelData& someData)
 	{
-		myVulkanRenderer->DespawnModel(anIndex);
+		return Vulkan::RenderCore::GetInstance()->SpawnModel(someData);
 	}
 
-	Facade::Facade()
+	void Facade::DespawnModel(Model* aModel)
 	{
-	}
-
-	Facade::~Facade()
-	{
-		Assert(!myVulkanRenderer);
+		Vulkan::RenderCore::GetInstance()->DespawnModel(aModel);
 	}
 }

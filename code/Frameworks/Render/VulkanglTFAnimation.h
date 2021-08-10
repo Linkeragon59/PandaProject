@@ -1,10 +1,6 @@
 #pragma once
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	class Model;
 	struct Node;
@@ -38,6 +34,4 @@ namespace glTF
 		float myEndTime = std::numeric_limits<float>::min();
 		float myCurrentTime = 0.0f;
 	};
-}
-}
 }

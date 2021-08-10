@@ -9,22 +9,16 @@
 #include "VulkanBuffer.h"
 #include "VulkanModel.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	class Model : public Render::Vulkan::Model
 	{
-		typedef Render::Vulkan::Model Super;
-
 	public:
-		Model(const std::string& aFilename, const RenderData& aRenderData);
+		Model(const BaseModelData& someData);
 		~Model();
 
-		void Update() override;
-		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) override;
+		void Update(const BaseModelData& someData) override;
+		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const override;
 
 		Node* GetNodeByIndex(uint anIndex);
 		const Image* GetImage(uint anIndex) { return &myImages[anIndex]; }
@@ -36,7 +30,7 @@ namespace glTF
 		const Skin* GetEmptySkin() { return &mySkins.back(); }
 
 	private:
-		bool LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, float aScale = 1.0f);
+		bool LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const glm::mat4& aMatrix);
 
 		void LoadImages(const tinygltf::Model& aModel);
 		void LoadTextures(const tinygltf::Model& aModel);
@@ -86,6 +80,4 @@ namespace glTF
 
 		uint myActiveAnimation = 0;
 	};
-}
-}
 }

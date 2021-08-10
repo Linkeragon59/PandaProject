@@ -1,9 +1,11 @@
 #pragma once
 
+struct GLFWwindow;
+
 namespace GameWork
 {
 	class Module;
-	class Window;
+	class Camera;
 
 	class GameWork
 	{
@@ -17,17 +19,16 @@ namespace GameWork
 		bool RegisterModule(Module* aModule);
 		bool UnregisterModule(Module* aModule);
 
-		uint OpenWindow(uint aWidth, uint aHeight, const char* aTitle, bool aShouldInit = true);
-		void CloseWindow(uint aWindowIndex, bool aShouldFinalize = true);
-
 	private:
+		static GameWork* ourInstance;
 		GameWork();
 		~GameWork();
+
 		bool Update();
 
-		static GameWork* ourInstance;
-
 		std::vector<Module*> myModules;
-		std::vector<Window*> myWindows;
+
+		GLFWwindow* myWindow = nullptr;
+		GLFWwindow* myWindow2 = nullptr;
 	};
 }

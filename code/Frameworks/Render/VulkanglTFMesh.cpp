@@ -1,10 +1,6 @@
 #include "VulkanglTFMesh.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	void Mesh::Load(const tinygltf::Model& aModel, uint aMeshIndex, std::vector<Vertex>& someOutVertices, std::vector<uint>& someOutIndices)
 	{
@@ -148,6 +144,4 @@ namespace glTF
 			primitive.myMaterial = gltfPrimitive.material;
 		}
 	}
-}
-}
 }

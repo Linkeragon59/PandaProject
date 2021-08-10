@@ -2,11 +2,7 @@
 
 #include "VulkanBuffer.h"
 
-namespace Render
-{
-namespace Vulkan
-{
-namespace glTF
+namespace Render::Vulkan::glTF
 {
 	struct Material
 	{
@@ -40,6 +36,4 @@ namespace glTF
 		Buffer mySSBO;
 		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
-}
-}
 }
