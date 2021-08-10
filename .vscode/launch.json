@@ -8,7 +8,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/code/Game/PandaExe/PandaExe",
+            "program": "${workspaceFolder}/build/code/Games/PandaExe/PandaExe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/data",
