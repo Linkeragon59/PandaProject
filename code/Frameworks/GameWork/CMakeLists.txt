@@ -35,5 +35,6 @@ target_include_directories(GameWork PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(GameWork GLFW)
 target_link_libraries(GameWork ImGui)
+target_link_libraries(GameWork SoLoud)
 target_link_libraries(GameWork Base)
 target_link_libraries(GameWork Render)
