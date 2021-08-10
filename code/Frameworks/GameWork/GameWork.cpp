@@ -2,14 +2,13 @@
 
 #include "Input.h"
 #include "RenderFacade.h"
-#include "RenderLight.h"
-#include "RenderModel.h"
 
 #include "Module.h"
 #include "Camera.h"
 #include "Prop.h"
 #include "glTFProp.h"
 #include "DynamicProp.h"
+#include "PointLight.h"
 
 #include <GLFW/glfw3.h>
 #include <chrono>
@@ -28,6 +27,8 @@ namespace GameWork
 		Render::Renderer* locRenderer2;
 		
 		std::vector<Prop*> locProps;
+		std::vector<PointLight> locLights;
+		Camera* locCamera = nullptr;
 
 		const std::vector<Render::DynamicModelData::Vertex> locVertices =
 		{
@@ -58,8 +59,6 @@ namespace GameWork
 		const std::string locTestTexture = "Frameworks/textures/panda.jpg";
 		const std::string locTestglTFModel = "Frameworks/models/CesiumMan/CesiumMan.gltf";
 
-		std::vector<Render::PointLight> locLights;
-
 		void locSpawnModels()
 		{
 			if (locProps.size() == 0)
@@ -88,10 +87,20 @@ namespace GameWork
 		void locSetupLights()
 		{
 			locLights.resize(2);
-			locLights[0].myPosition = glm::vec4(-47.0f, 26.0f, 46.0f, 1.0f);
-			locLights[0].myColor = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-			locLights[1].myPosition = glm::vec4(47.0f, -26.0f, -46.0f, 1.0f);
-			locLights[1].myColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+			locLights[0].SetPosition(glm::vec3(-47.0f, 26.0f, 46.0f));
+			locLights[0].SetColor(glm::vec3(0.0f, 0.0f, 1.0f));
+			locLights[0].SetIntensity(1.0f);
+			locLights[1].SetPosition(glm::vec3(47.0f, -26.0f, -46.0f));
+			locLights[1].SetColor(glm::vec3(1.0f, 0.0f, 0.0f));
+			locLights[1].SetIntensity(1.0f);
+		}
+
+		void locSetupCamera()
+		{
+			locCamera = new Camera();
+			locCamera->SetPosition(glm::vec3(0.0f, -0.75f, -2.0f));
+			locCamera->SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+			locCamera->SetPerspective(800.0f / 600.0f, 60.0f, 0.1f, 256.0f);
 		}
 	}
 
@@ -171,15 +180,11 @@ namespace GameWork
 		inputManager->AddWindow(myWindow);
 		inputManager->SetupCallbacks(inputManager->GetWindowId(myWindow));
 
-		myCamera = new Camera();
-		myCamera->SetPosition(glm::vec3(0.0f, -0.75f, -2.0f));
-		myCamera->SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
-		myCamera->SetPerspective(800.0f / 600.0f, 60.0f, 0.1f, 256.0f);
+		locSetupCamera();
 
 		Render::Facade::Create();
 		Render::Facade::GetInstance()->InitializeRendering();
 		Render::Facade::GetInstance()->RegisterWindow(myWindow, Render::RendererType::Deferred);
-
 		//Render::Facade::GetInstance()->RegisterWindow(myWindow2, Render::RendererType::Deferred);
 
 		locSpawnModels();
@@ -190,17 +195,16 @@ namespace GameWork
 	{
 		locDespawnModels();
 
-		Render::Facade::GetInstance()->UnregisterWindow(myWindow2);
+		//Render::Facade::GetInstance()->UnregisterWindow(myWindow2);
 		Render::Facade::GetInstance()->UnregisterWindow(myWindow);
 		Render::Facade::GetInstance()->FinalizeRendering();
-
 		Render::Facade::Destroy();
 
-		delete myCamera;
+		delete locCamera;
 
 		Input::InputManager::GetInstance()->RemoveWindow(myWindow);
 
-		glfwDestroyWindow(myWindow2);
+		//glfwDestroyWindow(myWindow2);
 		glfwDestroyWindow(myWindow);
 		
 		glfwTerminate();
@@ -233,23 +237,23 @@ namespace GameWork
 		locRenderer = Render::Facade::GetInstance()->GetRenderer(myWindow);
 		//locRenderer2 = Render::Facade::GetInstance()->GetRenderer(myWindow2);
 
-		myCamera->Update();
-		myCamera->Bind(locRenderer);
-		//myCamera->Rotate(glm::vec3(180.0f, 0.0f, 0.0f));
-		//myCamera->Bind(locRenderer2);
-		//myCamera->Rotate(glm::vec3(-180.0f, 0.0f, 0.0f));
+		locCamera->Update();
+		locCamera->Bind(locRenderer);
+		//locCamera->Rotate(glm::vec3(180.0f, 0.0f, 0.0f));
+		//locCamera->Bind(locRenderer2);
+		//locCamera->Rotate(glm::vec3(-180.0f, 0.0f, 0.0f));
 
 		for (Prop* prop : locProps)
 		{
-			prop->Translate(glm::vec3(0.001f));
-			prop->Rotate(glm::vec3(0.1f));
+			//prop->Translate(glm::vec3(0.001f));
+			//prop->Rotate(glm::vec3(0.1f));
 			prop->Update();
 			prop->Draw(locRenderer);
 		}
 
-		for (const Render::PointLight& light : locLights)
+		for (PointLight& light : locLights)
 		{
-			locRenderer->AddLight(light);
+			light.Bind(locRenderer);
 		}
 
 		Render::Facade::GetInstance()->EndFrame();

@@ -30,6 +30,5 @@ namespace GameWork
 
 		GLFWwindow* myWindow = nullptr;
 		GLFWwindow* myWindow2 = nullptr;
-		Camera* myCamera = nullptr;
 	};
 }
