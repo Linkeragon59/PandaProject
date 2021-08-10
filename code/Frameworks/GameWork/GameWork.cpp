@@ -10,8 +10,17 @@
 #include "DynamicProp.h"
 #include "PointLight.h"
 
+#if LINUX_BUILD
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 #include "soloud.h"
 #include "soloud_wav.h"
+
+#if LINUX_BUILD
+#pragma GCC diagnostic pop
+#endif
 
 #include <GLFW/glfw3.h>
 #include <chrono>
