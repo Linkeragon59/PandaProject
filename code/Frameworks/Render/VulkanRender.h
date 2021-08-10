@@ -29,7 +29,7 @@ namespace Render::Vulkan
 		void UnregisterWindow(GLFWwindow* aWindow);
 		Render::Renderer* GetRenderer(GLFWwindow* aWindow);
 
-		Render::Model* SpawnModel(const glTFModelData& someData);
+		Render::Model* SpawnModel(const BaseModelData& someData);
 		void DespawnModel(Render::Model* aModel);
 
 		VkInstance GetVkInstance() const { return myVkInstance; }

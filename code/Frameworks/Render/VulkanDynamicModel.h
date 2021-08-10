@@ -6,14 +6,14 @@
 
 namespace Render::Vulkan
 {
-	/*class DummyModel : public Model
+	class DynamicModel : public Model
 	{
 	public:
-		DummyModel();
-		~DummyModel();
+		DynamicModel(const BaseModelData& someData);
+		~DynamicModel();
 
-		void Update() override;
-		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) override;
+		void Update(const BaseModelData& someData) override;
+		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const override;
 
 	private:
 		void SetupDescriptorPool();
@@ -35,5 +35,5 @@ namespace Render::Vulkan
 		Buffer mySSBOMaterial;
 
 		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
-	};*/
+	};
 }

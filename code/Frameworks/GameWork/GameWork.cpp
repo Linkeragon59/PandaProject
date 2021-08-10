@@ -2,10 +2,14 @@
 
 #include "Input.h"
 #include "RenderFacade.h"
+#include "RenderLight.h"
 #include "RenderModel.h"
 
 #include "Module.h"
 #include "Camera.h"
+#include "Prop.h"
+#include "glTFProp.h"
+#include "DynamicProp.h"
 
 #include <GLFW/glfw3.h>
 #include <chrono>
@@ -22,7 +26,73 @@ namespace GameWork
 
 		Render::Renderer* locRenderer;
 		Render::Renderer* locRenderer2;
-		std::vector<std::pair<Render::Model*, Render::glTFModelData>> locModels;
+		
+		std::vector<Prop*> locProps;
+
+		const std::vector<Render::DynamicModelData::Vertex> locVertices =
+		{
+			{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+			{{0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}},
+			{{0.87f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.065f, 0.25f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+			{{0.87f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.065f, 0.75f}, {0.0f, 1.0f, 1.0f, 1.0f}},
+			{{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+			{{-0.87f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.935f, 0.75f}, {1.0f, 0.0f, 1.0f, 1.0f}},
+			{{-0.87f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.935f, 0.25f}, {1.0f, 0.0f, 0.0f, 1.0f}},
+
+			{{0.0f, 0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+			{{0.0f, -1.0f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}},
+			{{0.87f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.065f, 0.25f}, {0.0f, 1.0f, 0.0f, 1.0f}},
+			{{0.87f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.065f, 0.75f}, {0.0f, 1.0f, 1.0f, 1.0f}},
+			{{0.0f, 1.0f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}},
+			{{-0.87f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.935f, 0.75f}, {1.0f, 0.0f, 1.0f, 1.0f}},
+			{{-0.87f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.935f, 0.25f}, {1.0f, 0.0f, 0.0f, 1.0f}}
+		};
+
+		const std::vector<uint> locIndices =
+		{
+			0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1,
+
+			7, 8, 9, 7, 9, 10, 7, 10, 11, 7, 11, 12, 7, 12, 13, 7, 13, 8
+		};
+
+		const std::string locTestTexture = "Frameworks/textures/panda.jpg";
+		const std::string locTestglTFModel = "Frameworks/models/CesiumMan/CesiumMan.gltf";
+
+		std::vector<Render::PointLight> locLights;
+
+		void locSpawnModels()
+		{
+			if (locProps.size() == 0)
+			{
+				glTFProp* prop1 = new glTFProp(locTestglTFModel);
+				prop1->Spawn();
+				locProps.push_back(prop1);
+
+				DynamicProp* prop2 = new DynamicProp();
+				prop2->SetGeometry(locVertices, locIndices);
+				prop2->SetTexture(locTestTexture);
+				prop2->Spawn();
+				locProps.push_back(prop2);
+			}
+		}
+
+		void locDespawnModels()
+		{
+			for (Prop* prop : locProps)
+			{
+				prop->Despawn();
+			}
+			locProps.clear();
+		}
+
+		void locSetupLights()
+		{
+			locLights.resize(2);
+			locLights[0].myPosition = glm::vec4(-47.0f, 26.0f, 46.0f, 1.0f);
+			locLights[0].myColor = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+			locLights[1].myPosition = glm::vec4(47.0f, -26.0f, -46.0f, 1.0f);
+			locLights[1].myColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+		}
 	}
 
 	bool GameWork::Create()
@@ -95,7 +165,7 @@ namespace GameWork
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		myWindow = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.1", nullptr, nullptr);
-		myWindow2 = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.12", nullptr, nullptr);
+		//myWindow2 = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.12", nullptr, nullptr);
 
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		inputManager->AddWindow(myWindow);
@@ -110,23 +180,15 @@ namespace GameWork
 		Render::Facade::GetInstance()->InitializeRendering();
 		Render::Facade::GetInstance()->RegisterWindow(myWindow, Render::RendererType::Deferred);
 
-		Render::Facade::GetInstance()->RegisterWindow(myWindow2, Render::RendererType::Deferred);
+		//Render::Facade::GetInstance()->RegisterWindow(myWindow2, Render::RendererType::Deferred);
 
-		if (locModels.size() == 0)
-		{
-			Render::glTFModelData modelData;
-			modelData.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
-			locModels.push_back(std::make_pair(Render::Facade::GetInstance()->SpawnModel(modelData), modelData));
-		}
+		locSpawnModels();
+		locSetupLights();
 	}
 
 	GameWork::~GameWork()
 	{
-		if (locModels.size() > 0)
-		{
-			Render::Facade::GetInstance()->DespawnModel(locModels[0].first);
-			locModels.clear();
-		}
+		locDespawnModels();
 
 		Render::Facade::GetInstance()->UnregisterWindow(myWindow2);
 		Render::Facade::GetInstance()->UnregisterWindow(myWindow);
@@ -153,20 +215,11 @@ namespace GameWork
 
 		if (inputManager->PollRawInput(Input::RawInput::KeyI) == Input::RawInputState::Pressed)
 		{
-			if (locModels.size() > 0)
-			{
-				Render::Facade::GetInstance()->DespawnModel(locModels[0].first);
-				locModels.clear();
-			}
+			locDespawnModels();
 		}
 		if (inputManager->PollRawInput(Input::RawInput::KeyO) == Input::RawInputState::Pressed)
 		{
-			if (locModels.size() == 0)
-			{
-				Render::glTFModelData modelData;
-				modelData.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
-				locModels.push_back(std::make_pair(Render::Facade::GetInstance()->SpawnModel(modelData), modelData));
-			}
+			locSpawnModels();
 		}
 		
 		// Update Modules
@@ -178,19 +231,25 @@ namespace GameWork
 		Render::Facade::GetInstance()->StartFrame();
 
 		locRenderer = Render::Facade::GetInstance()->GetRenderer(myWindow);
-		locRenderer2 = Render::Facade::GetInstance()->GetRenderer(myWindow2);
+		//locRenderer2 = Render::Facade::GetInstance()->GetRenderer(myWindow2);
 
 		myCamera->Update();
-		locRenderer->SetViewProj(myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
-		myCamera->Rotate(glm::vec3(180.0f, 0.0f, 0.0f));
-		locRenderer2->SetViewProj(myCamera->GetViewMatrix(), myCamera->GetPerspectiveMatrix());
-		myCamera->Rotate(glm::vec3(-180.0f, 0.0f, 0.0f));
+		myCamera->Bind(locRenderer);
+		//myCamera->Rotate(glm::vec3(180.0f, 0.0f, 0.0f));
+		//myCamera->Bind(locRenderer2);
+		//myCamera->Rotate(glm::vec3(-180.0f, 0.0f, 0.0f));
 
-		for (const std::pair<Render::Model*, Render::glTFModelData>& model : locModels)
+		for (Prop* prop : locProps)
 		{
-			model.first->Update();
-			locRenderer->DrawModel(model.first, model.second);
-			locRenderer2->DrawModel(model.first, model.second);
+			prop->Translate(glm::vec3(0.001f));
+			prop->Rotate(glm::vec3(0.1f));
+			prop->Update();
+			prop->Draw(locRenderer);
+		}
+
+		for (const Render::PointLight& light : locLights)
+		{
+			locRenderer->AddLight(light);
 		}
 
 		Render::Facade::GetInstance()->EndFrame();

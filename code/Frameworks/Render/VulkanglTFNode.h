@@ -16,7 +16,7 @@ namespace Render::Vulkan::glTF
 
 		void SetupDescriptorSet(Model* aContainer, VkDescriptorPool aDescriptorPool);
 
-		void UpdateUBO();
+		void UpdateUBO(const glm::mat4& aMatrix);
 		void UpdateJoints(Model* aContainer);
 		void Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const;
 

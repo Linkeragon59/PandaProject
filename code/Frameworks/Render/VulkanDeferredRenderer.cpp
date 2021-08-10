@@ -8,8 +8,6 @@
 #include "VulkanShaderHelpers.h"
 #include "VulkanDebug.h"
 
-#include <random>
-
 namespace Render::Vulkan
 {
 	void DeferredRenderer::Setup(SwapChain* aSwapChain)
@@ -26,12 +24,12 @@ namespace Render::Vulkan
 		SetupDescriptorSets();
 		SetupFrameBuffers();
 
-		SetupLights();
+		myPointLightsSet.Setup();
 	}
 
 	void DeferredRenderer::Cleanup()
 	{
-		DestroyLights();
+		myPointLightsSet.Destroy();
 
 		DestroyFrameBuffers();
 		DestroyDescriptorSets();
@@ -119,8 +117,7 @@ namespace Render::Vulkan
 
 		vkCmdBindPipeline(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipeline);
 		vkCmdBindDescriptorSets(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 0, 1, &myLightingDescriptorSet, 0, NULL);
-		// Temporary
-		vkCmdBindDescriptorSets(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 1, 1, &myLightsDescriptorSet, 0, NULL);
+		myPointLightsSet.Bind(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], myDeferredPipeline.myLightingPipelineLayout, 1);
 
 		vkCmdBindPipeline(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipeline);
 		vkCmdBindDescriptorSets(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipelineLayout, 0, 1, &myTransparentDescriptorSet, 0, NULL);
@@ -139,10 +136,14 @@ namespace Render::Vulkan
 		scissor.extent = myExtent;
 		scissor.offset = { 0, 0 };
 		SetScissor(scissor);
+
+		myPointLightsSet.ClearLightData();
 	}
 
 	void DeferredRenderer::EndFrame()
 	{
+		myPointLightsSet.UpdateUBO();
+
 		Debug::EndRegion(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex]);
 		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex]), "Failed to end a command buffer");
 
@@ -178,19 +179,18 @@ namespace Render::Vulkan
 		vkCmdSetScissor(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], 0, 1, &aScissor);
 	}
 
-	void DeferredRenderer::SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection)
-	{
-		Renderer::SetViewProj(aView, aProjection);
-		UpdateLightsUBO(myCamera->GetView()[3]);
-	}
-
-	void DeferredRenderer::DrawModel(const Render::Model* aModel, const glTFModelData& someData)
+	void DeferredRenderer::DrawModel(const Render::Model* aModel, const BaseModelData& someData)
 	{
 		const Model* vulkanModel = static_cast<const Model*>(aModel);
 		if (!someData.myIsTransparent)
 			vulkanModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1);
 		else
 			vulkanModel->Draw(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], myDeferredPipeline.myTransparentPipelineLayout, 2);
+	}
+
+	void DeferredRenderer::AddLight(const PointLight& aPointLight)
+	{
+		myPointLightsSet.AddLight(aPointLight);
 	}
 
 	void DeferredRenderer::SetupAttachments()
@@ -508,86 +508,5 @@ namespace Render::Vulkan
 				vkDestroyFramebuffer(myDevice, myFrameBuffers[i], nullptr);
 		}
 		myFrameBuffers.clear();
-	}
-
-	// Temporary
-	void DeferredRenderer::SetupLights()
-	{
-		myLightsUBO.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		myLightsUBO.SetupDescriptor();
-		myLightsUBO.Map();
-		SetupRandomLights();
-		SetupLightsDescriptorPool();
-		SetupLightsDescriptorSets();
-	}
-
-	void DeferredRenderer::DestroyLights()
-	{
-		myLightsUBO.Destroy();
-		vkDestroyDescriptorPool(myDevice, myLightsDescriptorPool, nullptr);
-	}
-
-	void DeferredRenderer::UpdateLightsUBO(const glm::vec3& aCameraPos)
-	{
-		myLightsData.myViewPos = glm::vec4(aCameraPos, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
-		memcpy(myLightsUBO.myMappedData, &myLightsData, sizeof(LightData));
-	}
-
-	void DeferredRenderer::SetupRandomLights()
-	{
-		std::vector<glm::vec3> colors =
-		{
-			glm::vec3(1.0f, 1.0f, 1.0f),
-			glm::vec3(1.0f, 0.0f, 0.0f),
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			glm::vec3(0.0f, 0.0f, 1.0f),
-			glm::vec3(1.0f, 1.0f, 0.0f),
-		};
-
-		std::default_random_engine rndGen((uint)time(nullptr));
-		std::uniform_real_distribution<float> rndDist(-10.0f, 10.0f);
-		std::uniform_int_distribution<uint> rndCol(0, static_cast<uint>(colors.size() - 1));
-
-		for (Light& light : myLightsData.myLights)
-		{
-			light.myPosition = glm::vec4(rndDist(rndGen) * 6.0f, 0.25f + std::abs(rndDist(rndGen)) * 4.0f, rndDist(rndGen) * 6.0f, 1.0f);
-			light.myColor = colors[rndCol(rndGen)];
-			light.myRadius = 1.0f + std::abs(rndDist(rndGen));
-		}
-	}
-
-	void DeferredRenderer::SetupLightsDescriptorPool()
-	{
-		std::array<VkDescriptorPoolSize, 1> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = 1;
-
-		VkDescriptorPoolCreateInfo descriptorPoolInfo{};
-		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descriptorPoolInfo.poolSizeCount = (uint)poolSizes.size();
-		descriptorPoolInfo.pPoolSizes = poolSizes.data();
-		descriptorPoolInfo.maxSets = 1;
-
-		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myLightsDescriptorPool), "Failed to create the descriptor pool");
-	}
-
-	void DeferredRenderer::SetupLightsDescriptorSets()
-	{
-		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::GetLightsDescriptorSetLayout() };
-		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
-		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descriptorSetAllocateInfo.descriptorPool = myLightsDescriptorPool;
-		descriptorSetAllocateInfo.pSetLayouts = layouts.data();
-		descriptorSetAllocateInfo.descriptorSetCount = (uint)layouts.size();
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(myDevice, &descriptorSetAllocateInfo, &myLightsDescriptorSet), "Failed to create the node descriptor set");
-
-		std::array<VkWriteDescriptorSet, 1> writeDescriptorSets{};
-		writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[0].dstSet = myLightsDescriptorSet;
-		writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		writeDescriptorSets[0].dstBinding = 0;
-		writeDescriptorSets[0].pBufferInfo = &myLightsUBO.myDescriptor;
-		writeDescriptorSets[0].descriptorCount = 1;
-		vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
 	}
 }

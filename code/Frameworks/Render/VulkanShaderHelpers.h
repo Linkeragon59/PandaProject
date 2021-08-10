@@ -39,6 +39,11 @@ namespace Render::Vulkan::ShaderHelpers
 		glm::mat4 myView;
 	};
 
+	struct NearFarData
+	{
+		glm::vec2 myPlanes;
+	};
+
 	struct ModelData
 	{
 		glm::mat4 myModel;

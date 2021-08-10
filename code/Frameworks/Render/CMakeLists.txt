@@ -4,6 +4,7 @@ add_library(Render "")
 target_sources(Render
 	PRIVATE
 		RenderFacade.h
+		RenderLight.h
 		RenderModel.h
 		RenderRenderer.h
 		RenderPrecompile.h
@@ -13,7 +14,7 @@ target_sources(Render
 		VulkanDeferredPipeline.h
 		VulkanDeferredRenderer.h
 		VulkanDevice.h
-		VulkanDummyModel.h
+		VulkanDynamicModel.h
 		VulkanglTFAnimation.h
 		VulkanglTFMaterial.h
 		VulkanglTFMesh.h
@@ -25,6 +26,7 @@ target_sources(Render
 		VulkanImage.h
 		VulkanImGuiOverlay.h
 		VulkanModel.h
+		VulkanPointLightsSet.h
 		VulkanRender.h
 		VulkanRenderer.h
 		VulkanShaderHelpers.h
@@ -38,7 +40,7 @@ target_sources(Render
 		VulkanDeferredPipeline.cpp
 		VulkanDeferredRenderer.cpp
 		VulkanDevice.cpp
-		VulkanDummyModel.cpp
+		VulkanDynamicModel.cpp
 		VulkanglTFAnimation.cpp
 		VulkanglTFMaterial.cpp
 		VulkanglTFMesh.cpp
@@ -49,6 +51,7 @@ target_sources(Render
 		VulkanHelpers.cpp
 		VulkanImage.cpp
 		VulkanImGuiOverlay.cpp
+		VulkanPointLightsSet.cpp
 		VulkanRender.cpp
 		VulkanRenderer.cpp
 		VulkanShaderHelpers.cpp

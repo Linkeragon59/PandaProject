@@ -54,7 +54,7 @@ namespace Render
 		return Vulkan::RenderCore::GetInstance()->GetRenderer(aWindow);
 	}
 
-	Model* Facade::SpawnModel(const glTFModelData& someData)
+	Model* Facade::SpawnModel(const BaseModelData& someData)
 	{
 		return Vulkan::RenderCore::GetInstance()->SpawnModel(someData);
 	}

@@ -19,6 +19,7 @@ namespace Render::Vulkan
 		glm::mat4 myView;
 		glm::mat4 myProjection;
 		Buffer myViewProjUBO;
+		Buffer myPlanesSSBO;
 
 		VkDescriptorPool myDescriptorPool = VK_NULL_HANDLE;
 		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;

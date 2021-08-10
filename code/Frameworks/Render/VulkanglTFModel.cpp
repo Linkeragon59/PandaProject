@@ -5,10 +5,13 @@
 
 namespace Render::Vulkan::glTF
 {
-	Model::Model(const glTFModelData& someData)
+	Model::Model(const BaseModelData& someData)
 	{
 		myDevice = RenderCore::GetInstance()->GetDevice();
-		LoadFromFile(someData.myFilename, RenderCore::GetInstance()->GetGraphicsQueue(), someData.myMatrix[3][3]);
+
+		Assert(someData.GetType() == BaseModelData::Type::glTF);
+		const glTFModelData& glTFData = static_cast<const glTFModelData&>(someData);
+		LoadFromFile(glTFData.myFilename, RenderCore::GetInstance()->GetGraphicsQueue(), someData.myMatrix);
 	}
 
 	Model::~Model()
@@ -22,7 +25,7 @@ namespace Render::Vulkan::glTF
 			delete node;
 	}
 
-	void Model::Update()
+	void Model::Update(const BaseModelData& someData)
 	{
 		if (myAnimations.size() > 0)
 			myAnimations[0].Update(1.0f / 60.0f);
@@ -31,7 +34,7 @@ namespace Render::Vulkan::glTF
 			node->UpdateJoints(this);
 
 		for (Node* node : myNodes)
-			node->UpdateUBO();
+			node->UpdateUBO(someData.myMatrix);
 	}
 
 	void Model::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const
@@ -45,7 +48,7 @@ namespace Render::Vulkan::glTF
 			node->Draw(this, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex);
 	}
 
-	bool Model::LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, float aScale)
+	bool Model::LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const glm::mat4& aMatrix)
 	{
 		myTransferQueue = aTransferQueue;
 
@@ -64,7 +67,7 @@ namespace Render::Vulkan::glTF
 
 		std::vector<Mesh::Vertex> vertexBuffer;
 		std::vector<uint> indexBuffer;
-		LoadNodes(gltfModel, aScale, vertexBuffer, indexBuffer);
+		LoadNodes(gltfModel, aMatrix[3][3], vertexBuffer, indexBuffer);
 
 		auto countNodes = [this](Node* aNode) { (void)aNode; myNodeCount++; };
 		IterateNodes(countNodes);
@@ -78,7 +81,7 @@ namespace Render::Vulkan::glTF
 
 		// Fill initial matrices
 		for (Node* node : myNodes)
-			node->UpdateUBO();
+			node->UpdateUBO(aMatrix);
 
 		SetupDescriptorPool();
 		SetupDescriptorSets();

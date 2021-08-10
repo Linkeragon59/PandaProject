@@ -4,6 +4,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanImage.h"
 #include "VulkanDeferredPipeline.h"
+#include "VulkanPointLightsSet.h"
 
 namespace Render::Vulkan
 {
@@ -20,9 +21,9 @@ namespace Render::Vulkan
 
 		void SetViewport(const VkViewport& aViewport);
 		void SetScissor(const VkRect2D& aScissor);
-		void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection) override;
 
-		void DrawModel(const Render::Model* aModel, const glTFModelData& someData) override;
+		void DrawModel(const Render::Model* aModel, const BaseModelData& someData) override;
+		void AddLight(const PointLight& aPointLight) override;
 
 	private:
 		VkExtent2D myExtent = {};
@@ -38,6 +39,9 @@ namespace Render::Vulkan
 		Image myAlbedoAttachment;
 		// Depth attachment
 		Image myDepthAttachment;
+
+		// Point Lights
+		PointLightsSet myPointLightsSet;
 
 		// Render Pass
 		void SetupRenderPass();
@@ -67,29 +71,5 @@ namespace Render::Vulkan
 		void SetupFrameBuffers();
 		void DestroyFrameBuffers();
 		std::vector<VkFramebuffer> myFrameBuffers;
-
-		// Temporary
-		// Lights will be moved to a separate class later
-		static const uint ourNumLights = 64;
-		struct Light
-		{
-			glm::vec4 myPosition;
-			glm::vec3 myColor;
-			float myRadius;
-		};
-		struct LightData
-		{
-			glm::vec4 myViewPos;
-			Light myLights[ourNumLights];
-		} myLightsData;
-		Buffer myLightsUBO;
-		VkDescriptorPool myLightsDescriptorPool = VK_NULL_HANDLE;
-		VkDescriptorSet myLightsDescriptorSet = VK_NULL_HANDLE;
-		void SetupLights();
-		void DestroyLights();
-		void UpdateLightsUBO(const glm::vec3& aCameraPos);
-		void SetupRandomLights();
-		void SetupLightsDescriptorPool();
-		void SetupLightsDescriptorSets();
 	};
 }

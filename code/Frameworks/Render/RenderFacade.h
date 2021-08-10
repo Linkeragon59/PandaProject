@@ -24,7 +24,7 @@ namespace Render
 		void UnregisterWindow(GLFWwindow* aWindow);
 		Renderer* GetRenderer(GLFWwindow* aWindow);
 
-		Model* SpawnModel(const glTFModelData& someData);
+		Model* SpawnModel(const BaseModelData& someData);
 		void DespawnModel(Model* aModel);
 
 	private:

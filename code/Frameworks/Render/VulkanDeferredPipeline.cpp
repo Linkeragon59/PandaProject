@@ -244,6 +244,18 @@ namespace Render::Vulkan
 		VkShaderModule vertModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/composition_vert.spv");
 		VkShaderModule fragModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/composition_frag.spv");
 
+		VkSpecializationMapEntry specializationEntry{};
+		specializationEntry.constantID = 0;
+		specializationEntry.offset = 0;
+		specializationEntry.size = sizeof(uint32_t);
+
+		uint32_t specializationData = 64;
+		VkSpecializationInfo specializationInfo;
+		specializationInfo.mapEntryCount = 1;
+		specializationInfo.pMapEntries = &specializationEntry;
+		specializationInfo.dataSize = sizeof(specializationData);
+		specializationInfo.pData = &specializationData;
+
 		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 		shaderStages[0] = {};
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -254,10 +266,8 @@ namespace Render::Vulkan
 		shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		shaderStages[1].module = fragModule;
-		shaderStages[1].pName = "main";
-		// TODO: Use specialization constants to pass number of lights to the shader
-		//VkSpecializationInfo
-		//shaderStages[1].pSpecializationInfo
+		shaderStages[1].pSpecializationInfo = &specializationInfo;
+		shaderStages[1].pName = "main";	
 
 		VkPipelineVertexInputStateCreateInfo vertexInputStateInfo{};
 		vertexInputStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

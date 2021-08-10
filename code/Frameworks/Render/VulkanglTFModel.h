@@ -14,10 +14,10 @@ namespace Render::Vulkan::glTF
 	class Model : public Render::Vulkan::Model
 	{
 	public:
-		Model(const glTFModelData& someData);
+		Model(const BaseModelData& someData);
 		~Model();
 
-		void Update() override;
+		void Update(const BaseModelData& someData) override;
 		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const override;
 
 		Node* GetNodeByIndex(uint anIndex);
@@ -30,7 +30,7 @@ namespace Render::Vulkan::glTF
 		const Skin* GetEmptySkin() { return &mySkins.back(); }
 
 	private:
-		bool LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, float aScale = 1.0f);
+		bool LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const glm::mat4& aMatrix);
 
 		void LoadImages(const tinygltf::Model& aModel);
 		void LoadTextures(const tinygltf::Model& aModel);

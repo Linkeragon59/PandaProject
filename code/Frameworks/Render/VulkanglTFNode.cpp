@@ -152,13 +152,13 @@ namespace Render::Vulkan::glTF
 			child->SetupDescriptorSet(aContainer, aDescriptorPool);
 	}
 
-	void Node::UpdateUBO()
+	void Node::UpdateUBO(const glm::mat4& aMatrix)
 	{
-		glm::mat4 matrix = GetMatrix();
+		glm::mat4 matrix = aMatrix * GetMatrix();
 		memcpy(myUBO.myMappedData, &matrix, sizeof(glm::mat4));
 
 		for (Node* child : myChildren)
-			child->UpdateUBO();
+			child->UpdateUBO(aMatrix);
 	}
 
 	void Node::UpdateJoints(Model* aContainer)

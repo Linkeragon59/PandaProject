@@ -7,6 +7,7 @@
 #include "VulkanDevice.h"
 #include "VulkanSwapChain.h"
 #include "VulkanglTFModel.h"
+#include "VulkanDynamicModel.h"
 #include "VulkanRenderer.h"
 
 #include <GLFW/glfw3.h>
@@ -132,9 +133,17 @@ namespace Render::Vulkan
 		return nullptr;
 	}
 
-	Render::Model* RenderCore::SpawnModel(const glTFModelData& someData)
+	Render::Model* RenderCore::SpawnModel(const BaseModelData& someData)
 	{
-		return new glTF::Model(someData);
+		switch (someData.GetType())
+		{
+		case BaseModelData::Type::glTF:
+			return new glTF::Model(someData);
+		case BaseModelData::Type::Dynamic:
+			return new DynamicModel(someData);
+		default:
+			return nullptr;
+		}
 	}
 
 	void RenderCore::DespawnModel(Render::Model* aModel)

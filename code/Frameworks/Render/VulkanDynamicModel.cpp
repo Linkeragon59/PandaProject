@@ -1,4 +1,4 @@
-#include "VulkanDummyModel.h"
+#include "VulkanDynamicModel.h"
 
 #include "VulkanHelpers.h"
 #include "VulkanShaderHelpers.h"
@@ -11,82 +11,34 @@
 
 namespace Render::Vulkan
 {
-	/*namespace
-	{
-		const std::vector<ShaderHelpers::Vertex> locVertices =
-		{
-			{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{0.0f, -1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{0.87f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.065f, 0.25f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{0.87f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.065f, 0.75f}, {0.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{0.0f, 1.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{-0.87f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.935f, 0.75f}, {1.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{-0.87f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.935f, 0.25f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-
-			{{0.0f, 0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.5f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{0.0f, -1.0f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{0.87f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.065f, 0.25f}, {0.0f, 1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{0.87f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.065f, 0.75f}, {0.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{0.0f, 1.0f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.5f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{-0.87f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.935f, 0.75f}, {1.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-			{{-0.87f, -0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.935f, 0.25f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}
-		};
-
-		const std::vector<uint> locIndices =
-		{
-			0, 1, 2, 0, 2, 3, 0, 3, 4, 0, 4, 5, 0, 5, 6, 0, 6, 1,
-
-			7, 8, 9, 7, 9, 10, 7, 10, 11, 7, 11, 12, 7, 12, 13, 7, 13, 8
-		};
-
-		const std::string locTestTexture = "Frameworks/textures/panda.jpg";
-	}
-
-	void DummyModel::Update()
-	{
-		// Using a UBO this way is not the most efficient way to pass frequently changing values to the shader.
-		// A more efficient way to pass a small buffer of data to shaders are push constants.
-		static auto startTime = std::chrono::high_resolution_clock::now();
-		static float addTime = 0;
-
-		Input::InputManager* inputManager = Input::InputManager::GetInstance();
-		Input::RawInputState spaceState = inputManager->PollRawInput(Input::RawInput::KeySpace);
-		if (spaceState == Input::RawInputState::Pressed)
-		{
-			addTime += 0.1f;
-		}
-
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float elapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count() + addTime;
-		if (GetPosition().x < 0.f)
-			elapsedTime *= -1.0f;
-
-		ShaderHelpers::ModelData ubo{};
-		ubo.myModel = glm::rotate(glm::translate(glm::mat4(1.0f), GetPosition()), elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-
-		memcpy(myUBOObject.myMappedData, &ubo, sizeof(ubo));
-	}
-
-	void DummyModel::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
-	{
-		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT32);
-		std::array<VkBuffer, 1> modelVertexBuffers = { myVertexBuffer.myBuffer };
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(aCommandBuffer, 0, (uint)modelVertexBuffers.size(), modelVertexBuffers.data(), offsets);
-
-		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &myDescriptorSet, 0, NULL);
-
-		vkCmdDrawIndexed(aCommandBuffer, myIndexCount, 1, 0, 0, 0);
-	}
-
-	DummyModel::DummyModel()
+	DynamicModel::DynamicModel(const BaseModelData& someData)
 	{
 		myDevice = RenderCore::GetInstance()->GetDevice();
 
-		VkDeviceSize vertexBufferSize = sizeof(ShaderHelpers::Vertex) * locVertices.size();
-		VkDeviceSize indexBufferSize = sizeof(uint) * locIndices.size();
+		Assert(someData.GetType() == BaseModelData::Type::Dynamic);
+		const DynamicModelData& modelData = static_cast<const DynamicModelData&>(someData);
+
+		std::vector< ShaderHelpers::Vertex> fullVertices;
+		fullVertices.reserve(modelData.myVertices.size());
+		for (const DynamicModelData::Vertex& vertex : modelData.myVertices)
+		{
+			ShaderHelpers::Vertex fullVertex =
+			{
+				vertex.myPosition,
+				vertex.myNormal,
+				vertex.myUV,
+				vertex.myColor,
+				{0.0f, 0.0f, 0.0f, 0.0f},
+				{1.0f, 1.0f, 1.0f, 1.0f},
+				{1.0f, 1.0f, 1.0f, 1.0f}
+			};
+			fullVertices.push_back(fullVertex);
+		}
+
+		VkDeviceSize vertexBufferSize = sizeof(ShaderHelpers::Vertex) * modelData.myVertices.size();
+		VkDeviceSize indexBufferSize = sizeof(uint) * modelData.myIndices.size();
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load(locTestTexture.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load(modelData.myTextureFilename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		Assert(pixels, "Failed to load an image!");
 
 		VkDeviceSize textureSize = static_cast<VkDeviceSize>(texWidth) * static_cast<VkDeviceSize>(texHeight) * 4;
@@ -96,14 +48,14 @@ namespace Render::Vulkan
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		vertexStaging.Map();
-		memcpy(vertexStaging.myMappedData, locVertices.data(), (size_t)vertexBufferSize);
+		memcpy(vertexStaging.myMappedData, fullVertices.data(), (size_t)vertexBufferSize);
 		vertexStaging.Unmap();
 
 		indexStaging.Create(indexBufferSize,
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		indexStaging.Map();
-		memcpy(indexStaging.myMappedData, locIndices.data(), (size_t)indexBufferSize);
+		memcpy(indexStaging.myMappedData, modelData.myIndices.data(), (size_t)indexBufferSize);
 		indexStaging.Unmap();
 
 		textureStaging.Create(textureSize,
@@ -122,7 +74,7 @@ namespace Render::Vulkan
 		myIndexBuffer.Create(indexBufferSize,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		myIndexCount = (uint)locIndices.size();
+		myIndexCount = (uint)modelData.myIndices.size();
 
 		myTexture.Create(texWidth, texHeight,
 			VK_FORMAT_R8G8B8A8_SRGB,
@@ -171,7 +123,7 @@ namespace Render::Vulkan
 		SetupDescriptoSets();
 	}
 
-	DummyModel::~DummyModel()
+	DynamicModel::~DynamicModel()
 	{
 		myUBOObject.Destroy();
 		mySSBOSkin.Destroy();
@@ -186,7 +138,45 @@ namespace Render::Vulkan
 		myDescriptorPool = VK_NULL_HANDLE;
 	}
 
-	void DummyModel::SetupDescriptorPool()
+	void DynamicModel::Update(const BaseModelData& someData)
+	{
+		memcpy(myUBOObject.myMappedData, &someData.myMatrix, sizeof(glm::mat4));
+		// Using a UBO this way is not the most efficient way to pass frequently changing values to the shader.
+		// A more efficient way to pass a small buffer of data to shaders are push constants.
+		/*static auto startTime = std::chrono::high_resolution_clock::now();
+		static float addTime = 0;
+
+		Input::InputManager* inputManager = Input::InputManager::GetInstance();
+		Input::RawInputState spaceState = inputManager->PollRawInput(Input::RawInput::KeySpace);
+		if (spaceState == Input::RawInputState::Pressed)
+		{
+			addTime += 0.1f;
+		}
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float elapsedTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count() + addTime;
+		if (GetPosition().x < 0.f)
+			elapsedTime *= -1.0f;
+
+		ShaderHelpers::ModelData ubo{};
+		ubo.myModel = glm::rotate(glm::translate(glm::mat4(1.0f), GetPosition()), elapsedTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		memcpy(myUBOObject.myMappedData, &ubo, sizeof(ubo));*/
+	}
+
+	void DynamicModel::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const
+	{
+		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT32);
+		std::array<VkBuffer, 1> modelVertexBuffers = { myVertexBuffer.myBuffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(aCommandBuffer, 0, (uint)modelVertexBuffers.size(), modelVertexBuffers.data(), offsets);
+
+		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &myDescriptorSet, 0, NULL);
+
+		vkCmdDrawIndexed(aCommandBuffer, myIndexCount, 1, 0, 0, 0);
+	}
+
+	void DynamicModel::SetupDescriptorPool()
 	{
 		std::array<VkDescriptorPoolSize, 3> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -205,7 +195,7 @@ namespace Render::Vulkan
 		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
 	}
 
-	void DummyModel::PrepareBuffers()
+	void DynamicModel::PrepareBuffers()
 	{
 		myUBOObject.Create(sizeof(ShaderHelpers::ModelData),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -230,11 +220,9 @@ namespace Render::Vulkan
 		mySSBOMaterial.Map();
 		memcpy(mySSBOMaterial.myMappedData, &colorFactor, sizeof(glm::vec4));
 		mySSBOMaterial.Unmap();
-
-		Update();
 	}
 
-	void DummyModel::SetupDescriptoSets()
+	void DynamicModel::SetupDescriptoSets()
 	{
 		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::GetObjectDescriptorSetLayout() };
 		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
@@ -275,5 +263,5 @@ namespace Render::Vulkan
 		descriptorWrites[3].pBufferInfo = &mySSBOMaterial.myDescriptor;
 
 		vkUpdateDescriptorSets(myDevice, static_cast<uint>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-	}*/
+	}
 }
