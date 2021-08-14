@@ -48,108 +48,11 @@ namespace Render::Vulkan::glTF
 			myMesh.Load(aModel, gltfNode.mesh, someOutVertices, someOutIndices);
 
 		myUBO.Create(
-			sizeof(ShaderHelpers::ModelData),
+			sizeof(ShaderHelpers::ModelMatrixData),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myUBO.SetupDescriptor();
 		myUBO.Map();
-	}
-
-	void Node::SetupDescriptorSet(Model* aContainer, VkDescriptorPool aDescriptorPool)
-	{
-		if (myMesh.myPrimitives.size() > 0)
-		{
-			VkDevice device = RenderCore::GetInstance()->GetDevice();
-
-			std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::GetObjectDescriptorSetLayout() };
-
-			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
-			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			descriptorSetAllocateInfo.descriptorPool = aDescriptorPool;
-			descriptorSetAllocateInfo.pSetLayouts = layouts.data();
-			descriptorSetAllocateInfo.descriptorSetCount = (uint)layouts.size();
-
-			std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
-
-			// Binding 0 : Model
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			// Binding 1 : Joint Matrices
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			// Binding 2 : Texture Sampler
-			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[2].dstBinding = 2;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			// Binding 3 : Material
-			descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[3].dstBinding = 3;
-			descriptorWrites[3].descriptorCount = 1;
-			descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-
-			const Skin* skin = nullptr;
-			const Image* image = nullptr;
-			const Material* material = nullptr;
-
-			if (mySkinIndex > -1)
-			{
-				skin = aContainer->GetSkin(mySkinIndex);
-			}
-			if (!skin)
-			{
-				skin = aContainer->GetEmptySkin();
-			}
-
-			for (Primitive& primitive : myMesh.myPrimitives)
-			{
-				if (primitive.myMaterial > -1)
-				{
-					material = aContainer->GetMaterial(primitive.myMaterial);
-					Assert(material);
-
-					if (material->myBaseColorTexture > -1)
-					{
-						const Texture* texture = aContainer->GetTexture(material->myBaseColorTexture);
-						Assert(texture);
-						image = aContainer->GetImage(texture->myImageIndex);
-						Assert(image);
-					}
-				}
-				if (!image)
-				{
-					image = aContainer->GetEmptyImage();
-				}
-				if (!material)
-				{
-					material = aContainer->GetEmptyMaterial();
-				}
-
-				VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &primitive.myDescriptorSet), "Failed to create the descriptor set");
-
-				// Binding 0 : Model
-				descriptorWrites[0].dstSet = primitive.myDescriptorSet;
-				descriptorWrites[0].pBufferInfo = &myUBO.myDescriptor;
-				// Binding 1 : Joint Matrices
-				descriptorWrites[1].dstSet = primitive.myDescriptorSet;
-				descriptorWrites[1].pBufferInfo = &skin->mySSBO.myDescriptor;
-				// Binding 2 : Texture Sampler
-				descriptorWrites[2].dstSet = primitive.myDescriptorSet;
-				descriptorWrites[2].pImageInfo = &image->myImage.myDescriptor;
-				// Binding 3 : Material
-				descriptorWrites[3].dstSet = primitive.myDescriptorSet;
-				descriptorWrites[3].pBufferInfo = &material->mySSBO.myDescriptor;
-
-				vkUpdateDescriptorSets(device, static_cast<uint>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-			}
-		}
-
-		for (Node* child : myChildren)
-			child->SetupDescriptorSet(aContainer, aDescriptorPool);
 	}
 
 	void Node::UpdateUBO(const glm::mat4& aMatrix)
@@ -161,7 +64,7 @@ namespace Render::Vulkan::glTF
 			child->UpdateUBO(aMatrix);
 	}
 
-	void Node::UpdateJoints(Model* aContainer)
+	void Node::UpdateJoints(const Model* aContainer)
 	{
 		if (mySkinIndex > -1)
 		{
@@ -184,17 +87,116 @@ namespace Render::Vulkan::glTF
 			child->UpdateJoints(aContainer);
 	}
 
-	void Node::Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const
+	void Node::Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::DescriptorLayout aLayout)
 	{
-		for (const Primitive& primitive : myMesh.myPrimitives)
+		for (Primitive& primitive : myMesh.myPrimitives)
 		{
-			vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &primitive.myDescriptorSet, 0, NULL);
+			switch (aLayout)
+			{
+			case Render::Vulkan::ShaderHelpers::DescriptorLayout::SimpleObject:
+			{
+				if (primitive.mySimpleDescriptorSet == VK_NULL_HANDLE)
+				{
+					SetupSimpleDescriptorSet(aContainer, primitive);
+				}
+				vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &primitive.mySimpleDescriptorSet, 0, NULL);
+			}
+			break;
+			case Render::Vulkan::ShaderHelpers::DescriptorLayout::Object:
+			{
+				if (primitive.myDescriptorSet == VK_NULL_HANDLE)
+				{
+					SetupDescriptorSet(aContainer, primitive);
+				}
+				vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &primitive.myDescriptorSet, 0, NULL);
+			}
+			break;
+			default:
+				Assert(false, "Unsupported Layout");
+				break;
+			}
 
 			vkCmdDrawIndexed(aCommandBuffer, primitive.myIndexCount, 1, primitive.myFirstIndex, 0, 0);
 		}
 
 		for (Node* child : myChildren)
-			child->Draw(aContainer, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex);
+			child->Draw(aContainer, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex, aLayout);
+	}
+
+	void Node::SetupSimpleDescriptorSet(const Model* aContainer, Primitive& aPrimitive)
+	{
+		const Image* image = nullptr;
+		const Material* material = nullptr;
+
+		if (aPrimitive.myMaterial > -1)
+		{
+			material = aContainer->GetMaterial(aPrimitive.myMaterial);
+			Assert(material);
+
+			if (material->myBaseColorTexture > -1)
+			{
+				const Texture* texture = aContainer->GetTexture(material->myBaseColorTexture);
+				Assert(texture);
+				image = aContainer->GetImage(texture->myImageIndex);
+				Assert(image);
+			}
+		}
+		if (!image)
+		{
+			image = aContainer->GetEmptyImage();
+		}
+
+		RenderCore::GetInstance()->AllocateDescriptorSet(ShaderHelpers::DescriptorLayout::SimpleObject, aPrimitive.mySimpleDescriptorSet);
+		ShaderHelpers::ObjectDescriptorInfo info;
+		info.myModelMatrixInfo = &myUBO.myDescriptor;
+		info.myImageSamplerInfo = &image->myImage.myDescriptor;
+		RenderCore::GetInstance()->UpdateDescriptorSet(ShaderHelpers::DescriptorLayout::SimpleObject, info, aPrimitive.mySimpleDescriptorSet);
+	}
+
+	void Node::SetupDescriptorSet(const Model* aContainer, Primitive& aPrimitive)
+	{
+		const Skin* skin = nullptr;
+		const Image* image = nullptr;
+		const Material* material = nullptr;
+
+		if (mySkinIndex > -1)
+		{
+			skin = aContainer->GetSkin(mySkinIndex);
+		}
+		if (!skin)
+		{
+			skin = aContainer->GetEmptySkin();
+		}
+
+		if (aPrimitive.myMaterial > -1)
+		{
+			material = aContainer->GetMaterial(aPrimitive.myMaterial);
+			Assert(material);
+
+			if (material->myBaseColorTexture > -1)
+			{
+				const Texture* texture = aContainer->GetTexture(material->myBaseColorTexture);
+				Assert(texture);
+				image = aContainer->GetImage(texture->myImageIndex);
+				Assert(image);
+			}
+		}
+		if (!image)
+		{
+			image = aContainer->GetEmptyImage();
+		}
+		if (!material)
+		{
+			material = aContainer->GetEmptyMaterial();
+		}
+
+		RenderCore::GetInstance()->AllocateDescriptorSet(ShaderHelpers::DescriptorLayout::Object, aPrimitive.myDescriptorSet);
+		ShaderHelpers::ObjectDescriptorInfo info;
+		info.myModelMatrixInfo = &myUBO.myDescriptor;
+		info.myImageSamplerInfo = &image->myImage.myDescriptor;
+		info.myMaterialInfo = &material->mySSBO.myDescriptor;
+		info.myJointMatricesInfo = &skin->mySSBO.myDescriptor;
+		RenderCore::GetInstance()->UpdateDescriptorSet(ShaderHelpers::DescriptorLayout::Object, info, aPrimitive.myDescriptorSet);
 	}
 
 	glm::mat4 Node::GetLocalMatrix() const

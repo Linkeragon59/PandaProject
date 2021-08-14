@@ -17,7 +17,9 @@ namespace Render::Vulkan
 
 		SetupGBufferPipeline(aRenderPass);
 		SetupLightingPipeline(aRenderPass);
-		SetupTransparentPipeline(aRenderPass);
+#if DEBUG_BUILD
+		SetupDebugForwardPipeline(aRenderPass);
+#endif
 	}
 
 	void DeferredPipeline::Destroy()
@@ -26,7 +28,9 @@ namespace Render::Vulkan
 
 		DestroyGBufferPipeline();
 		DestroyLightingPipeline();
-		DestroyTransparentPipeline();
+#if DEBUG_BUILD
+		DestroyDebugForwardPipeline();
+#endif
 	}
 
 	void DeferredPipeline::SetupDescriptorSetLayouts()
@@ -58,40 +62,19 @@ namespace Render::Vulkan
 				vkCreateDescriptorSetLayout(myDevice, &descriptorLayoutInfo, nullptr, &myLightingDescriptorSetLayout),
 				"Failed to create the Lighting descriptor set layout");
 		}
-
-		// Transparent
-		{
-			std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
-			// Binding 0 : Position attachment
-			bindings[0].binding = 0;
-			bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			bindings[0].descriptorCount = 1;
-			bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-			VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
-			descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutInfo.bindingCount = (uint)bindings.size();
-			descriptorLayoutInfo.pBindings = bindings.data();
-			VK_CHECK_RESULT(
-				vkCreateDescriptorSetLayout(myDevice, &descriptorLayoutInfo, nullptr, &myTransparentDescriptorSetLayout),
-				"Failed to create the Transparent DescriptorSetLayout");
-		}
 	}
 
 	void DeferredPipeline::DestroyDescriptorSetLayouts()
 	{
 		vkDestroyDescriptorSetLayout(myDevice, myLightingDescriptorSetLayout, nullptr);
 		myLightingDescriptorSetLayout = VK_NULL_HANDLE;
-
-		vkDestroyDescriptorSetLayout(myDevice, myTransparentDescriptorSetLayout, nullptr);
-		myTransparentDescriptorSetLayout = VK_NULL_HANDLE;
 	}
 
 	void DeferredPipeline::SetupGBufferPipeline(VkRenderPass aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
-			ShaderHelpers::GetCameraDescriptorSetLayout(),
-			ShaderHelpers::GetObjectDescriptorSetLayout()
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout::Camera),
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout::Object)
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -229,7 +212,7 @@ namespace Render::Vulkan
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
 			myLightingDescriptorSetLayout,
-			ShaderHelpers::GetLightsDescriptorSetLayout()
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout::LightsSet)
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -358,12 +341,12 @@ namespace Render::Vulkan
 		myLightingPipelineLayout = VK_NULL_HANDLE;
 	}
 
-	void DeferredPipeline::SetupTransparentPipeline(VkRenderPass aRenderPass)
+#if DEBUG_BUILD
+	void DeferredPipeline::SetupDebugForwardPipeline(VkRenderPass aRenderPass)
 	{
-		std::array<VkDescriptorSetLayout, 3> descriptorSetLayouts = {
-			myTransparentDescriptorSetLayout,
-			ShaderHelpers::GetCameraDescriptorSetLayout(),
-			ShaderHelpers::GetObjectDescriptorSetLayout()
+		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout::Camera),
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout::SimpleObject)
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -372,11 +355,11 @@ namespace Render::Vulkan
 		pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 
 		VK_CHECK_RESULT(
-			vkCreatePipelineLayout(myDevice, &pipelineLayoutCreateInfo, nullptr, &myTransparentPipelineLayout),
+			vkCreatePipelineLayout(myDevice, &pipelineLayoutCreateInfo, nullptr, &myDebug3DPipelineLayout),
 			"Failed to create the Transparent pipeline layout");
 
-		VkShaderModule vertModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/transparent_vert.spv");
-		VkShaderModule fragModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/transparent_frag.spv");
+		VkShaderModule vertModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/debugForward_vert.spv");
+		VkShaderModule fragModule = ShaderHelpers::CreateShaderModule("Frameworks/shaders/debugForward_frag.spv");
 
 		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 		shaderStages[0] = {};
@@ -437,14 +420,16 @@ namespace Render::Vulkan
 		depthStencilState.stencilTestEnable = VK_FALSE;
 
 		std::array<VkPipelineColorBlendAttachmentState, 1> blendAttachmentStates{};
+		//blendAttachmentStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		//blendAttachmentStates[0].blendEnable = VK_TRUE;
+		//blendAttachmentStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		//blendAttachmentStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		//blendAttachmentStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+		//blendAttachmentStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		//blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		//blendAttachmentStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
 		blendAttachmentStates[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		blendAttachmentStates[0].blendEnable = VK_TRUE;
-		blendAttachmentStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		blendAttachmentStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		blendAttachmentStates[0].colorBlendOp = VK_BLEND_OP_ADD;
-		blendAttachmentStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		blendAttachmentStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
+		blendAttachmentStates[0].blendEnable = VK_FALSE;
 
 		VkPipelineColorBlendStateCreateInfo colorBlendState{};
 		colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -471,26 +456,27 @@ namespace Render::Vulkan
 		pipelineInfo.pDepthStencilState = &depthStencilState;
 		pipelineInfo.pColorBlendState = &colorBlendState;
 		pipelineInfo.pDynamicState = &dynamicState;
-		pipelineInfo.layout = myTransparentPipelineLayout;
+		pipelineInfo.layout = myDebug3DPipelineLayout;
 		pipelineInfo.renderPass = aRenderPass;
 		pipelineInfo.subpass = 2;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
 
 		VK_CHECK_RESULT(
-			vkCreateGraphicsPipelines(myDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &myTransparentPipeline),
+			vkCreateGraphicsPipelines(myDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &myDebug3DPipeline),
 			"Failed to create the transparent pipeline");
 
 		vkDestroyShaderModule(myDevice, vertModule, nullptr);
 		vkDestroyShaderModule(myDevice, fragModule, nullptr);
 	}
 
-	void DeferredPipeline::DestroyTransparentPipeline()
+	void DeferredPipeline::DestroyDebugForwardPipeline()
 	{
-		vkDestroyPipeline(myDevice, myTransparentPipeline, nullptr);
-		myTransparentPipeline = VK_NULL_HANDLE;
+		vkDestroyPipeline(myDevice, myDebug3DPipeline, nullptr);
+		myDebug3DPipeline = VK_NULL_HANDLE;
 
-		vkDestroyPipelineLayout(myDevice, myTransparentPipelineLayout, nullptr);
-		myTransparentPipelineLayout = VK_NULL_HANDLE;
+		vkDestroyPipelineLayout(myDevice, myDebug3DPipelineLayout, nullptr);
+		myDebug3DPipelineLayout = VK_NULL_HANDLE;
 	}
+#endif
 }

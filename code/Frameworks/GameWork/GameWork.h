@@ -2,10 +2,14 @@
 
 struct GLFWwindow;
 
+namespace Render
+{
+	class Renderer;
+}
+
 namespace GameWork
 {
 	class Module;
-	class Camera;
 
 	class GameWork
 	{
@@ -19,6 +23,8 @@ namespace GameWork
 		bool RegisterModule(Module* aModule);
 		bool UnregisterModule(Module* aModule);
 
+		Render::Renderer* GetMainRenderer();
+
 	private:
 		static GameWork* ourInstance;
 		GameWork();
@@ -29,6 +35,6 @@ namespace GameWork
 		std::vector<Module*> myModules;
 
 		GLFWwindow* myWindow = nullptr;
-		GLFWwindow* myWindow2 = nullptr;
+		//GLFWwindow* myWindow2 = nullptr;
 	};
 }

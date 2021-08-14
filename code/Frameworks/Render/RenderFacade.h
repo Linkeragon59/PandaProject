@@ -20,7 +20,7 @@ namespace Render
 		void StartFrame();
 		void EndFrame();
 
-		void RegisterWindow(GLFWwindow* aWindow, RendererType aRendererType);
+		void RegisterWindow(GLFWwindow* aWindow, Renderer::Type aRendererType);
 		void UnregisterWindow(GLFWwindow* aWindow);
 		Renderer* GetRenderer(GLFWwindow* aWindow);
 

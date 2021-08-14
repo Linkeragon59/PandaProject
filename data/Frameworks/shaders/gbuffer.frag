@@ -1,13 +1,8 @@
 #version 450
 
-layout (std430, set = 0, binding = 1) readonly buffer NearFarData
-{
-	vec2 planes;
-} nearFarData;
+layout (set = 1, binding = 1) uniform sampler2D samplerTexture;
 
-layout (set = 1, binding = 2) uniform sampler2D samplerTexture;
-
-layout (std430, set = 1, binding = 3) readonly buffer MaterialData
+layout (std430, set = 1, binding = 2) readonly buffer MaterialData
 {
 	vec4 color;
 } materialData;
@@ -33,7 +28,7 @@ void main()
 	outColor = vec4(0.0);
 	
 	// Store depth in alpha component
-	outPosition = vec4(inWorldPosition, linearDepth(gl_FragCoord.z, nearFarData.planes.x, nearFarData.planes.y));
+	outPosition = vec4(inWorldPosition, linearDepth(gl_FragCoord.z, 0.1, 256.0));
 	
 	outNormal = vec4(normalize(inWorldNormal), 1.0);
 	

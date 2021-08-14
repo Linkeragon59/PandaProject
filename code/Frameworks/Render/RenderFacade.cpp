@@ -39,7 +39,7 @@ namespace Render
 		Vulkan::RenderCore::GetInstance()->EndFrame();
 	}
 
-	void Facade::RegisterWindow(GLFWwindow* aWindow, RendererType aRendererType)
+	void Facade::RegisterWindow(GLFWwindow* aWindow, Renderer::Type aRendererType)
 	{
 		Vulkan::RenderCore::GetInstance()->RegisterWindow(aWindow, aRendererType);
 	}

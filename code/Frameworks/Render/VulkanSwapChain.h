@@ -12,7 +12,7 @@ namespace Render::Vulkan
 	class SwapChain
 	{
 	public:
-		SwapChain(GLFWwindow* aWindow, RendererType aRendererType);
+		SwapChain(GLFWwindow* aWindow, Render::Renderer::Type aRendererType);
 		~SwapChain();
 		
 		void Setup();
@@ -59,7 +59,7 @@ namespace Render::Vulkan
 		VkSemaphore myCurrentImageAvailableSemaphore = VK_NULL_HANDLE;
 
 		// For now, one renderer per swapchain
-		RendererType myRendererType = RendererType::Invalid;
+		Render::Renderer::Type myRendererType = Render::Renderer::Type::Invalid;
 		Renderer* myRenderer = nullptr;
 	};
 }

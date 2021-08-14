@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Entity.h"
-
 namespace Render
 {
 	class Renderer;
@@ -9,36 +7,30 @@ namespace Render
 
 namespace GameWork
 {
-	class Camera : public Entity
+	class Camera
 	{
 	public:
 		Camera();
 		~Camera();
 
-		void Update() override;
+		void Update();
 		void Bind(Render::Renderer* aRenderer);
 
-		const glm::mat4& GetViewMatrix() const { return myView; }
-
+		void SetPosition(const glm::vec3& aPosition) { myPosition = aPosition; }
+		void SetDirection(const glm::vec3& aDirection) { myDirection = aDirection; }
 		void SetPerspective(float anAspectRatio, float aFov, float aZNear, float aZFar);
-		const glm::mat4& GetPerspectiveMatrix() const { return myPerspective; }
-
-	protected:
-		void OnPositionChanged();
-		void OnRotationChanged();
 
 	private:
-		void UpdateViewMatrix();
-		void UpdatePerspectiveMatrix();
-
 		float myAspectRatio = 1.0f;
 		float myFov = 60.0f;
 		float myZNear = 0.1f;
 		float myZFar = 256.0f;
 
-		glm::mat4 myView = glm::mat4(1.0f);
-		glm::mat4 myPerspective = glm::mat4(1.0f);
-
 		uint myScrollCallbackId = UINT_MAX;
+
+		glm::vec3 myPosition = glm::vec3(0.0f, 0.0f, 2.0f);
+		glm::vec3 myDirection = glm::vec3(0.0f, 0.0f, 1.0f);
+		glm::vec3 myUp = glm::vec3(0.0f, 1.0f, 0.0f);
+		glm::vec3 myRight = glm::vec3(1.0f, 0.0f, 0.0f);
 	};
 }

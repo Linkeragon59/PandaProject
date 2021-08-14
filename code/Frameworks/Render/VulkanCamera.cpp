@@ -7,66 +7,18 @@ namespace Render::Vulkan
 {
 	Camera::Camera()
 	{
-		myViewProjUBO.Create(sizeof(ShaderHelpers::ViewProjData),
+		myViewProjUBO.Create(sizeof(ShaderHelpers::ViewProjMatricesData),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		myViewProjUBO.SetupDescriptor();
 		myViewProjUBO.Map();
 
-		myPlanesSSBO.Create(sizeof(ShaderHelpers::NearFarData),
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		myPlanesSSBO.SetupDescriptor();
-		myPlanesSSBO.Map();
-
 		Update(glm::mat4(1.0f), glm::mat4(1.0f));
-
-		VkDevice device = RenderCore::GetInstance()->GetDevice();
-
-		std::array<VkDescriptorPoolSize, 2> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = 1;
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		poolSizes[1].descriptorCount = 1;
-
-		VkDescriptorPoolCreateInfo descriptorPoolInfo{};
-		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descriptorPoolInfo.poolSizeCount = (uint)poolSizes.size();
-		descriptorPoolInfo.pPoolSizes = poolSizes.data();
-		descriptorPoolInfo.maxSets = 2;
-
-		VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
-
-		std::array<VkDescriptorSetLayout, 1> layouts = { ShaderHelpers::GetCameraDescriptorSetLayout() };
-		VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
-		descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
-		descriptorSetAllocateInfo.pSetLayouts = layouts.data();
-		descriptorSetAllocateInfo.descriptorSetCount = (uint)layouts.size();
-		VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &myDescriptorSet), "Failed to create the descriptor set");
-
-		std::array<VkWriteDescriptorSet, 2> writeDescriptorSets{};
-		writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[0].dstSet = myDescriptorSet;
-		writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		writeDescriptorSets[0].dstBinding = 0;
-		writeDescriptorSets[0].pBufferInfo = &myViewProjUBO.myDescriptor;
-		writeDescriptorSets[0].descriptorCount = 1;
-		writeDescriptorSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		writeDescriptorSets[1].dstSet = myDescriptorSet;
-		writeDescriptorSets[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		writeDescriptorSets[1].dstBinding = 1;
-		writeDescriptorSets[1].pBufferInfo = &myPlanesSSBO.myDescriptor;
-		writeDescriptorSets[1].descriptorCount = 1;
-		vkUpdateDescriptorSets(device, (uint)writeDescriptorSets.size(), writeDescriptorSets.data(), 0, NULL);
 	}
 
 	Camera::~Camera()
 	{
-		vkDestroyDescriptorPool(RenderCore::GetInstance()->GetDevice(), myDescriptorPool, nullptr);
-
 		myViewProjUBO.Destroy();
-		myPlanesSSBO.Destroy();
 	}
 
 	void Camera::Update(const glm::mat4& aView, const glm::mat4& aProjection)
@@ -74,19 +26,22 @@ namespace Render::Vulkan
 		myView = aView;
 		myProjection = aProjection;
 
-		ShaderHelpers::ViewProjData viewProjData;
+		ShaderHelpers::ViewProjMatricesData viewProjData;
 		viewProjData.myView = myView;
 		viewProjData.myProjection = myProjection;
-		memcpy(myViewProjUBO.myMappedData, &viewProjData, sizeof(ShaderHelpers::ViewProjData));
-
-		ShaderHelpers::NearFarData planesData;
-		planesData.myPlanes.x = myProjection[3][2] / myProjection[2][2];
-		planesData.myPlanes.y = myProjection[3][2] / (1.0f + myProjection[2][2]);
-		memcpy(myPlanesSSBO.myMappedData, &planesData, sizeof(ShaderHelpers::NearFarData));
+		memcpy(myViewProjUBO.myMappedData, &viewProjData, sizeof(ShaderHelpers::ViewProjMatricesData));
 	}
 
 	void Camera::BindViewProj(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aSetIndex)
 	{
+		if (myDescriptorSet == VK_NULL_HANDLE)
+		{
+			RenderCore::GetInstance()->AllocateDescriptorSet(ShaderHelpers::DescriptorLayout::Camera, myDescriptorSet);
+			ShaderHelpers::CameraDescriptorInfo info;
+			info.myViewProjMatricesInfo = &myViewProjUBO.myDescriptor;
+			RenderCore::GetInstance()->UpdateDescriptorSet(ShaderHelpers::DescriptorLayout::Camera, info, myDescriptorSet);
+		}
+
 		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aSetIndex, 1, &myDescriptorSet, 0, NULL);
 	}
 }

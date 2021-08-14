@@ -85,10 +85,26 @@ target_sources(SoLoud
 
 target_compile_features(SoLoud PRIVATE cxx_std_20)
 if (MSVC)
-	target_compile_options(SoLoud PRIVATE /wd"4100" /wd"4244" /wd"4245" /wd"4456" /wd"4457" /wd"4701" /wd"4996")
+	target_compile_options(SoLoud PRIVATE
+		/wd"4100"
+		/wd"4244"
+		/wd"4245"
+		/wd"4456"
+		/wd"4457"
+		/wd"4701"
+		/wd"4996"
+	)
 	target_compile_definitions(SoLoud PRIVATE WITH_MINIAUDIO)
 else()
-	target_compile_options(SoLoud PRIVATE -Wno-pedantic -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-missing-field-initializers -Wno-unused-result -Wno-sign-compare)
+	target_compile_options(SoLoud PRIVATE
+		-Wno-pedantic
+		-Wno-unused-parameter
+		-Wno-unused-but-set-variable
+		-Wno-misleading-indentation
+		-Wno-missing-field-initializers
+		-Wno-unused-result
+		-Wno-sign-compare
+	)
 	target_compile_definitions(SoLoud PRIVATE WITH_MINIAUDIO)
 endif()
 

@@ -13,6 +13,7 @@ target_sources(Render
 		VulkanDebug.h
 		VulkanDeferredPipeline.h
 		VulkanDeferredRenderer.h
+		VulkanDescriptorContainer.h
 		VulkanDevice.h
 		VulkanDynamicModel.h
 		VulkanglTFAnimation.h
@@ -33,12 +34,14 @@ target_sources(Render
 		VulkanSwapChain.h
 
 		RenderFacade.cpp
+		RenderModel.cpp
 		RenderPrecompile.cpp
 		VulkanBuffer.cpp
 		VulkanCamera.cpp
 		VulkanDebug.cpp
 		VulkanDeferredPipeline.cpp
 		VulkanDeferredRenderer.cpp
+		VulkanDescriptorContainer.cpp
 		VulkanDevice.cpp
 		VulkanDynamicModel.cpp
 		VulkanglTFAnimation.cpp

@@ -11,16 +11,20 @@ namespace Render::Vulkan
 
 		VkDevice myDevice = VK_NULL_HANDLE;
 
+		// TODO:
+		// - Add transparent sub pass
+		// - Add UI sub pass
 		VkPipeline myGBufferPipeline = VK_NULL_HANDLE;
-		VkPipeline myLightingPipeline = VK_NULL_HANDLE;
-		VkPipeline myTransparentPipeline = VK_NULL_HANDLE;
-
 		VkPipelineLayout myGBufferPipelineLayout = VK_NULL_HANDLE;
-		VkPipelineLayout myLightingPipelineLayout = VK_NULL_HANDLE;
-		VkPipelineLayout myTransparentPipelineLayout = VK_NULL_HANDLE;
 
+		VkPipeline myLightingPipeline = VK_NULL_HANDLE;
+		VkPipelineLayout myLightingPipelineLayout = VK_NULL_HANDLE;
 		VkDescriptorSetLayout myLightingDescriptorSetLayout = VK_NULL_HANDLE;
-		VkDescriptorSetLayout myTransparentDescriptorSetLayout = VK_NULL_HANDLE;
+
+#if DEBUG_BUILD
+		VkPipeline myDebug3DPipeline = VK_NULL_HANDLE;
+		VkPipelineLayout myDebug3DPipelineLayout = VK_NULL_HANDLE;
+#endif
 
 	private:
 		void SetupDescriptorSetLayouts();
@@ -32,7 +36,9 @@ namespace Render::Vulkan
 		void SetupLightingPipeline(VkRenderPass aRenderPass);
 		void DestroyLightingPipeline();
 
-		void SetupTransparentPipeline(VkRenderPass aRenderPass);
-		void DestroyTransparentPipeline();
+#if DEBUG_BUILD
+		void SetupDebugForwardPipeline(VkRenderPass aRenderPass);
+		void DestroyDebugForwardPipeline();
+#endif
 	};
 }

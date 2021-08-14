@@ -19,8 +19,6 @@ namespace Render::Vulkan::glTF
 		myVertexBuffer.Destroy();
 		myIndexBuffer.Destroy();
 
-		vkDestroyDescriptorPool(myDevice, myDescriptorPool, nullptr);
-
 		for (Node* node : myNodes)
 			delete node;
 	}
@@ -37,7 +35,7 @@ namespace Render::Vulkan::glTF
 			node->UpdateUBO(someData.myMatrix);
 	}
 
-	void Model::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const
+	void Model::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::DescriptorLayout aLayout)
 	{
 		// All vertices and indices are stored in a single buffer, so we only need to bind once
 		VkDeviceSize offsets[1] = { 0 };
@@ -45,7 +43,7 @@ namespace Render::Vulkan::glTF
 		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		for (Node* node : myNodes)
-			node->Draw(this, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex);
+			node->Draw(this, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex, aLayout);
 	}
 
 	bool Model::LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const glm::mat4& aMatrix)
@@ -82,9 +80,6 @@ namespace Render::Vulkan::glTF
 		// Fill initial matrices
 		for (Node* node : myNodes)
 			node->UpdateUBO(aMatrix);
-
-		SetupDescriptorPool();
-		SetupDescriptorSets();
 
 		size_t vertexBufferSize = vertexBuffer.size() * sizeof(Mesh::Vertex);
 		size_t indexBufferSize = indexBuffer.size() * sizeof(uint);
@@ -179,38 +174,6 @@ namespace Render::Vulkan::glTF
 			myNodes[i] = new Node;
 			myNodes[i]->Load(aModel, scene.nodes[i], aScale, someOutVertices, someOutIndices);
 		}
-	}
-
-	void Model::SetupDescriptorPool()
-	{
-		uint nbPrimitives = 0;
-		auto countPrimitives = [&nbPrimitives](Node* aNode) { nbPrimitives += (uint)aNode->myMesh.myPrimitives.size(); };
-		IterateNodes(countPrimitives);
-
-		if (nbPrimitives == 0)
-			return;
-
-		std::array<VkDescriptorPoolSize, 3> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = nbPrimitives;
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = nbPrimitives;
-		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		poolSizes[2].descriptorCount = 2 * nbPrimitives;
-
-		VkDescriptorPoolCreateInfo descriptorPoolInfo{};
-		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		descriptorPoolInfo.poolSizeCount = (uint)poolSizes.size();
-		descriptorPoolInfo.pPoolSizes = poolSizes.data();
-		descriptorPoolInfo.maxSets = nbPrimitives;
-
-		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
-	}
-
-	void Model::SetupDescriptorSets()
-	{
-		for (Node* node : myNodes)
-			node->SetupDescriptorSet(this, myDescriptorPool);
 	}
 
 	Node* Model::GetNodeByIndex(uint anIndex)

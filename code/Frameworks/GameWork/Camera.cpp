@@ -5,12 +5,22 @@
 
 namespace GameWork
 {
+	namespace
+	{
+		float locSpeed = 0.01f;
+		float locSensitivity = 0.1f;
+	}
+
 	Camera::Camera()
 	{
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		myScrollCallbackId = inputManager->AddScrollCallback([this](double aX, double aY) {
 			(void)aX;
-			Translate(glm::vec3(0.0f, 0.0f, (float)aY * 0.3f));
+			myFov -= (float)aY;
+			if (myFov < 1.0f)
+				myFov = 1.0f;
+			if (myFov > 90.0f)
+				myFov = 90.0f;
 		});
 	}
 
@@ -22,6 +32,9 @@ namespace GameWork
 
 	void Camera::Update()
 	{
+		myRight = glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), myDirection);
+		myUp = glm::cross(myDirection, myRight);
+
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 
 		double mouseX, mouseY;
@@ -30,25 +43,57 @@ namespace GameWork
 		static double prevMouseX = mouseX;
 		static double prevMouseY = mouseY;
 
-		double deltaMouseX = prevMouseX - mouseX;
-		double deltaMouseY = prevMouseY - mouseY;
-
-		if (inputManager->PollRawInput(Input::RawInput::MouseLeft) == Input::RawInputState::Pressed)
-		{
-			Rotate(glm::vec3(deltaMouseY, -deltaMouseX, 0.0f));
-		}
-		if (inputManager->PollRawInput(Input::RawInput::MouseMiddle) == Input::RawInputState::Pressed)
-		{
-			Translate(glm::vec3(-deltaMouseX * 0.01f, deltaMouseY * 0.01f, 0.0f));
-		}
+		double deltaMouseX = locSensitivity * (prevMouseX - mouseX);
+		double deltaMouseY = locSensitivity * (prevMouseY - mouseY);
 
 		prevMouseX = mouseX;
 		prevMouseY = mouseY;
+
+		if (inputManager->PollRawInput(Input::RawInput::MouseLeft) == Input::RawInputState::Pressed)
+		{
+			static float pitch = 0.0f;
+			static float yaw = -90.0f;
+
+			pitch += (float)deltaMouseY;
+			if (pitch > 89.0f)
+				pitch = 89.0f;
+			if (pitch < -89.0f)
+				pitch = -89.0f;
+			yaw += (float)-deltaMouseX;
+
+			myDirection.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+			myDirection.y = sin(glm::radians(pitch));
+			myDirection.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+			myDirection = glm::normalize(myDirection);
+		}
+		if (inputManager->PollRawInput(Input::RawInput::MouseMiddle) == Input::RawInputState::Pressed)
+		{
+			myPosition += -0.1f * ((float)deltaMouseX * myRight + (float)deltaMouseY * myUp);
+		}
+		if (inputManager->PollRawInput(Input::RawInput::KeyW) == Input::RawInputState::Pressed)
+		{
+			myPosition += locSpeed * myDirection;
+		}
+		if (inputManager->PollRawInput(Input::RawInput::KeyS) == Input::RawInputState::Pressed)
+		{
+			myPosition -= locSpeed * myDirection;
+		}
+		if (inputManager->PollRawInput(Input::RawInput::KeyA) == Input::RawInputState::Pressed)
+		{
+			myPosition += locSpeed * myRight;
+		}
+		if (inputManager->PollRawInput(Input::RawInput::KeyD) == Input::RawInputState::Pressed)
+		{
+			myPosition -= locSpeed * myRight;
+		}
 	}
 
 	void Camera::Bind(Render::Renderer* aRenderer)
 	{
-		aRenderer->SetViewProj(myView, myPerspective);
+		glm::mat4 view = glm::lookAt(myPosition, myPosition + myDirection, myUp);
+		glm::mat4 perspective = glm::perspective(glm::radians(myFov), myAspectRatio, myZNear, myZFar);
+		perspective[1][1] *= -1;
+		aRenderer->SetViewProj(view, perspective);
 	}
 
 	void Camera::SetPerspective(float anAspectRatio, float aFov, float aZNear, float aZFar)
@@ -57,36 +102,5 @@ namespace GameWork
 		myFov = aFov;
 		myZNear = aZNear;
 		myZFar = aZFar;
-		UpdatePerspectiveMatrix();
-	}
-
-	void Camera::OnPositionChanged()
-	{
-		UpdateViewMatrix();
-	}
-
-	void Camera::OnRotationChanged()
-	{
-		UpdateViewMatrix();
-	}
-
-	void Camera::UpdateViewMatrix()
-	{
-		glm::mat4 rotationMatrix = glm::mat4(1.0f);
-		rotationMatrix = glm::rotate(rotationMatrix, glm::radians(-myRotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-		rotationMatrix = glm::rotate(rotationMatrix, glm::radians(myRotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-		rotationMatrix = glm::rotate(rotationMatrix, glm::radians(myRotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-
-		glm::vec3 translation = myPosition;
-		glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), translation);
-
-		myView = translationMatrix * rotationMatrix;
-		//myView = rotationMatrix * translationMatrix;
-	}
-
-	void Camera::UpdatePerspectiveMatrix()
-	{
-		myPerspective = glm::perspective(glm::radians(myFov), myAspectRatio, myZNear, myZFar);
-		myPerspective[1][1] *= -1.0f; // Adapt for Vulkan
 	}
 }

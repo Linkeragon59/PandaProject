@@ -22,7 +22,7 @@ namespace Render::Vulkan
 		void SetViewport(const VkViewport& aViewport);
 		void SetScissor(const VkRect2D& aScissor);
 
-		void DrawModel(const Render::Model* aModel, const BaseModelData& someData) override;
+		void DrawModel(Render::Model* aModel, const BaseModelData& someData, DrawType aDrawType = DrawType::Normal) override;
 		void AddLight(const PointLight& aPointLight) override;
 
 	private:
@@ -58,14 +58,15 @@ namespace Render::Vulkan
 		void DestroyDescriptorSets();
 		VkDescriptorPool myDescriptorPool = VK_NULL_HANDLE;
 		VkDescriptorSet myLightingDescriptorSet = VK_NULL_HANDLE;
-		VkDescriptorSet myTransparentDescriptorSet = VK_NULL_HANDLE;
 
 		// Command Buffers - one per frame
 		void SetupCommandBuffers() override;
 		void DestroyCommandBuffers() override;
 		std::vector<VkCommandBuffer> mySecondaryCommandBuffersGBuffer;
 		std::vector<VkCommandBuffer> mySecondaryCommandBuffersCombine;
-		std::vector<VkCommandBuffer> mySecondaryCommandBuffersTransparent;
+#if DEBUG_BUILD
+		std::vector<VkCommandBuffer> mySecondaryCommandBuffersDebugForward;
+#endif
 
 		// Frame Buffers - one per frame
 		void SetupFrameBuffers();

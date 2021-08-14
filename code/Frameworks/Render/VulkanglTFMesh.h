@@ -13,6 +13,7 @@ namespace Render::Vulkan::glTF
 
 		int myMaterial = -1;
 
+		VkDescriptorSet mySimpleDescriptorSet = VK_NULL_HANDLE;
 		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
 

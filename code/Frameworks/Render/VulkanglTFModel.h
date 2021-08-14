@@ -18,16 +18,16 @@ namespace Render::Vulkan::glTF
 		~Model();
 
 		void Update(const BaseModelData& someData) override;
-		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const override;
+		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::DescriptorLayout aLayout) override;
 
 		Node* GetNodeByIndex(uint anIndex);
-		const Image* GetImage(uint anIndex) { return &myImages[anIndex]; }
-		const Image* GetEmptyImage() { return &myImages.back(); }
-		const Texture* GetTexture(uint anIndex) { return &myTextures[anIndex]; }
-		const Material* GetMaterial(uint anIndex) { return &myMaterials[anIndex]; }
-		const Material* GetEmptyMaterial() { return &myMaterials.back(); }
-		const Skin* GetSkin(uint anIndex) { return &mySkins[anIndex]; }
-		const Skin* GetEmptySkin() { return &mySkins.back(); }
+		const Image* GetImage(uint anIndex) const { return &myImages[anIndex]; }
+		const Image* GetEmptyImage() const { return &myImages.back(); }
+		const Texture* GetTexture(uint anIndex) const { return &myTextures[anIndex]; }
+		const Material* GetMaterial(uint anIndex) const { return &myMaterials[anIndex]; }
+		const Material* GetEmptyMaterial() const { return &myMaterials.back(); }
+		const Skin* GetSkin(uint anIndex) const { return &mySkins[anIndex]; }
+		const Skin* GetEmptySkin() const { return &mySkins.back(); }
 
 	private:
 		bool LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const glm::mat4& aMatrix);
@@ -57,17 +57,11 @@ namespace Render::Vulkan::glTF
 				aFunctor(aNode);
 		}
 
-		void SetupDescriptorPool();
-		void SetupDescriptorSets();
-
 		VkDevice myDevice = VK_NULL_HANDLE;
 		VkQueue myTransferQueue = VK_NULL_HANDLE;
 
 		Buffer myVertexBuffer;
 		Buffer myIndexBuffer;
-
-		// Each model has its descriptor pool
-		VkDescriptorPool myDescriptorPool = VK_NULL_HANDLE;
 
 		uint myNodeCount = 0;
 		std::vector<Node*> myNodes;

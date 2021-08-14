@@ -2,8 +2,11 @@
 
 #include "RenderModel.h"
 #include "RenderRenderer.h"
+#include "VulkanBuffer.h"
 #include "VulkanImage.h"
 #include "VulkanModel.h"
+#include "VulkanDescriptorContainer.h"
+#include "VulkanShaderHelpers.h"
 
 struct GLFWwindow;
 
@@ -25,7 +28,7 @@ namespace Render::Vulkan
 		void StartFrame();
 		void EndFrame();
 
-		void RegisterWindow(GLFWwindow* aWindow, RendererType aType);
+		void RegisterWindow(GLFWwindow* aWindow, Render::Renderer::Type aType);
 		void UnregisterWindow(GLFWwindow* aWindow);
 		Render::Renderer* GetRenderer(GLFWwindow* aWindow);
 
@@ -41,6 +44,16 @@ namespace Render::Vulkan
 		VkQueue GetGraphicsQueue() const;
 		VkCommandPool GetGraphicsCommandPool() const;
 
+		const VkDescriptorImageInfo* GetWhiteTextureDescriptorInfo() const { return &myWhiteTexture.myDescriptor; }
+		const VkDescriptorImageInfo* GetBlackTextureDescriptorInfo() const { return &myBlackTexture.myDescriptor; }
+		const VkDescriptorImageInfo* GetMissingTextureDescriptorInfo() const { return &myMissingTexture.myDescriptor; }
+		const VkDescriptorBufferInfo* GetDefaultMaterialDescriptorInfo() const { return &myDefaultMaterial.myDescriptor; }
+		const VkDescriptorBufferInfo* GetDefaultJointsMatrixDescriptorInfo() const { return &myDefaultJointsMatrix.myDescriptor; }
+
+		VkDescriptorSetLayout GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout aLayout);
+		void AllocateDescriptorSet(ShaderHelpers::DescriptorLayout aLayout, VkDescriptorSet& anOutDescriptorSet);
+		void UpdateDescriptorSet(ShaderHelpers::DescriptorLayout aLayout, const ShaderHelpers::DescriptorInfo& someDescriptorInfo, VkDescriptorSet aDescriptorSet);
+
 	private:
 		static RenderCore* ourInstance;
 
@@ -53,8 +66,14 @@ namespace Render::Vulkan
 		void CreateDevice();
 		Device* myDevice = nullptr;
 
-		void SetupEmptyTexture();
+		void SetupDefaultData();
+		void DestroyDefaultData();
+		void SetupTexture(Image& anImage, uint8* aColor);
+		Image myWhiteTexture;
+		Image myBlackTexture;
 		Image myMissingTexture;
+		Buffer myDefaultMaterial;
+		Buffer myDefaultJointsMatrix;
 
 		std::vector<SwapChain*> mySwapChains;
 
@@ -62,5 +81,7 @@ namespace Render::Vulkan
 		void DeleteUnusedModels(bool aDeleteNow = false);
 		typedef std::pair<Model*, uint> ModelLifeTime;
 		std::vector<ModelLifeTime> myModelsToDelete;
+
+		std::array<DescriptorContainer, (size_t)ShaderHelpers::DescriptorLayout::Count> myDescriptorContainers;
 	};
 }

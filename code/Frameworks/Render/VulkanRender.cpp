@@ -75,8 +75,7 @@ namespace Render::Vulkan
 
 	void RenderCore::Initialize()
 	{
-		ShaderHelpers::SetupDescriptorSetLayouts();
-		SetupEmptyTexture();
+		SetupDefaultData();
 	}
 
 	void RenderCore::Finalize()
@@ -84,8 +83,10 @@ namespace Render::Vulkan
 		Assert(mySwapChains.empty(), "Renderering is being finalized while swapchains are still alive!");
 		DeleteUnusedModels(true);
 
-		myMissingTexture.Destroy();
-		ShaderHelpers::DestroyDescriptorSetLayouts();
+		for (DescriptorContainer& container : myDescriptorContainers)
+			container.Destroy();
+
+		DestroyDefaultData();
 	}
 
 	void RenderCore::StartFrame()
@@ -102,7 +103,7 @@ namespace Render::Vulkan
 			swapChain->Present();
 	}
 
-	void RenderCore::RegisterWindow(GLFWwindow* aWindow, RendererType aType)
+	void RenderCore::RegisterWindow(GLFWwindow* aWindow, Render::Renderer::Type aType)
 	{
 		SwapChain* swapChain = new SwapChain(aWindow, aType);
 		mySwapChains.push_back(swapChain);
@@ -174,6 +175,25 @@ namespace Render::Vulkan
 	VkCommandPool RenderCore::GetGraphicsCommandPool() const
 	{
 		return myDevice->myGraphicsCommandPool;
+	}
+
+
+	VkDescriptorSetLayout RenderCore::GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout aLayout)
+	{
+		if (myDescriptorContainers[(size_t)aLayout].myLayout == VK_NULL_HANDLE)
+			myDescriptorContainers[(size_t)aLayout].Create(aLayout);
+
+		return myDescriptorContainers[(size_t)aLayout].myLayout;
+	}
+
+	void RenderCore::AllocateDescriptorSet(ShaderHelpers::DescriptorLayout aLayout, VkDescriptorSet& anOutDescriptorSet)
+	{
+		myDescriptorContainers[(size_t)aLayout].AllocateDescriptorSet(anOutDescriptorSet);
+	}
+
+	void RenderCore::UpdateDescriptorSet(ShaderHelpers::DescriptorLayout aLayout, const ShaderHelpers::DescriptorInfo& someDescriptorInfo, VkDescriptorSet aDescriptorSet)
+	{
+		myDescriptorContainers[(size_t)aLayout].UpdateDescriptorSet(someDescriptorInfo, aDescriptorSet);
 	}
 
 	void RenderCore::CreateVkInstance()
@@ -263,15 +283,53 @@ namespace Render::Vulkan
 		myDevice->SetupVmaAllocator(myVkInstance, locVulkanApiVersion);
 	}
 
-	void RenderCore::SetupEmptyTexture()
+	void RenderCore::SetupDefaultData()
 	{
-		myMissingTexture.Create(1, 1,
+		uint8 white[4] = { 0xff, 0xff, 0xff, 0xff };
+		uint8 black[4] = { 0x00, 0x00, 0x00, 0xff };
+		uint8 missing[4] = { 0xff, 0x14, 0x93, 0xff };
+		SetupTexture(myWhiteTexture, white);
+		SetupTexture(myBlackTexture, black);
+		SetupTexture(myMissingTexture, missing);
+
+		ShaderHelpers::MaterialData materialData;
+		myDefaultMaterial.Create(sizeof(ShaderHelpers::MaterialData),
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		myDefaultMaterial.SetupDescriptor();
+		myDefaultMaterial.Map();
+		memcpy(myDefaultMaterial.myMappedData, &materialData, sizeof(ShaderHelpers::MaterialData));
+		myDefaultMaterial.Unmap();
+
+		ShaderHelpers::JointMatrixData jointsData;
+		myDefaultJointsMatrix.Create(sizeof(ShaderHelpers::JointMatrixData),
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		myDefaultJointsMatrix.SetupDescriptor();
+		myDefaultJointsMatrix.Map();
+		memcpy(myDefaultJointsMatrix.myMappedData, &jointsData, sizeof(ShaderHelpers::JointMatrixData));
+		myDefaultJointsMatrix.Unmap();
+	}
+
+	void RenderCore::DestroyDefaultData()
+	{
+		myWhiteTexture.Destroy();
+		myBlackTexture.Destroy();
+		myMissingTexture.Destroy();
+
+		myDefaultMaterial.Destroy();
+		myDefaultJointsMatrix.Destroy();
+	}
+
+	void RenderCore::SetupTexture(Image& anImage, uint8* aColor)
+	{
+		anImage.Create(1, 1,
 			VK_FORMAT_R8G8B8A8_SRGB,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		myMissingTexture.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
+		anImage.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			GetGraphicsQueue());
 
@@ -281,8 +339,7 @@ namespace Render::Vulkan
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		textureStaging.Map();
 		{
-			uint8_t empty[4] = { 0xff, 0x14, 0x93, 0xff };
-			memcpy(textureStaging.myMappedData, empty, 4);
+			memcpy(textureStaging.myMappedData, aColor, 4);
 		}
 		textureStaging.Unmap();
 
@@ -294,18 +351,18 @@ namespace Render::Vulkan
 			imageCopyRegion.imageSubresource.baseArrayLayer = 0;
 			imageCopyRegion.imageSubresource.layerCount = 1;
 			imageCopyRegion.imageExtent = { 1, 1, 1 };
-			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myMissingTexture.myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
+			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, anImage.myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
 		}
 		EndOneTimeCommand(commandBuffer, GetGraphicsQueue());
 
 		textureStaging.Destroy();
 
-		myMissingTexture.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		anImage.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			GetGraphicsQueue());
-		myMissingTexture.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		myMissingTexture.CreateImageSampler();
-		myMissingTexture.SetupDescriptor();
+		anImage.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		anImage.CreateImageSampler();
+		anImage.SetupDescriptor();
 	}
 
 	uint RenderCore::GetModelsLifetime() const

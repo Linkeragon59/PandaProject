@@ -13,7 +13,7 @@ namespace GameWork
 	class PointLight : public Entity
 	{
 	public:
-		void Update() override {}
+		void Update() override;
 		void Bind(Render::Renderer* aRenderer);
 
 		void SetColor(const glm::vec3& aColor) { myLightData.myColor = glm::vec4(aColor, myLightData.myColor.w); }
@@ -21,10 +21,6 @@ namespace GameWork
 
 		void SetIntensity(float anIntensity) { myLightData.myColor.w = anIntensity; }
 		float GetIntensity() const { return myLightData.myColor.w; }
-
-	protected:
-		void OnPositionChanged() override { myLightData.myPosition = glm::vec4(myPosition, 1.0f); }
-		void OnRotationChanged() override {}
 
 	private:
 		Render::PointLight myLightData;

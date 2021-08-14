@@ -14,8 +14,8 @@ namespace GameWork
 	protected:
 		friend class GameWork;
 		virtual void OnRegister() = 0;
-		virtual void OnUpdate() = 0;
 		virtual void OnUnregister() = 0;
+		virtual void OnUpdate() = 0;
 
 		template<typename ModuleType>
 		static bool RegisterModule(ModuleType*& anInstance)

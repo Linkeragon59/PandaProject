@@ -38,6 +38,10 @@ namespace Render
 		std::vector<Vertex> myVertices;
 		std::vector<uint> myIndices;
 		std::string myTextureFilename;
+
+#if DEBUG_BUILD
+		static void GetVectorBaseWidget(std::vector<Vertex>& someOutVertices, std::vector<uint>& someOutIndices);
+#endif
 	};
 
 	class Model

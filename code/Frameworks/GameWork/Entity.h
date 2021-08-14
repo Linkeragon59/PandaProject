@@ -10,19 +10,32 @@ namespace GameWork
 
 		virtual void Update() = 0;
 
+		// Position - Translation
 		void SetPosition(const glm::vec3& aPosition);
-		void Translate(const glm::vec3& aPositionDelta);
+		void Translate(const glm::vec3& aTranslation);
 		glm::vec3 GetPosition() const { return myPosition; }
 
-		void SetRotation(const glm::vec3& aRotation);
-		void Rotate(const glm::vec3& aRotationDelta);
-		glm::vec3 GetRotation() const { return myRotation; }
+		// Orientation - Rotation
+		// Angles in degrees
+		void SetOrientation(const glm::vec3& someEulerAngles);
+		void SetOrientation(float anAngle, const glm::vec3& anAxis);
+		void Rotate(const glm::vec3& someEulerAngles);
+		void Rotate(float anAngle, const glm::vec3& anAxis);
+		glm::quat GetOrientation() const { return myOrientation; }
+		glm::vec3 GetDirection() const;
+
+		// Scale - Scaling
+		void SetScale(float aScale);
+		void SetScale(glm::vec3 aScale);
+		void Scale(float aScaleMultiplier);
+		void Scale(glm::vec3 aScaleMultiplier);
+		glm::vec3 GetScale() const { return myScale; }
+
+		glm::mat4 GetMatrix() const;
 
 	protected:
-		virtual void OnPositionChanged() = 0;
-		virtual void OnRotationChanged() = 0;
-
-		glm::vec3 myPosition = glm::vec3();
-		glm::vec3 myRotation = glm::vec3();
+		glm::vec3 myPosition = glm::vec3(0.0f);
+		glm::quat myOrientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+		glm::vec3 myScale = glm::vec3(1.0f);
 	};
 }

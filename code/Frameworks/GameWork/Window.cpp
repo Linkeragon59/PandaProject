@@ -19,8 +19,8 @@ namespace GameWork
 		inputManager->SetupCallbacks(inputManager->GetWindowId(myWindow));
 
 		myCamera = new Camera();
-		myCamera->SetPosition(glm::vec3(0.0f, -0.75f, -2.0f));
-		myCamera->SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+		myCamera->SetPosition(glm::vec3(0.0f, 0.0f, 2.0f));
+		//myCamera->SetTarget(glm::vec3(0.0f, 0.0f, 0.0f));
 		myCamera->SetPerspective(800.0f / 600.0f, 60.0f, 0.1f, 256.0f);
 	}
 

@@ -2,14 +2,9 @@
 
 layout (set = 0, input_attachment_index = 0, binding = 0) uniform subpassInput samplerPositionDepth;
 
-layout (std430, set = 1, binding = 1) readonly buffer NearFarData
-{
-	vec2 planes;
-} nearFarData;
+layout (set = 2, binding = 1) uniform sampler2D samplerTexture;
 
-layout (set = 2, binding = 2) uniform sampler2D samplerTexture;
-
-layout (std430, set = 2, binding = 3) readonly buffer MaterialData {
+layout (std430, set = 2, binding = 2) readonly buffer MaterialData {
 	vec4 color;
 } materialData;
 
@@ -31,7 +26,7 @@ void main ()
 	// Save the sampled texture color before discarding.
 	// This is to avoid implicit derivatives in non-uniform control flow.
 	vec4 sampledColor = texture(samplerTexture, inUV);
-	if ((depth != 0.0) && (linearDepth(gl_FragCoord.z, nearFarData.planes.x, nearFarData.planes.y) > depth))
+	if ((depth != 0.0) && (linearDepth(gl_FragCoord.z, 0.1, 256.0) > depth))
 	{
 		discard;
 	};

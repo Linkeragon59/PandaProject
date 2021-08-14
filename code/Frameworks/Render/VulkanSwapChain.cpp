@@ -10,7 +10,7 @@
 
 namespace Render::Vulkan
 {
-	SwapChain::SwapChain(GLFWwindow* aWindow, RendererType aRendererType)
+	SwapChain::SwapChain(GLFWwindow* aWindow, Render::Renderer::Type aRendererType)
 		: myWindow(aWindow)
 		, myRendererType(aRendererType)
 	{
@@ -266,7 +266,7 @@ namespace Render::Vulkan
 	{
 		switch (myRendererType)
 		{
-		case RendererType::Deferred:
+		case Render::Renderer::Type::Deferred:
 			myRenderer = new DeferredRenderer();
 			myRenderer->Setup(this);
 			break;

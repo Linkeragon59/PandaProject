@@ -5,17 +5,25 @@
 
 namespace Render
 {
-	enum class RendererType
-	{
-		Invalid,
-		Deferred,
-	};
-
 	class Renderer
 	{
 	public:
+		enum class Type
+		{
+			Invalid,
+			Deferred,
+		};
+
+		enum class DrawType
+		{
+			Normal,
+#if DEBUG_BUILD
+			Debug,
+#endif
+		};
+
 		virtual void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection) = 0;
-		virtual void DrawModel(const Model* aModel, const BaseModelData& someData) = 0;
+		virtual void DrawModel(Model* aModel, const BaseModelData& someData, DrawType aDrawType = DrawType::Normal) = 0;
 		virtual void AddLight(const PointLight& aPointLight) = 0;
 		// TODO
 		// DrawUI

@@ -102,15 +102,17 @@ namespace Render::Vulkan
 
 		cmdBufferInheritanceInfo.subpass = 0;
 		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
-		Debug::BeginRegion(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], "Subpass 0: Deferred G-Buffer creation", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		Debug::BeginRegion(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], "Subpass 0: Deferred G-Buffer", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		cmdBufferInheritanceInfo.subpass = 1;
 		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
-		Debug::BeginRegion(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], "Subpass 1: Deferred composition", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		Debug::BeginRegion(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], "Subpass 1: Deferred Lighting", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
+#if DEBUG_BUILD
 		cmdBufferInheritanceInfo.subpass = 2;
-		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
-		Debug::BeginRegion(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], "Subpass 2: Forward transparency", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
+		Debug::BeginRegion(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], "Subpass 2: Debug Forward", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+#endif
 
 		vkCmdBindPipeline(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipeline);
 		myCamera->BindViewProj(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 0);
@@ -119,9 +121,10 @@ namespace Render::Vulkan
 		vkCmdBindDescriptorSets(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myLightingPipelineLayout, 0, 1, &myLightingDescriptorSet, 0, NULL);
 		myPointLightsSet.Bind(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], myDeferredPipeline.myLightingPipelineLayout, 1);
 
-		vkCmdBindPipeline(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipeline);
-		vkCmdBindDescriptorSets(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myTransparentPipelineLayout, 0, 1, &myTransparentDescriptorSet, 0, NULL);
-		myCamera->BindViewProj(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], myDeferredPipeline.myTransparentPipelineLayout, 1);
+#if DEBUG_BUILD
+		vkCmdBindPipeline(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myDebug3DPipeline);
+		myCamera->BindViewProj(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], myDeferredPipeline.myDebug3DPipelineLayout, 0);
+#endif
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
@@ -151,14 +154,18 @@ namespace Render::Vulkan
 		Debug::EndRegion(mySecondaryCommandBuffersCombine[myCurrentFrameIndex]);
 		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersCombine[myCurrentFrameIndex]), "Failed to end a command buffer");
 
-		Debug::EndRegion(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex]);
-		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex]), "Failed to end a command buffer");
+#if DEBUG_BUILD
+		Debug::EndRegion(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex]);
+		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex]), "Failed to end a command buffer");
+#endif
 
 		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex]);
 		vkCmdNextSubpass(myCommandBuffers[myCurrentFrameIndex], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersCombine[myCurrentFrameIndex]);
+#if DEBUG_BUILD
 		vkCmdNextSubpass(myCommandBuffers[myCurrentFrameIndex], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersTransparent[myCurrentFrameIndex]);
+		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex]);
+#endif
 
 		vkCmdEndRenderPass(myCommandBuffers[myCurrentFrameIndex]);
 
@@ -169,23 +176,39 @@ namespace Render::Vulkan
 	{
 		vkCmdSetViewport(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], 0, 1, &aViewport);
 		vkCmdSetViewport(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], 0, 1, &aViewport);
-		vkCmdSetViewport(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], 0, 1, &aViewport);
+#if DEBUG_BUILD
+		vkCmdSetViewport(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], 0, 1, &aViewport);
+#endif
 	}
 
 	void DeferredRenderer::SetScissor(const VkRect2D& aScissor)
 	{
 		vkCmdSetScissor(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], 0, 1, &aScissor);
 		vkCmdSetScissor(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], 0, 1, &aScissor);
-		vkCmdSetScissor(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], 0, 1, &aScissor);
+#if DEBUG_BUILD
+		vkCmdSetScissor(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], 0, 1, &aScissor);
+#endif
 	}
 
-	void DeferredRenderer::DrawModel(const Render::Model* aModel, const BaseModelData& someData)
+	void DeferredRenderer::DrawModel(Render::Model* aModel, const BaseModelData& someData, DrawType aDrawType /*= DrawType::Normal*/)
 	{
-		const Model* vulkanModel = static_cast<const Model*>(aModel);
-		if (!someData.myIsTransparent)
-			vulkanModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1);
-		else
-			vulkanModel->Draw(mySecondaryCommandBuffersTransparent[myCurrentFrameIndex], myDeferredPipeline.myTransparentPipelineLayout, 2);
+		(void)someData;
+		Model* vulkanModel = static_cast<Model*>(aModel);
+
+		switch (aDrawType)
+		{
+		case Renderer::DrawType::Normal:
+			vulkanModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1, ShaderHelpers::DescriptorLayout::Object);
+			break;
+#if DEBUG_BUILD
+		case Renderer::DrawType::Debug:
+			vulkanModel->Draw(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], myDeferredPipeline.myDebug3DPipelineLayout, 1, ShaderHelpers::DescriptorLayout::SimpleObject);
+			break;
+#endif
+		default:
+			Assert(false, "Unsupported draw type");
+			break;
+		}		
 	}
 
 	void DeferredRenderer::AddLight(const PointLight& aPointLight)
@@ -292,7 +315,7 @@ namespace Render::Vulkan
 			attachments[4].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		}
 
-		// Three subpasses
+		// Subpasses
 		VkAttachmentReference colorReferences[4];
 		colorReferences[0] = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
 		colorReferences[1] = { 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
@@ -306,59 +329,74 @@ namespace Render::Vulkan
 		inputReferences[1] = { 2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 		inputReferences[2] = { 3, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
 
-		std::array<VkSubpassDescription, 3> subpassDescriptions{};
+		std::vector<VkSubpassDescription> subpassDescriptions;
 		{
 			// First subpass: Fill G-Buffer components
-			subpassDescriptions[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpassDescriptions[0].colorAttachmentCount = 4;
-			subpassDescriptions[0].pColorAttachments = colorReferences;
-			subpassDescriptions[0].pDepthStencilAttachment = &depthReference;
+			VkSubpassDescription gbufferDescription{};
+			gbufferDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			gbufferDescription.colorAttachmentCount = 4;
+			gbufferDescription.pColorAttachments = colorReferences;
+			gbufferDescription.pDepthStencilAttachment = &depthReference;
+			subpassDescriptions.push_back(gbufferDescription);
 
 			// Second subpass: Final Lighting (using G-Buffer components)
-			subpassDescriptions[1].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpassDescriptions[1].colorAttachmentCount = 1;
-			subpassDescriptions[1].pColorAttachments = colorReferences;
-			subpassDescriptions[1].pDepthStencilAttachment = &depthReference;
-			subpassDescriptions[1].inputAttachmentCount = 3;
-			subpassDescriptions[1].pInputAttachments = inputReferences;
+			VkSubpassDescription lightingDescription{};
+			lightingDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			lightingDescription.colorAttachmentCount = 1;
+			lightingDescription.pColorAttachments = colorReferences;
+			lightingDescription.pDepthStencilAttachment = &depthReference;
+			lightingDescription.inputAttachmentCount = 3;
+			lightingDescription.pInputAttachments = inputReferences;
+			subpassDescriptions.push_back(lightingDescription);
 
-			// Third subpass: Forward transparency
-			subpassDescriptions[2].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpassDescriptions[2].colorAttachmentCount = 1;
-			subpassDescriptions[2].pColorAttachments = colorReferences;
-			subpassDescriptions[2].pDepthStencilAttachment = &depthReference;
-			subpassDescriptions[2].inputAttachmentCount = 1;
-			subpassDescriptions[2].pInputAttachments = inputReferences;
+#if DEBUG_BUILD
+			// Third subpass: Debug Forward
+			VkSubpassDescription debugForwardDescription{};
+			debugForwardDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			debugForwardDescription.colorAttachmentCount = 1;
+			debugForwardDescription.pColorAttachments = colorReferences;
+			debugForwardDescription.pDepthStencilAttachment = &depthReference;
+			debugForwardDescription.inputAttachmentCount = 1;
+			debugForwardDescription.pInputAttachments = inputReferences;
+			subpassDescriptions.push_back(debugForwardDescription);
+#endif
 		}
 
 		// TODO: Understand subpass dependencies better!
 		// Subpass dependencies for layout transitions
-		std::array<VkSubpassDependency, 3> dependencies{};
+		std::vector<VkSubpassDependency> dependencies;
 		{
-			dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependencies[0].dstSubpass = 0;
-			dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-			dependencies[0].srcAccessMask = 0;
-			dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-			dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			VkSubpassDependency gbufferDependency{};
+			gbufferDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			gbufferDependency.dstSubpass = 0;
+			gbufferDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			gbufferDependency.srcAccessMask = 0;
+			gbufferDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			gbufferDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			gbufferDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			dependencies.push_back(gbufferDependency);
 
-			// This dependency transitions the input attachment from color attachment to shader read
-			dependencies[1].srcSubpass = 0;
-			dependencies[1].dstSubpass = 1;
-			dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-			dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-			dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			VkSubpassDependency lightingDependency{};
+			lightingDependency.srcSubpass = 0;
+			lightingDependency.dstSubpass = 1;
+			lightingDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			lightingDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			lightingDependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			lightingDependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			lightingDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			dependencies.push_back(lightingDependency);
 
-			dependencies[2].srcSubpass = 1;
-			dependencies[2].dstSubpass = 2;
-			dependencies[2].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-			dependencies[2].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			dependencies[2].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-			dependencies[2].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+#if DEBUG_BUILD
+			VkSubpassDependency debugForwardDependency{};
+			debugForwardDependency.srcSubpass = 1;
+			debugForwardDependency.dstSubpass = 2;
+			debugForwardDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			debugForwardDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			debugForwardDependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			debugForwardDependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			debugForwardDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			dependencies.push_back(debugForwardDependency);
+#endif
 		}
 
 		VkRenderPassCreateInfo renderPassInfo = {};
@@ -393,13 +431,13 @@ namespace Render::Vulkan
 	{
 		std::array<VkDescriptorPoolSize, 1> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-		poolSizes[0].descriptorCount = 4; //  3 - Lighting, 1 - Transparent
+		poolSizes[0].descriptorCount = 3; //  3 - Lighting
 
 		VkDescriptorPoolCreateInfo descriptorPoolInfo{};
 		descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		descriptorPoolInfo.poolSizeCount = (uint)poolSizes.size();
 		descriptorPoolInfo.pPoolSizes = poolSizes.data();
-		descriptorPoolInfo.maxSets = 2; // Lighting, Transparent
+		descriptorPoolInfo.maxSets = 1; // Lighting
 
 		VK_CHECK_RESULT(vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myDescriptorPool), "Failed to create the descriptor pool");
 
@@ -434,26 +472,6 @@ namespace Render::Vulkan
 			writeDescriptorSets[2].descriptorCount = 1;
 			vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
 		}
-
-		// Transparent
-		{
-			std::array<VkDescriptorSetLayout, 1> layouts = { myDeferredPipeline.myTransparentDescriptorSetLayout };
-			VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{};
-			descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			descriptorSetAllocateInfo.descriptorPool = myDescriptorPool;
-			descriptorSetAllocateInfo.pSetLayouts = layouts.data();
-			descriptorSetAllocateInfo.descriptorSetCount = (uint)layouts.size();
-			VK_CHECK_RESULT(vkAllocateDescriptorSets(myDevice, &descriptorSetAllocateInfo, &myTransparentDescriptorSet), "Failed to create the node descriptor set");
-
-			std::array<VkWriteDescriptorSet, 1> writeDescriptorSets{};
-			writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			writeDescriptorSets[0].dstSet = myTransparentDescriptorSet;
-			writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			writeDescriptorSets[0].dstBinding = 0;
-			writeDescriptorSets[0].pImageInfo = &myPositionAttachment.myDescriptor;
-			writeDescriptorSets[0].descriptorCount = 1;
-			vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
-		}
 	}
 
 	void DeferredRenderer::DestroyDescriptorSets()
@@ -464,6 +482,8 @@ namespace Render::Vulkan
 
 	void DeferredRenderer::SetupCommandBuffers()
 	{
+		Renderer::SetupCommandBuffers();
+
 		uint framesCount = mySwapChain->GetImagesCount();
 
 		VkCommandBufferAllocateInfo allocInfo{};
@@ -471,28 +491,26 @@ namespace Render::Vulkan
 		allocInfo.commandPool = RenderCore::GetInstance()->GetGraphicsCommandPool();
 		allocInfo.commandBufferCount = framesCount;
 
-		// Primary
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		myCommandBuffers.resize(framesCount);
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, myCommandBuffers.data()), "Failed to create command buffers!");
-
-		// Secondary
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
 		mySecondaryCommandBuffersGBuffer.resize(framesCount);
-		mySecondaryCommandBuffersCombine.resize(framesCount);
-		mySecondaryCommandBuffersTransparent.resize(framesCount);
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, mySecondaryCommandBuffersGBuffer.data()), "Failed to create command buffers!");
+		mySecondaryCommandBuffersCombine.resize(framesCount);
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, mySecondaryCommandBuffersCombine.data()), "Failed to create command buffers!");
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, mySecondaryCommandBuffersTransparent.data()), "Failed to create command buffers!");
+#if DEBUG_BUILD
+		mySecondaryCommandBuffersDebugForward.resize(framesCount);
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, mySecondaryCommandBuffersDebugForward.data()), "Failed to create command buffers!");
+#endif
 	}
 
 	void DeferredRenderer::DestroyCommandBuffers()
 	{
-		myCommandBuffers.clear();
+		Renderer::DestroyCommandBuffers();
 
 		mySecondaryCommandBuffersGBuffer.clear();
 		mySecondaryCommandBuffersCombine.clear();
-		mySecondaryCommandBuffersTransparent.clear();
+#if DEBUG_BUILD
+		mySecondaryCommandBuffersDebugForward.clear();
+#endif
 	}
 
 	void DeferredRenderer::SetupFrameBuffers()

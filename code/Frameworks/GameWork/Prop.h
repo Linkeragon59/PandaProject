@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Entity.h"
+#include "RenderRenderer.h"
 
 namespace Render
 {
 	struct BaseModelData;
 	class Model;
-	class Renderer;
 }
 
 namespace GameWork
@@ -18,25 +18,16 @@ namespace GameWork
 		virtual ~Prop();
 
 		void Update() override;
-		void Draw(Render::Renderer* aRenderer);
+		void Draw(Render::Renderer* aRenderer, Render::Renderer::DrawType aDrawType = Render::Renderer::DrawType::Normal);
 
 		void Spawn();
 		void Despawn();
-
-		void SetScale(float aScale);
-		void Scale(float aScaleMultiplier);
-		float GetScale() const { return myScale; }
 
 		void Hide() { myIsVisible = false; }
 		void Show() { myIsVisible = true; }
 		bool IsVisible() const { return myIsVisible; }
 
 	protected:
-		void OnPositionChanged() override;
-		void OnRotationChanged() override;
-
-		void UpdateModelDataMatrix();
-
 		Render::BaseModelData* myModelData = nullptr;
 		Render::Model* myModel = nullptr;
 

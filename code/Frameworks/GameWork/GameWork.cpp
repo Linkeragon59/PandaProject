@@ -2,6 +2,7 @@
 
 #include "Input.h"
 #include "RenderFacade.h"
+#include "RenderRenderer.h"
 
 #include "Module.h"
 #include "Camera.h"
@@ -34,11 +35,8 @@ namespace GameWork
 	{
 		const uint locWindowWidth = 1280;
 		const uint locWindowHeight = 720;
-
-		Render::Renderer* locRenderer;
-		//Render::Renderer* locRenderer2;
 		
-		std::vector<Prop*> locProps;
+		/*std::vector<Prop*> locProps;
 		std::vector<PointLight> locLights;
 		Camera* locCamera = nullptr;
 
@@ -118,7 +116,7 @@ namespace GameWork
 
 		SoLoud::Soloud locSoloud; // SoLoud engine
 		SoLoud::Wav locWave;      // One wave file
-		bool locSoundPlaying = false;
+		bool locSoundPlaying = false;*/
 	}
 
 	bool GameWork::Create()
@@ -183,6 +181,11 @@ namespace GameWork
 		return false;
 	}
 
+	Render::Renderer* GameWork::GetMainRenderer()
+	{
+		return Render::Facade::GetInstance()->GetRenderer(myWindow);
+	}
+
 	GameWork::GameWork()
 	{
 		Input::InputManager::Create();
@@ -191,38 +194,38 @@ namespace GameWork
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		myWindow = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.1", nullptr, nullptr);
-		//myWindow2 = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.12", nullptr, nullptr);
+		//myWindow2 = glfwCreateWindow(locWindowWidth, locWindowHeight, "Panda Project v0.2", nullptr, nullptr);
 
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		inputManager->AddWindow(myWindow);
 		inputManager->SetupCallbacks(inputManager->GetWindowId(myWindow));
 
-		locSetupCamera();
+		//locSetupCamera();
 
 		Render::Facade::Create();
 		Render::Facade::GetInstance()->InitializeRendering();
-		Render::Facade::GetInstance()->RegisterWindow(myWindow, Render::RendererType::Deferred);
-		//Render::Facade::GetInstance()->RegisterWindow(myWindow2, Render::RendererType::Deferred);
+		Render::Facade::GetInstance()->RegisterWindow(myWindow, Render::Renderer::Type::Deferred);
+		//Render::Facade::GetInstance()->RegisterWindow(myWindow2, Render::Renderer::Type::Deferred);
 
-		locSpawnModels();
+		/*locSpawnModels();
 		locSetupLights();
 
 		locSoloud.init(); // Initialize SoLoud
-		locWave.load(locTestWavFile.c_str()); // Load a wave
+		locWave.load(locTestWavFile.c_str()); // Load a wave*/
 	}
 
 	GameWork::~GameWork()
 	{
-		locSoloud.deinit(); // Clean up!
+		/*locSoloud.deinit(); // Clean up!
 
-		locDespawnModels();
+		locDespawnModels();*/
 
 		//Render::Facade::GetInstance()->UnregisterWindow(myWindow2);
 		Render::Facade::GetInstance()->UnregisterWindow(myWindow);
 		Render::Facade::GetInstance()->FinalizeRendering();
 		Render::Facade::Destroy();
 
-		delete locCamera;
+		//delete locCamera;
 
 		Input::InputManager::GetInstance()->RemoveWindow(myWindow);
 
@@ -239,7 +242,7 @@ namespace GameWork
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		bool escapePressed = inputManager->PollRawInput(Input::RawInput::KeyEscape) == Input::RawInputState::Pressed;
 
-		if (inputManager->PollRawInput(Input::RawInput::KeyI) == Input::RawInputState::Pressed)
+		/*if (inputManager->PollRawInput(Input::RawInput::KeyI) == Input::RawInputState::Pressed)
 		{
 			locDespawnModels();
 		}
@@ -262,17 +265,17 @@ namespace GameWork
 				locSoundPlaying = false;
 				locSoloud.stopAll(); // Stop the wave
 			}
-		}
+		}*/
 		
+		Render::Facade::GetInstance()->StartFrame();
+
 		// Update Modules
 		for (Module* mod : myModules)
 		{
 			mod->OnUpdate();
 		}
-		
-		Render::Facade::GetInstance()->StartFrame();
 
-		locRenderer = Render::Facade::GetInstance()->GetRenderer(myWindow);
+		/*locRenderer = Render::Facade::GetInstance()->GetRenderer(myWindow);
 		//locRenderer2 = Render::Facade::GetInstance()->GetRenderer(myWindow2);
 
 		locCamera->Update();
@@ -292,7 +295,7 @@ namespace GameWork
 		for (PointLight& light : locLights)
 		{
 			light.Bind(locRenderer);
-		}
+		}*/
 
 		Render::Facade::GetInstance()->EndFrame();
 

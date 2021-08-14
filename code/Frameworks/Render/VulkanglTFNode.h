@@ -3,6 +3,7 @@
 #include "VulkanglTFMesh.h"
 
 #include "VulkanBuffer.h"
+#include "VulkanShaderHelpers.h"
 
 namespace Render::Vulkan::glTF
 {
@@ -14,11 +15,11 @@ namespace Render::Vulkan::glTF
 
 		void Load(const tinygltf::Model& aModel, uint aNodeIndex, float aScale, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices);
 
-		void SetupDescriptorSet(Model* aContainer, VkDescriptorPool aDescriptorPool);
-
 		void UpdateUBO(const glm::mat4& aMatrix);
-		void UpdateJoints(Model* aContainer);
-		void Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex) const;
+		void UpdateJoints(const Model* aContainer);
+		void Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::DescriptorLayout aLayout);
+		void SetupSimpleDescriptorSet(const Model* aContainer, Primitive& aPrimitive);
+		void SetupDescriptorSet(const Model* aContainer, Primitive& aPrimitive);
 
 		glm::mat4 GetLocalMatrix() const;
 		glm::mat4 GetMatrix() const;
