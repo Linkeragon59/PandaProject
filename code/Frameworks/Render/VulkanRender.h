@@ -50,9 +50,8 @@ namespace Render::Vulkan
 		const VkDescriptorBufferInfo* GetDefaultMaterialDescriptorInfo() const { return &myDefaultMaterial.myDescriptor; }
 		const VkDescriptorBufferInfo* GetDefaultJointsMatrixDescriptorInfo() const { return &myDefaultJointsMatrix.myDescriptor; }
 
-		VkDescriptorSetLayout GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout aLayout);
-		void AllocateDescriptorSet(ShaderHelpers::DescriptorLayout aLayout, VkDescriptorSet& anOutDescriptorSet);
-		void UpdateDescriptorSet(ShaderHelpers::DescriptorLayout aLayout, const ShaderHelpers::DescriptorInfo& someDescriptorInfo, VkDescriptorSet aDescriptorSet);
+		VkDescriptorSetLayout GetDescriptorSetLayout(ShaderHelpers::BindType aType);
+		VkDescriptorSet GetDescriptorSet(ShaderHelpers::BindType aType, const ShaderHelpers::DescriptorInfo& someDescriptorInfo);
 
 	private:
 		static RenderCore* ourInstance;
@@ -76,12 +75,14 @@ namespace Render::Vulkan
 		Buffer myDefaultJointsMatrix;
 
 		std::vector<SwapChain*> mySwapChains;
+		void UpdateMaxInFlightFrmaesCount();
+		uint myMaxInFlightFramesCount = 0;
 
-		uint GetModelsLifetime() const;
 		void DeleteUnusedModels(bool aDeleteNow = false);
 		typedef std::pair<Model*, uint> ModelLifeTime;
 		std::vector<ModelLifeTime> myModelsToDelete;
 
-		std::array<DescriptorContainer, (size_t)ShaderHelpers::DescriptorLayout::Count> myDescriptorContainers;
+		void RecycleDescriptorSets();
+		std::array<DescriptorContainer, (size_t)ShaderHelpers::BindType::Count> myDescriptorContainers;
 	};
 }

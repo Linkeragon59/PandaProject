@@ -13,7 +13,7 @@ namespace Render::Vulkan
 		~DynamicModel();
 
 		void Update(const BaseModelData& someData) override;
-		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::DescriptorLayout aLayout) override;
+		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType) override;
 
 	private:
 		Buffer myVertexBuffer;
@@ -22,10 +22,5 @@ namespace Render::Vulkan
 
 		Buffer myUBOObject;
 		Image myTexture;
-
-		void SetupSimpleDescriptorSet();
-		void SetupDescriptorSet();
-		VkDescriptorSet mySimpleDescriptorSet = VK_NULL_HANDLE;
-		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
 }

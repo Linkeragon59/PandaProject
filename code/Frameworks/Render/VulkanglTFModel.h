@@ -18,7 +18,7 @@ namespace Render::Vulkan::glTF
 		~Model();
 
 		void Update(const BaseModelData& someData) override;
-		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::DescriptorLayout aLayout) override;
+		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType) override;
 
 		Node* GetNodeByIndex(uint anIndex);
 		const Image* GetImage(uint anIndex) const { return &myImages[anIndex]; }

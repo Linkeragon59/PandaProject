@@ -35,7 +35,7 @@ namespace Render::Vulkan::glTF
 			node->UpdateUBO(someData.myMatrix);
 	}
 
-	void Model::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::DescriptorLayout aLayout)
+	void Model::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType)
 	{
 		// All vertices and indices are stored in a single buffer, so we only need to bind once
 		VkDeviceSize offsets[1] = { 0 };
@@ -43,7 +43,7 @@ namespace Render::Vulkan::glTF
 		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		for (Node* node : myNodes)
-			node->Draw(this, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex, aLayout);
+			node->Draw(this, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex, aType);
 	}
 
 	bool Model::LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const glm::mat4& aMatrix)

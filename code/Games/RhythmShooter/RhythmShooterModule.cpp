@@ -29,7 +29,7 @@ void RhythmShooterModule::OnRegister()
 	};
 	const std::vector<uint> indices =
 	{
-		0, 1, 2, 2, 3, 0
+		0, 2, 1, 2, 0, 3
 	};
 	myShooterPlane = new GameWork::DynamicProp();
 	myShooterPlane->SetGeometry(vertices, indices);
@@ -39,6 +39,11 @@ void RhythmShooterModule::OnRegister()
 	myTestModel = new GameWork::glTFProp("Games/RhythmShooter/models/duck/Duck.gltf");
 	myTestModel->Spawn();
 
+	myTestAnimatedModel = new GameWork::glTFProp("Frameworks/models/CesiumMan/CesiumMan.gltf");
+	myTestAnimatedModel->SetPosition(glm::vec3(0.0f, 0.0f, 1.0f));
+	myTestAnimatedModel->Spawn();
+
+#if DEBUG_BUILD
 	std::vector<Render::DynamicModelData::Vertex> vectorVertices;
 	std::vector<uint> vectorIndices;
 	Render::DynamicModelData::GetVectorBaseWidget(vectorVertices, vectorIndices);
@@ -46,6 +51,7 @@ void RhythmShooterModule::OnRegister()
 	myVectorBase->SetGeometry(vectorVertices, vectorIndices);
 	myVectorBase->SetTexture("Games/RhythmShooter/textures/white.png");
 	myVectorBase->Spawn();
+#endif
 }
 
 void RhythmShooterModule::OnUnregister()
@@ -61,9 +67,15 @@ void RhythmShooterModule::OnUnregister()
 	delete myTestModel;
 	myTestModel = nullptr;
 
+	myTestAnimatedModel->Despawn();
+	delete myTestAnimatedModel;
+	myTestAnimatedModel = nullptr;
+
+#if DEBUG_BUILD
 	myVectorBase->Despawn();
 	delete myVectorBase;
 	myVectorBase = nullptr;
+#endif
 }
 
 void RhythmShooterModule::OnUpdate()
@@ -91,6 +103,11 @@ void RhythmShooterModule::OnUpdate()
 	myTestModel->Update();
 	myTestModel->Draw(renderer);
 
+	myTestAnimatedModel->Update();
+	myTestAnimatedModel->Draw(renderer);
+
+#if DEBUG_BUILD
 	myVectorBase->Update();
 	myVectorBase->Draw(renderer, Render::Renderer::DrawType::Debug);
+#endif
 }

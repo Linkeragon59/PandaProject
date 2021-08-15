@@ -8,6 +8,6 @@ namespace Render::Vulkan
 	class Model : public Render::Model
 	{
 	public:
-		virtual void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::DescriptorLayout aLayout) = 0;
+		virtual void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType) = 0;
 	};
 }

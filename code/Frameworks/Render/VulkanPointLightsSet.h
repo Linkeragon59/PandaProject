@@ -26,7 +26,5 @@ namespace Render::Vulkan
 		uint myNumLights = 0;
 
 		Buffer myLightsUBO;
-
-		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
 }

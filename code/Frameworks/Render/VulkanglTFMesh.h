@@ -12,9 +12,6 @@ namespace Render::Vulkan::glTF
 		uint myIndexCount = 0;
 
 		int myMaterial = -1;
-
-		VkDescriptorSet mySimpleDescriptorSet = VK_NULL_HANDLE;
-		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
 
 	struct Mesh

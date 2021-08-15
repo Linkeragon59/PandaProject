@@ -81,6 +81,7 @@ namespace Render::Vulkan
 	void RenderCore::Finalize()
 	{
 		Assert(mySwapChains.empty(), "Renderering is being finalized while swapchains are still alive!");
+
 		DeleteUnusedModels(true);
 
 		for (DescriptorContainer& container : myDescriptorContainers)
@@ -92,6 +93,7 @@ namespace Render::Vulkan
 	void RenderCore::StartFrame()
 	{
 		DeleteUnusedModels();
+		RecycleDescriptorSets();
 
 		for (SwapChain* swapChain : mySwapChains)
 			swapChain->AcquireNext();
@@ -107,6 +109,8 @@ namespace Render::Vulkan
 	{
 		SwapChain* swapChain = new SwapChain(aWindow, aType);
 		mySwapChains.push_back(swapChain);
+
+		UpdateMaxInFlightFrmaesCount();
 	}
 
 	void RenderCore::UnregisterWindow(GLFWwindow* aWindow)
@@ -120,6 +124,8 @@ namespace Render::Vulkan
 				break;
 			}
 		}
+
+		UpdateMaxInFlightFrmaesCount();
 	}
 
 	Render::Renderer* RenderCore::GetRenderer(GLFWwindow* aWindow)
@@ -149,7 +155,7 @@ namespace Render::Vulkan
 
 	void RenderCore::DespawnModel(Render::Model* aModel)
 	{
-		myModelsToDelete.push_back(std::make_pair(static_cast<Model*>(aModel), GetModelsLifetime()));
+		myModelsToDelete.push_back(std::make_pair(static_cast<Model*>(aModel), myMaxInFlightFramesCount));
 	}
 
 	VkPhysicalDevice RenderCore::GetPhysicalDevice() const
@@ -178,22 +184,18 @@ namespace Render::Vulkan
 	}
 
 
-	VkDescriptorSetLayout RenderCore::GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout aLayout)
+	VkDescriptorSetLayout RenderCore::GetDescriptorSetLayout(ShaderHelpers::BindType aType)
 	{
-		if (myDescriptorContainers[(size_t)aLayout].myLayout == VK_NULL_HANDLE)
-			myDescriptorContainers[(size_t)aLayout].Create(aLayout);
+		if (myDescriptorContainers[(size_t)aType].myLayout == VK_NULL_HANDLE)
+			myDescriptorContainers[(size_t)aType].Create(aType);
 
-		return myDescriptorContainers[(size_t)aLayout].myLayout;
+		return myDescriptorContainers[(size_t)aType].myLayout;
 	}
 
-	void RenderCore::AllocateDescriptorSet(ShaderHelpers::DescriptorLayout aLayout, VkDescriptorSet& anOutDescriptorSet)
+	VkDescriptorSet RenderCore::GetDescriptorSet(ShaderHelpers::BindType aType, const ShaderHelpers::DescriptorInfo& someDescriptorInfo)
 	{
-		myDescriptorContainers[(size_t)aLayout].AllocateDescriptorSet(anOutDescriptorSet);
-	}
-
-	void RenderCore::UpdateDescriptorSet(ShaderHelpers::DescriptorLayout aLayout, const ShaderHelpers::DescriptorInfo& someDescriptorInfo, VkDescriptorSet aDescriptorSet)
-	{
-		myDescriptorContainers[(size_t)aLayout].UpdateDescriptorSet(someDescriptorInfo, aDescriptorSet);
+		Assert(myDescriptorContainers[(size_t)aType].myLayout != VK_NULL_HANDLE);
+		return myDescriptorContainers[(size_t)aType].GetDescriptorSet(someDescriptorInfo, myMaxInFlightFramesCount);
 	}
 
 	void RenderCore::CreateVkInstance()
@@ -365,14 +367,13 @@ namespace Render::Vulkan
 		anImage.SetupDescriptor();
 	}
 
-	uint RenderCore::GetModelsLifetime() const
+	void RenderCore::UpdateMaxInFlightFrmaesCount()
 	{
-		uint lifeTime = 0;
+		myMaxInFlightFramesCount = 0;
 		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
 		{
-			lifeTime = std::max(lifeTime, mySwapChains[i]->GetImagesCount());
+			myMaxInFlightFramesCount = std::max(myMaxInFlightFramesCount, mySwapChains[i]->GetImagesCount());
 		}
-		return lifeTime;
 	}
 
 	void RenderCore::DeleteUnusedModels(bool aDeleteNow)
@@ -387,5 +388,11 @@ namespace Render::Vulkan
 			}
 			i++;
 		}
+	}
+
+	void RenderCore::RecycleDescriptorSets()
+	{
+		for (DescriptorContainer& container : myDescriptorContainers)
+			container.RecycleDescriptors();
 	}
 }

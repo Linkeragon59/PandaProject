@@ -27,8 +27,8 @@ namespace Render::Vulkan
 				vertex.myUV,
 				vertex.myColor,
 				{0.0f, 0.0f, 0.0f, 0.0f},
-				{1.0f, 1.0f, 1.0f, 1.0f},
-				{1.0f, 1.0f, 1.0f, 1.0f}
+				{0.25f, 0.25f, 0.25f, 0.25f},
+				{0.0f, 0.0f, 0.0f, 0.0f}
 			};
 			fullVertices.push_back(fullVertex);
 		}
@@ -137,56 +137,19 @@ namespace Render::Vulkan
 		memcpy(myUBOObject.myMappedData, &someData.myMatrix, sizeof(glm::mat4));
 	}
 
-	void DynamicModel::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::DescriptorLayout aLayout)
+	void DynamicModel::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType)
 	{
 		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT32);
 		std::array<VkBuffer, 1> modelVertexBuffers = { myVertexBuffer.myBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(aCommandBuffer, 0, (uint)modelVertexBuffers.size(), modelVertexBuffers.data(), offsets);
 
-		switch (aLayout)
-		{
-		case Render::Vulkan::ShaderHelpers::DescriptorLayout::SimpleObject:
-			{
-				if (mySimpleDescriptorSet == VK_NULL_HANDLE)
-				{
-					SetupSimpleDescriptorSet();
-				}
-				vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &mySimpleDescriptorSet, 0, NULL);
-			}
-			break;
-		case Render::Vulkan::ShaderHelpers::DescriptorLayout::Object:
-			{
-				if (myDescriptorSet == VK_NULL_HANDLE)
-				{
-					SetupDescriptorSet();
-				}
-				vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &myDescriptorSet, 0, NULL);
-			}
-			break;
-		default:
-			Assert(false, "Unsupported Layout");
-			break;
-		}
+		ShaderHelpers::ObjectDescriptorInfo info;
+		info.myModelMatrixInfo = &myUBOObject.myDescriptor;
+		info.myImageSamplerInfo = &myTexture.myDescriptor;
+		VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(aType, info);
+		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
 
 		vkCmdDrawIndexed(aCommandBuffer, myIndexCount, 1, 0, 0, 0);
-	}
-
-	void DynamicModel::SetupSimpleDescriptorSet()
-	{
-		RenderCore::GetInstance()->AllocateDescriptorSet(ShaderHelpers::DescriptorLayout::SimpleObject, mySimpleDescriptorSet);
-		ShaderHelpers::ObjectDescriptorInfo info;
-		info.myModelMatrixInfo = &myUBOObject.myDescriptor;
-		info.myImageSamplerInfo = &myTexture.myDescriptor;
-		RenderCore::GetInstance()->UpdateDescriptorSet(ShaderHelpers::DescriptorLayout::SimpleObject, info, mySimpleDescriptorSet);
-	}
-
-	void DynamicModel::SetupDescriptorSet()
-	{
-		RenderCore::GetInstance()->AllocateDescriptorSet(ShaderHelpers::DescriptorLayout::Object, myDescriptorSet);
-		ShaderHelpers::ObjectDescriptorInfo info;
-		info.myModelMatrixInfo = &myUBOObject.myDescriptor;
-		info.myImageSamplerInfo = &myTexture.myDescriptor;
-		RenderCore::GetInstance()->UpdateDescriptorSet(ShaderHelpers::DescriptorLayout::Object, info, myDescriptorSet);
 	}
 }

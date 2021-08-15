@@ -5,7 +5,7 @@
         "commandLine": "",
         "environment": [
         ],
-        "executable": "C:\\Users\\corentin.dumont\\Desktop\\PandaProject\\build\\code\\Game\\PandaExe\\RelWithDebInfo\\PandaExe.exe",
+        "executable": "C:\\Users\\corentin.dumont\\Desktop\\PandaProject\\build\\code\\Games\\RhythmShooterExe\\Release\\RhythmShooterExe.exe",
         "inject": false,
         "numQueuedFrames": 0,
         "options": {

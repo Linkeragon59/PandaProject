@@ -87,73 +87,7 @@ namespace Render::Vulkan::glTF
 			child->UpdateJoints(aContainer);
 	}
 
-	void Node::Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::DescriptorLayout aLayout)
-	{
-		for (Primitive& primitive : myMesh.myPrimitives)
-		{
-			switch (aLayout)
-			{
-			case Render::Vulkan::ShaderHelpers::DescriptorLayout::SimpleObject:
-			{
-				if (primitive.mySimpleDescriptorSet == VK_NULL_HANDLE)
-				{
-					SetupSimpleDescriptorSet(aContainer, primitive);
-				}
-				vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &primitive.mySimpleDescriptorSet, 0, NULL);
-			}
-			break;
-			case Render::Vulkan::ShaderHelpers::DescriptorLayout::Object:
-			{
-				if (primitive.myDescriptorSet == VK_NULL_HANDLE)
-				{
-					SetupDescriptorSet(aContainer, primitive);
-				}
-				vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &primitive.myDescriptorSet, 0, NULL);
-			}
-			break;
-			default:
-				Assert(false, "Unsupported Layout");
-				break;
-			}
-
-			vkCmdDrawIndexed(aCommandBuffer, primitive.myIndexCount, 1, primitive.myFirstIndex, 0, 0);
-		}
-
-		for (Node* child : myChildren)
-			child->Draw(aContainer, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex, aLayout);
-	}
-
-	void Node::SetupSimpleDescriptorSet(const Model* aContainer, Primitive& aPrimitive)
-	{
-		const Image* image = nullptr;
-		const Material* material = nullptr;
-
-		if (aPrimitive.myMaterial > -1)
-		{
-			material = aContainer->GetMaterial(aPrimitive.myMaterial);
-			Assert(material);
-
-			if (material->myBaseColorTexture > -1)
-			{
-				const Texture* texture = aContainer->GetTexture(material->myBaseColorTexture);
-				Assert(texture);
-				image = aContainer->GetImage(texture->myImageIndex);
-				Assert(image);
-			}
-		}
-		if (!image)
-		{
-			image = aContainer->GetEmptyImage();
-		}
-
-		RenderCore::GetInstance()->AllocateDescriptorSet(ShaderHelpers::DescriptorLayout::SimpleObject, aPrimitive.mySimpleDescriptorSet);
-		ShaderHelpers::ObjectDescriptorInfo info;
-		info.myModelMatrixInfo = &myUBO.myDescriptor;
-		info.myImageSamplerInfo = &image->myImage.myDescriptor;
-		RenderCore::GetInstance()->UpdateDescriptorSet(ShaderHelpers::DescriptorLayout::SimpleObject, info, aPrimitive.mySimpleDescriptorSet);
-	}
-
-	void Node::SetupDescriptorSet(const Model* aContainer, Primitive& aPrimitive)
+	void Node::Draw(const Model* aContainer, VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType)
 	{
 		const Skin* skin = nullptr;
 		const Image* image = nullptr;
@@ -168,35 +102,43 @@ namespace Render::Vulkan::glTF
 			skin = aContainer->GetEmptySkin();
 		}
 
-		if (aPrimitive.myMaterial > -1)
+		for (Primitive& primitive : myMesh.myPrimitives)
 		{
-			material = aContainer->GetMaterial(aPrimitive.myMaterial);
-			Assert(material);
-
-			if (material->myBaseColorTexture > -1)
+			if (primitive.myMaterial > -1)
 			{
-				const Texture* texture = aContainer->GetTexture(material->myBaseColorTexture);
-				Assert(texture);
-				image = aContainer->GetImage(texture->myImageIndex);
-				Assert(image);
+				material = aContainer->GetMaterial(primitive.myMaterial);
+				Assert(material);
+
+				if (material->myBaseColorTexture > -1)
+				{
+					const Texture* texture = aContainer->GetTexture(material->myBaseColorTexture);
+					Assert(texture);
+					image = aContainer->GetImage(texture->myImageIndex);
+					Assert(image);
+				}
 			}
-		}
-		if (!image)
-		{
-			image = aContainer->GetEmptyImage();
-		}
-		if (!material)
-		{
-			material = aContainer->GetEmptyMaterial();
+			if (!image)
+			{
+				image = aContainer->GetEmptyImage();
+			}
+			if (!material)
+			{
+				material = aContainer->GetEmptyMaterial();
+			}
+
+			ShaderHelpers::ObjectDescriptorInfo info;
+			info.myModelMatrixInfo = &myUBO.myDescriptor;
+			info.myImageSamplerInfo = &image->myImage.myDescriptor;
+			info.myMaterialInfo = &material->mySSBO.myDescriptor;
+			info.myJointMatricesInfo = &skin->mySSBO.myDescriptor;
+			VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(aType, info);
+			vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
+
+			vkCmdDrawIndexed(aCommandBuffer, primitive.myIndexCount, 1, primitive.myFirstIndex, 0, 0);
 		}
 
-		RenderCore::GetInstance()->AllocateDescriptorSet(ShaderHelpers::DescriptorLayout::Object, aPrimitive.myDescriptorSet);
-		ShaderHelpers::ObjectDescriptorInfo info;
-		info.myModelMatrixInfo = &myUBO.myDescriptor;
-		info.myImageSamplerInfo = &image->myImage.myDescriptor;
-		info.myMaterialInfo = &material->mySSBO.myDescriptor;
-		info.myJointMatricesInfo = &skin->mySSBO.myDescriptor;
-		RenderCore::GetInstance()->UpdateDescriptorSet(ShaderHelpers::DescriptorLayout::Object, info, aPrimitive.myDescriptorSet);
+		for (Node* child : myChildren)
+			child->Draw(aContainer, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex, aType);
 	}
 
 	glm::mat4 Node::GetLocalMatrix() const

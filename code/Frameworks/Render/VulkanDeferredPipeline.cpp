@@ -73,8 +73,8 @@ namespace Render::Vulkan
 	void DeferredPipeline::SetupGBufferPipeline(VkRenderPass aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
-			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout::Camera),
-			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout::Object)
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Camera),
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Object)
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -212,7 +212,7 @@ namespace Render::Vulkan
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
 			myLightingDescriptorSetLayout,
-			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout::LightsSet)
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::LightsSet)
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -345,8 +345,8 @@ namespace Render::Vulkan
 	void DeferredPipeline::SetupDebugForwardPipeline(VkRenderPass aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
-			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout::Camera),
-			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::DescriptorLayout::SimpleObject)
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Camera),
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::SimpleObject)
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

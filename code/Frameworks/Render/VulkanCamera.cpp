@@ -34,14 +34,10 @@ namespace Render::Vulkan
 
 	void Camera::BindViewProj(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aSetIndex)
 	{
-		if (myDescriptorSet == VK_NULL_HANDLE)
-		{
-			RenderCore::GetInstance()->AllocateDescriptorSet(ShaderHelpers::DescriptorLayout::Camera, myDescriptorSet);
-			ShaderHelpers::CameraDescriptorInfo info;
-			info.myViewProjMatricesInfo = &myViewProjUBO.myDescriptor;
-			RenderCore::GetInstance()->UpdateDescriptorSet(ShaderHelpers::DescriptorLayout::Camera, info, myDescriptorSet);
-		}
+		ShaderHelpers::CameraDescriptorInfo info;
+		info.myViewProjMatricesInfo = &myViewProjUBO.myDescriptor;
+		VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(ShaderHelpers::BindType::Camera, info);
 
-		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aSetIndex, 1, &myDescriptorSet, 0, NULL);
+		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aSetIndex, 1, &descriptorSet, 0, NULL);
 	}
 }

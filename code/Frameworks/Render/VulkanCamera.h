@@ -20,7 +20,5 @@ namespace Render::Vulkan
 		glm::mat4 myView = glm::mat4(1.0f);
 		glm::mat4 myProjection = glm::mat4(1.0f);
 		Buffer myViewProjUBO;
-
-		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
 	};
 }

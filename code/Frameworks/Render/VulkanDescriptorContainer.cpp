@@ -5,19 +5,18 @@
 
 namespace Render::Vulkan
 {
-	// TODO: smarter pool size, allowing for later size increase (multiple pools)
-	// TODO: reuse old descriptor sets when they are not used anymore
-
-	void DescriptorContainer::Create(ShaderHelpers::DescriptorLayout aLayout)
+	void DescriptorContainer::Create(ShaderHelpers::BindType aType)
 	{
 		myDevice = RenderCore::GetInstance()->GetDevice();
-		myLayoutType = aLayout;
+		myType = aType;
 
-		switch (myLayoutType)
+		myAllocatedSets.resize(1);
+
+		switch (myType)
 		{
-		case ShaderHelpers::DescriptorLayout::Camera:
+		case ShaderHelpers::BindType::Camera:
 			{
-				const uint maxCamerasCount = 4;
+				const uint maxCamerasCount = 64;
 
 				std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
 				// Binding 0 : ViewProj
@@ -50,7 +49,7 @@ namespace Render::Vulkan
 					"Failed to create the Camera DescriptorPool");
 			}
 			break;
-		case ShaderHelpers::DescriptorLayout::SimpleObject:
+		case ShaderHelpers::BindType::SimpleObject:
 			{
 				const uint maxObjectsCount = 64;
 
@@ -92,7 +91,7 @@ namespace Render::Vulkan
 					"Failed to create the SimpleObject DescriptorPool");
 			}
 			break;
-		case ShaderHelpers::DescriptorLayout::Object:
+		case ShaderHelpers::BindType::Object:
 			{
 				const uint maxObjectsCount = 64;
 
@@ -146,9 +145,9 @@ namespace Render::Vulkan
 					"Failed to create the Object DescriptorPool");
 			}
 			break;
-		case ShaderHelpers::DescriptorLayout::LightsSet:
+		case ShaderHelpers::BindType::LightsSet:
 			{
-				const uint maxLightsSetsCount = 4;
+				const uint maxLightsSetsCount = 64;
 
 				std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
 				// Binding 0 : Lights
@@ -168,13 +167,13 @@ namespace Render::Vulkan
 
 				std::array<VkDescriptorPoolSize, 1> poolSizes{};
 				poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-				poolSizes[0].descriptorCount = 1;
+				poolSizes[0].descriptorCount = maxLightsSetsCount;
 
 				VkDescriptorPoolCreateInfo descriptorPoolInfo{};
 				descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 				descriptorPoolInfo.poolSizeCount = (uint)poolSizes.size();
 				descriptorPoolInfo.pPoolSizes = poolSizes.data();
-				descriptorPoolInfo.maxSets = 1;
+				descriptorPoolInfo.maxSets = maxLightsSetsCount;
 
 				VK_CHECK_RESULT(
 					vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myPool),
@@ -189,8 +188,11 @@ namespace Render::Vulkan
 
 	void DescriptorContainer::Destroy()
 	{
-		if (myLayoutType == ShaderHelpers::DescriptorLayout::Count)
+		if (myType == ShaderHelpers::BindType::Count)
 			return;
+
+		myAllocatedSets.clear();
+		myCurrentFrame = 0;
 
 		vkDestroyDescriptorSetLayout(myDevice, myLayout, nullptr);
 		myLayout = VK_NULL_HANDLE;
@@ -198,9 +200,40 @@ namespace Render::Vulkan
 		vkDestroyDescriptorPool(myDevice, myPool, nullptr);
 		myPool = VK_NULL_HANDLE;
 
-		myLayoutType = ShaderHelpers::DescriptorLayout::Count;
+		myType = ShaderHelpers::BindType::Count;
 
 		myDevice = VK_NULL_HANDLE;
+	}
+
+	VkDescriptorSet DescriptorContainer::GetDescriptorSet(const ShaderHelpers::DescriptorInfo& someDescriptorInfo, uint aFramesToKeep)
+	{
+		if (aFramesToKeep > (uint)myAllocatedSets.size())
+		{
+			myAllocatedSets.resize(aFramesToKeep);
+		}
+
+		FrameAllocatedDescriptors& descriptorSets = myAllocatedSets[myCurrentFrame];
+		if (descriptorSets.myFirstAvailableSet >= (uint)descriptorSets.mySets.size())
+		{
+			descriptorSets.myFirstAvailableSet = (uint)descriptorSets.mySets.size();
+
+			VkDescriptorSet newSet;
+			AllocateDescriptorSet(newSet);
+			descriptorSets.mySets.push_back(newSet);
+		}
+
+		UpdateDescriptorSet(someDescriptorInfo, descriptorSets.mySets[descriptorSets.myFirstAvailableSet]);
+		return descriptorSets.mySets[descriptorSets.myFirstAvailableSet++];
+	}
+
+	void DescriptorContainer::RecycleDescriptors()
+	{
+		if (myType == ShaderHelpers::BindType::Count)
+			return;
+
+		myCurrentFrame = (myCurrentFrame + 1) % (uint)myAllocatedSets.size();
+		FrameAllocatedDescriptors& descriptorSets = myAllocatedSets[myCurrentFrame];
+		descriptorSets.myFirstAvailableSet = 0;
 	}
 
 	void DescriptorContainer::AllocateDescriptorSet(VkDescriptorSet& anOutDescriptorSet)
@@ -221,9 +254,9 @@ namespace Render::Vulkan
 
 	void DescriptorContainer::UpdateDescriptorSet(const ShaderHelpers::DescriptorInfo& someDescriptorInfo, VkDescriptorSet aDescriptorSet)
 	{
-		switch (myLayoutType)
+		switch (myType)
 		{
-		case ShaderHelpers::DescriptorLayout::Camera:
+		case ShaderHelpers::BindType::Camera:
 			{
 				const ShaderHelpers::CameraDescriptorInfo& info = static_cast<const ShaderHelpers::CameraDescriptorInfo&>(someDescriptorInfo);
 
@@ -239,7 +272,7 @@ namespace Render::Vulkan
 				vkUpdateDescriptorSets(myDevice, (uint)writeDescriptorSets.size(), writeDescriptorSets.data(), 0, NULL);
 			}
 			break;
-		case ShaderHelpers::DescriptorLayout::SimpleObject:
+		case ShaderHelpers::BindType::SimpleObject:
 			{
 				const ShaderHelpers::ObjectDescriptorInfo& info = static_cast<const ShaderHelpers::ObjectDescriptorInfo&>(someDescriptorInfo);
 
@@ -262,7 +295,7 @@ namespace Render::Vulkan
 				vkUpdateDescriptorSets(myDevice, static_cast<uint>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 			}
 			break;
-		case ShaderHelpers::DescriptorLayout::Object:
+		case ShaderHelpers::BindType::Object:
 			{
 				const ShaderHelpers::ObjectDescriptorInfo& info = static_cast<const ShaderHelpers::ObjectDescriptorInfo&>(someDescriptorInfo);
 
@@ -299,7 +332,7 @@ namespace Render::Vulkan
 				vkUpdateDescriptorSets(myDevice, static_cast<uint>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 			}
 			break;
-		case ShaderHelpers::DescriptorLayout::LightsSet:
+		case ShaderHelpers::BindType::LightsSet:
 			{
 				const ShaderHelpers::LightsSetDescriptorInfo& info = static_cast<const ShaderHelpers::LightsSetDescriptorInfo&>(someDescriptorInfo);
 

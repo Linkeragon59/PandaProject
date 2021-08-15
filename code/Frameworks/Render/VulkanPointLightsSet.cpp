@@ -46,14 +46,9 @@ namespace Render::Vulkan
 
 	void PointLightsSet::Bind(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
 	{
-		if (myDescriptorSet == VK_NULL_HANDLE)
-		{
-			RenderCore::GetInstance()->AllocateDescriptorSet(ShaderHelpers::DescriptorLayout::LightsSet, myDescriptorSet);
-			ShaderHelpers::LightsSetDescriptorInfo info;
-			info.myLightsInfo = &myLightsUBO.myDescriptor;
-			RenderCore::GetInstance()->UpdateDescriptorSet(ShaderHelpers::DescriptorLayout::LightsSet, info, myDescriptorSet);
-		}
-
-		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &myDescriptorSet, 0, NULL);
+		ShaderHelpers::LightsSetDescriptorInfo info;
+		info.myLightsInfo = &myLightsUBO.myDescriptor;
+		VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(ShaderHelpers::BindType::LightsSet, info);
+		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
 	}
 }

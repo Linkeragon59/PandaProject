@@ -198,11 +198,11 @@ namespace Render::Vulkan
 		switch (aDrawType)
 		{
 		case Renderer::DrawType::Normal:
-			vulkanModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1, ShaderHelpers::DescriptorLayout::Object);
+			vulkanModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1, ShaderHelpers::BindType::Object);
 			break;
 #if DEBUG_BUILD
 		case Renderer::DrawType::Debug:
-			vulkanModel->Draw(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], myDeferredPipeline.myDebug3DPipelineLayout, 1, ShaderHelpers::DescriptorLayout::SimpleObject);
+			vulkanModel->Draw(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], myDeferredPipeline.myDebug3DPipelineLayout, 1, ShaderHelpers::BindType::SimpleObject);
 			break;
 #endif
 		default:

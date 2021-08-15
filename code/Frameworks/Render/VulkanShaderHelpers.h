@@ -2,6 +2,9 @@
 
 namespace Render::Vulkan::ShaderHelpers
 {
+	//-----------------------------------------------------
+	// Vertex Input
+	//-----------------------------------------------------
 	enum class VertexComponent
 	{
 		Position,
@@ -20,7 +23,7 @@ namespace Render::Vulkan::ShaderHelpers
 		glm::vec2 myUV = glm::vec2(0.0f);
 		glm::vec4 myColor = glm::vec4(1.0f);
 		glm::vec4 myJoint = glm::vec4(0.0f);
-		glm::vec4 myWeight = glm::vec4(0.0f);
+		glm::vec4 myWeight = glm::vec4(0.25f);
 		glm::vec4 myTangent = glm::vec4(0.0f);
 
 		static VkVertexInputBindingDescription GetBindingDescription(uint aBinding = 0);
@@ -28,16 +31,19 @@ namespace Render::Vulkan::ShaderHelpers
 		static std::vector<VkVertexInputAttributeDescription> GetAttributeDescriptions(const std::vector<VertexComponent> someComponents, uint aBinding = 0);
 	};
 
+	//-----------------------------------------------------
+	// Descriptor Sets
+	//-----------------------------------------------------
 	struct DescriptorInfo
 	{};
 
-	// Cameras must provide the following info to create a DescriptorSet to bind to a pipeline
+	// Cameras must provide the following info to get a DescriptorSet to bind to a pipeline
 	struct CameraDescriptorInfo : public DescriptorInfo
 	{
 		const VkDescriptorBufferInfo* myViewProjMatricesInfo = nullptr;
 	};
 
-	// Objects must provide the following info to create a DescriptorSet to bind to a pipeline
+	// Objects must provide the following info to get a DescriptorSet to bind to a pipeline
 	struct ObjectDescriptorInfo : public DescriptorInfo
 	{
 		const VkDescriptorBufferInfo* myModelMatrixInfo = nullptr;
@@ -46,7 +52,7 @@ namespace Render::Vulkan::ShaderHelpers
 		const VkDescriptorBufferInfo* myJointMatricesInfo = nullptr;
 	};
 
-	// LightsSets must provide the following info to create a DescriptorSet to bind to a pipeline
+	// LightsSets must provide the following info to get a DescriptorSet to bind to a pipeline
 	struct LightsSetDescriptorInfo : public DescriptorInfo
 	{
 		const VkDescriptorBufferInfo* myLightsInfo = nullptr;
@@ -73,8 +79,8 @@ namespace Render::Vulkan::ShaderHelpers
 		glm::mat4 myJointsMatrix = glm::mat4(1.0f);
 	};
 
-	// All shader pipelines must choose from the following available layouts
-	enum class DescriptorLayout
+	// All shader pipelines must choose from the following available bindings
+	enum class BindType
 	{
 		Camera,
 		SimpleObject,
