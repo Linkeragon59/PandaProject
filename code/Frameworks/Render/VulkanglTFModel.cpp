@@ -11,7 +11,7 @@ namespace Render::Vulkan::glTF
 
 		Assert(someData.GetType() == ModelData::Type::glTF);
 		const glTFModelData& glTFData = static_cast<const glTFModelData&>(someData);
-		LoadFromFile(glTFData.myFilename, RenderCore::GetInstance()->GetGraphicsQueue(), someData.myMatrix);
+		LoadFromFile(glTFData.myFilename, RenderCore::GetInstance()->GetGraphicsQueue(), someData);
 	}
 
 	Model::~Model()
@@ -46,7 +46,7 @@ namespace Render::Vulkan::glTF
 			node->Draw(this, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex, aType);
 	}
 
-	bool Model::LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const glm::mat4& aMatrix)
+	bool Model::LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const ModelData& someData)
 	{
 		myTransferQueue = aTransferQueue;
 
@@ -65,7 +65,7 @@ namespace Render::Vulkan::glTF
 
 		std::vector<Mesh::Vertex> vertexBuffer;
 		std::vector<uint> indexBuffer;
-		LoadNodes(gltfModel, aMatrix[3][3], vertexBuffer, indexBuffer);
+		LoadNodes(gltfModel, vertexBuffer, indexBuffer);
 
 		auto countNodes = [this](Node* aNode) { (void)aNode; myNodeCount++; };
 		IterateNodes(countNodes);
@@ -79,7 +79,7 @@ namespace Render::Vulkan::glTF
 
 		// Fill initial matrices
 		for (Node* node : myNodes)
-			node->UpdateUBO(aMatrix);
+			node->UpdateUBO(someData.myMatrix);
 
 		size_t vertexBufferSize = vertexBuffer.size() * sizeof(Mesh::Vertex);
 		size_t indexBufferSize = indexBuffer.size() * sizeof(uint);
@@ -165,14 +165,14 @@ namespace Render::Vulkan::glTF
 			myAnimations[i].Load(this, aModel, i);
 	}
 
-	void Model::LoadNodes(const tinygltf::Model& aModel, float aScale, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices)
+	void Model::LoadNodes(const tinygltf::Model& aModel, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices)
 	{
 		const tinygltf::Scene& scene = aModel.scenes[aModel.defaultScene > -1 ? aModel.defaultScene : 0];
 		myNodes.resize(scene.nodes.size());
 		for (size_t i = 0; i < scene.nodes.size(); i++)
 		{
 			myNodes[i] = new Node;
-			myNodes[i]->Load(aModel, scene.nodes[i], aScale, someOutVertices, someOutIndices);
+			myNodes[i]->Load(aModel, scene.nodes[i], someOutVertices, someOutIndices);
 		}
 	}
 

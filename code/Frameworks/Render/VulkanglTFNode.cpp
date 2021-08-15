@@ -16,7 +16,7 @@ namespace Render::Vulkan::glTF
 		myUBO.Destroy();
 	}
 
-	void Node::Load(const tinygltf::Model& aModel, uint aNodeIndex, float aScale, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices)
+	void Node::Load(const tinygltf::Model& aModel, uint aNodeIndex, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices)
 	{
 		const tinygltf::Node& gltfNode = aModel.nodes[aNodeIndex];
 		myIndex = aNodeIndex;
@@ -32,7 +32,6 @@ namespace Render::Vulkan::glTF
 			myScale = glm::make_vec3(gltfNode.scale.data());
 		if (gltfNode.matrix.size() == 16)
 			myMatrix = glm::make_mat4x4(gltfNode.matrix.data());
-		myMatrix = glm::scale(myMatrix, glm::vec3(aScale));
 
 		// Load children
 		myChildren.resize(gltfNode.children.size());
@@ -40,7 +39,7 @@ namespace Render::Vulkan::glTF
 		{
 			myChildren[i] = new Node();
 			myChildren[i]->myParent = this;
-			myChildren[i]->Load(aModel, gltfNode.children[i], aScale, someOutVertices, someOutIndices);
+			myChildren[i]->Load(aModel, gltfNode.children[i], someOutVertices, someOutIndices);
 		}
 
 		// Parse node mesh
@@ -143,7 +142,7 @@ namespace Render::Vulkan::glTF
 
 	glm::mat4 Node::GetLocalMatrix() const
 	{
-		return glm::translate(glm::mat4(1.0f), myTranslation) * glm::mat4(myRotation) * glm::scale(glm::mat4(1.0f), myScale) * myMatrix;
+		return glm::translate(glm::mat4(1.0f), myTranslation) * glm::mat4(myRotation) * glm::scale(myScale) * myMatrix;
 	}
 
 	glm::mat4 Node::GetMatrix() const

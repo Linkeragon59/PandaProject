@@ -20,10 +20,11 @@ void RhythmShooterModule::OnRegister()
 	myCamera->SetDirection(glm::vec3(0.0f, 0.0f, -1.0f));
 	myCamera->SetPerspective(1280.0f / 720.0f, 45.0f, 0.1f, 256.0f);
 
-	myShooterPlane = new GameWork::SimpleGeometryProp();
-	myShooterPlane->SetGeometry(Render::SimpleGeometryModelData::Preset::Sphere);
-	myShooterPlane->SetTexture("Games/RhythmShooter/textures/earth.png");
-	myShooterPlane->Spawn();
+	mySimpleGeometryTest = new GameWork::SimpleGeometryProp();
+	mySimpleGeometryTest->SetGeometry(Render::SimpleGeometryModelData::Preset::Sphere);
+	mySimpleGeometryTest->SetTexture("Games/RhythmShooter/textures/earth.png");
+	mySimpleGeometryTest->SetPosition(glm::vec3(-1.5f, 0.0f, 0.0f));
+	mySimpleGeometryTest->Spawn();
 
 	myTestModel = new GameWork::glTFProp();
 	myTestModel->SetModelFilename("Games/RhythmShooter/models/cube/Cube.gltf");
@@ -48,9 +49,9 @@ void RhythmShooterModule::OnUnregister()
 	delete myCamera;
 	myCamera = nullptr;
 
-	myShooterPlane->Despawn();
-	delete myShooterPlane;
-	myShooterPlane = nullptr;
+	mySimpleGeometryTest->Despawn();
+	delete mySimpleGeometryTest;
+	mySimpleGeometryTest = nullptr;
 
 	myTestModel->Despawn();
 	delete myTestModel;
@@ -73,14 +74,10 @@ void RhythmShooterModule::OnUpdate()
 	myCamera->Update();
 	myCamera->Bind(renderer);
 
-	myShooterPlane->Update();
-	myShooterPlane->Draw(renderer);
+	mySimpleGeometryTest->Update();
+	mySimpleGeometryTest->Draw(renderer);
 
 	Input::InputManager* inputManager = Input::InputManager::GetInstance();
-	if (inputManager->PollRawInput(Input::RawInput::KeyT) == Input::RawInputState::Pressed)
-	{
-		myTestModel->Translate(0.01f * myTestModel->GetDirection());
-	}
 	if (inputManager->PollRawInput(Input::RawInput::KeyR) == Input::RawInputState::Pressed)
 	{
 		myTestModel->Rotate(0.5f, glm::vec3(0.0f, 1.0f, 0.0f));

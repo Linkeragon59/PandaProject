@@ -13,7 +13,7 @@ namespace Render::Vulkan::glTF
 	{
 		~Node();
 
-		void Load(const tinygltf::Model& aModel, uint aNodeIndex, float aScale, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices);
+		void Load(const tinygltf::Model& aModel, uint aNodeIndex, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices);
 
 		void UpdateUBO(const glm::mat4& aMatrix);
 		void UpdateJoints(const Model* aContainer);

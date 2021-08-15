@@ -30,7 +30,7 @@ namespace Render::Vulkan::glTF
 		const Skin* GetEmptySkin() const { return &mySkins.back(); }
 
 	private:
-		bool LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const glm::mat4& aMatrix);
+		bool LoadFromFile(const std::string& aFilename, VkQueue aTransferQueue, const ModelData& someData);
 
 		void LoadImages(const tinygltf::Model& aModel);
 		void LoadTextures(const tinygltf::Model& aModel);
@@ -38,7 +38,7 @@ namespace Render::Vulkan::glTF
 		void LoadSkins(const tinygltf::Model& aModel);
 		void LoadAnimations(const tinygltf::Model& aModel);
 
-		void LoadNodes(const tinygltf::Model& aModel, float aScale, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices);
+		void LoadNodes(const tinygltf::Model& aModel, std::vector<Mesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices);
 
 		template<typename Functor>
 		void IterateNodes(Functor aFunctor, bool aParentFirst = true)

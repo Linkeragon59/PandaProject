@@ -22,7 +22,6 @@ namespace GameWork
 		void Rotate(const glm::vec3& someEulerAngles);
 		void Rotate(float anAngle, const glm::vec3& anAxis);
 		glm::quat GetOrientation() const { return myOrientation; }
-		glm::vec3 GetDirection() const;
 
 		// Scale - Scaling
 		void SetScale(float aScale);

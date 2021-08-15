@@ -32,11 +32,6 @@ namespace GameWork
 		myOrientation = glm::angleAxis(glm::radians(anAngle), anAxis) * myOrientation;
 	}
 
-	glm::vec3 Entity::GetDirection() const
-	{
-		return GetMatrix() * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
-	}
-
 	void Entity::SetScale(float aScale)
 	{
 		myScale = glm::vec3(aScale);

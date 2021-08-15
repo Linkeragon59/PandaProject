@@ -19,7 +19,7 @@ protected:
 
 private:
 	GameWork::Camera* myCamera = nullptr;
-	GameWork::SimpleGeometryProp* myShooterPlane = nullptr;
+	GameWork::SimpleGeometryProp* mySimpleGeometryTest = nullptr;
 	GameWork::glTFProp* myTestModel = nullptr;
 	GameWork::glTFProp* myTestAnimatedModel = nullptr;
 #if DEBUG_BUILD
