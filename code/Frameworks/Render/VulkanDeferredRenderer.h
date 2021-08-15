@@ -22,7 +22,7 @@ namespace Render::Vulkan
 		void SetViewport(const VkViewport& aViewport);
 		void SetScissor(const VkRect2D& aScissor);
 
-		void DrawModel(Render::Model* aModel, const BaseModelData& someData, DrawType aDrawType = DrawType::Normal) override;
+		void DrawModel(Render::Model* aModel, const ModelData& someData, DrawType aDrawType = DrawType::Default) override;
 		void AddLight(const PointLight& aPointLight) override;
 
 	private:

@@ -190,14 +190,14 @@ namespace Render::Vulkan
 #endif
 	}
 
-	void DeferredRenderer::DrawModel(Render::Model* aModel, const BaseModelData& someData, DrawType aDrawType /*= DrawType::Normal*/)
+	void DeferredRenderer::DrawModel(Render::Model* aModel, const ModelData& someData, DrawType aDrawType /*= DrawType::Normal*/)
 	{
 		(void)someData;
 		Model* vulkanModel = static_cast<Model*>(aModel);
 
 		switch (aDrawType)
 		{
-		case Renderer::DrawType::Normal:
+		case Renderer::DrawType::Default:
 			vulkanModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1, ShaderHelpers::BindType::Object);
 			break;
 #if DEBUG_BUILD

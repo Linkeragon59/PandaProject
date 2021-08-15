@@ -5,11 +5,11 @@
 
 namespace Render::Vulkan::glTF
 {
-	Model::Model(const BaseModelData& someData)
+	Model::Model(const ModelData& someData)
 	{
 		myDevice = RenderCore::GetInstance()->GetDevice();
 
-		Assert(someData.GetType() == BaseModelData::Type::glTF);
+		Assert(someData.GetType() == ModelData::Type::glTF);
 		const glTFModelData& glTFData = static_cast<const glTFModelData&>(someData);
 		LoadFromFile(glTFData.myFilename, RenderCore::GetInstance()->GetGraphicsQueue(), someData.myMatrix);
 	}
@@ -23,7 +23,7 @@ namespace Render::Vulkan::glTF
 			delete node;
 	}
 
-	void Model::Update(const BaseModelData& someData)
+	void Model::Update(const ModelData& someData)
 	{
 		if (myAnimations.size() > 0)
 			myAnimations[0].Update(1.0f / 60.0f);

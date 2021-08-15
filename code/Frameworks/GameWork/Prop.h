@@ -5,7 +5,7 @@
 
 namespace Render
 {
-	struct BaseModelData;
+	struct ModelData;
 	class Model;
 }
 
@@ -18,7 +18,7 @@ namespace GameWork
 		virtual ~Prop();
 
 		void Update() override;
-		void Draw(Render::Renderer* aRenderer, Render::Renderer::DrawType aDrawType = Render::Renderer::DrawType::Normal);
+		void Draw(Render::Renderer* aRenderer, Render::Renderer::DrawType aDrawType = Render::Renderer::DrawType::Default);
 
 		void Spawn();
 		void Despawn();
@@ -28,7 +28,7 @@ namespace GameWork
 		bool IsVisible() const { return myIsVisible; }
 
 	protected:
-		Render::BaseModelData* myModelData = nullptr;
+		Render::ModelData* myModelData = nullptr;
 		Render::Model* myModel = nullptr;
 
 		bool myIsSpawned = false;

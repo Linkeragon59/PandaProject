@@ -2,13 +2,13 @@
 
 namespace Render
 {
-	struct BaseModelData
+	struct ModelData
 	{
-		virtual ~BaseModelData() {}
+		virtual ~ModelData() {}
 		enum class Type
 		{
 			glTF,
-			Dynamic,
+			SimpleGeometry,
 		};
 		virtual Type GetType() const = 0;
 
@@ -16,7 +16,7 @@ namespace Render
 		bool myIsTransparent = false;
 	};
 
-	struct glTFModelData : public BaseModelData
+	struct glTFModelData : public ModelData
 	{
 		Type GetType() const override { return Type::glTF; }
 
@@ -24,9 +24,9 @@ namespace Render
 		bool myIsAnimated = false;
 	};
 
-	struct DynamicModelData : public BaseModelData
+	struct SimpleGeometryModelData : public ModelData
 	{
-		Type GetType() const override { return Type::Dynamic; }
+		Type GetType() const override { return Type::SimpleGeometry; }
 
 		struct Vertex
 		{
@@ -39,15 +39,27 @@ namespace Render
 		std::vector<uint> myIndices;
 		std::string myTextureFilename;
 
-#if DEBUG_BUILD
-		static void GetVectorBaseWidget(std::vector<Vertex>& someOutVertices, std::vector<uint>& someOutIndices);
-#endif
+		enum class Preset
+		{
+			VectorBaseWidget,
+			Square,
+			Cube,
+			Disc,
+			Sphere,
+		};
+		void FillWithPreset(Preset aPreset);
+
+		void FillVectorBaseWidget();
+		void FillSquare();
+		void FillCube();
+		void FillDisc();
+		void FillSphere();
 	};
 
 	class Model
 	{
 	public:
 		virtual ~Model() {};
-		virtual void Update(const BaseModelData& someData) = 0;
+		virtual void Update(const ModelData& someData) = 0;
 	};
 }

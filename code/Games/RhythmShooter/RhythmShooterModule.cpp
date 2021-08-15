@@ -2,7 +2,7 @@
 
 #include "GameWork.h"
 #include "Camera.h"
-#include "DynamicProp.h"
+#include "SimpleGeometryProp.h"
 #include "glTFProp.h"
 #include "RenderRenderer.h"
 #include "Input.h"
@@ -18,37 +18,26 @@ void RhythmShooterModule::OnRegister()
 	myCamera = new GameWork::Camera();
 	myCamera->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
 	myCamera->SetDirection(glm::vec3(0.0f, 0.0f, -1.0f));
-	myCamera->SetPerspective(800.0f / 600.0f, 45.0f, 0.1f, 256.0f);
+	myCamera->SetPerspective(1280.0f / 720.0f, 45.0f, 0.1f, 256.0f);
 
-	const std::vector<Render::DynamicModelData::Vertex> vertices =
-	{
-		{{-5.0f, -5.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-		{{-5.0f, 5.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-		{{5.0f, 5.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-		{{5.0f, -5.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}
-	};
-	const std::vector<uint> indices =
-	{
-		0, 2, 1, 2, 0, 3
-	};
-	myShooterPlane = new GameWork::DynamicProp();
-	myShooterPlane->SetGeometry(vertices, indices);
-	myShooterPlane->SetTexture("Games/RhythmShooter/textures/space.png");
+	myShooterPlane = new GameWork::SimpleGeometryProp();
+	myShooterPlane->SetGeometry(Render::SimpleGeometryModelData::Preset::Sphere);
+	myShooterPlane->SetTexture("Games/RhythmShooter/textures/earth.png");
 	myShooterPlane->Spawn();
 
-	myTestModel = new GameWork::glTFProp("Games/RhythmShooter/models/duck/Duck.gltf");
+	myTestModel = new GameWork::glTFProp();
+	myTestModel->SetModelFilename("Games/RhythmShooter/models/cube/Cube.gltf");
+	myTestModel->SetPosition(glm::vec3(0.0f, 2.5f, 0.0f));
 	myTestModel->Spawn();
 
-	myTestAnimatedModel = new GameWork::glTFProp("Frameworks/models/CesiumMan/CesiumMan.gltf");
+	myTestAnimatedModel = new GameWork::glTFProp();
+	myTestAnimatedModel->SetModelFilename("Frameworks/models/CesiumMan/CesiumMan.gltf");
 	myTestAnimatedModel->SetPosition(glm::vec3(0.0f, 0.0f, 1.0f));
 	myTestAnimatedModel->Spawn();
 
 #if DEBUG_BUILD
-	std::vector<Render::DynamicModelData::Vertex> vectorVertices;
-	std::vector<uint> vectorIndices;
-	Render::DynamicModelData::GetVectorBaseWidget(vectorVertices, vectorIndices);
-	myVectorBase = new GameWork::DynamicProp();
-	myVectorBase->SetGeometry(vectorVertices, vectorIndices);
+	myVectorBase = new GameWork::SimpleGeometryProp();
+	myVectorBase->SetGeometry(Render::SimpleGeometryModelData::Preset::VectorBaseWidget);
 	myVectorBase->SetTexture("Games/RhythmShooter/textures/white.png");
 	myVectorBase->Spawn();
 #endif

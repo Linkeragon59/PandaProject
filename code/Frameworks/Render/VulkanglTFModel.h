@@ -14,10 +14,10 @@ namespace Render::Vulkan::glTF
 	class Model : public Render::Vulkan::Model
 	{
 	public:
-		Model(const BaseModelData& someData);
+		Model(const ModelData& someData);
 		~Model();
 
-		void Update(const BaseModelData& someData) override;
+		void Update(const ModelData& someData) override;
 		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType) override;
 
 		Node* GetNodeByIndex(uint anIndex);

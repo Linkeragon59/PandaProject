@@ -4,10 +4,15 @@
 
 namespace GameWork
 {
-	glTFProp::glTFProp(std::string aFileName)
-		: Prop()
+	glTFProp::glTFProp()
 	{
 		myModelData = new Render::glTFModelData;
-		static_cast<Render::glTFModelData*>(myModelData)->myFilename = aFileName;
+		
 	}
+
+	void glTFProp::SetModelFilename(const std::string& aFilename)
+	{
+		static_cast<Render::glTFModelData*>(myModelData)->myFilename = aFilename;
+	}
+
 }

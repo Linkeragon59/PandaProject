@@ -16,14 +16,14 @@ namespace Render
 
 		enum class DrawType
 		{
-			Normal,
+			Default,
 #if DEBUG_BUILD
 			Debug,
 #endif
 		};
 
 		virtual void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection) = 0;
-		virtual void DrawModel(Model* aModel, const BaseModelData& someData, DrawType aDrawType = DrawType::Normal) = 0;
+		virtual void DrawModel(Model* aModel, const ModelData& someData, DrawType aDrawType = DrawType::Default) = 0;
 		virtual void AddLight(const PointLight& aPointLight) = 0;
 		// TODO
 		// DrawUI

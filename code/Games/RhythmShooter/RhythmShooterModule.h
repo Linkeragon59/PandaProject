@@ -5,7 +5,7 @@ namespace GameWork
 {
 	class Camera;
 	class glTFProp;
-	class DynamicProp;
+	class SimpleGeometryProp;
 }
 
 class RhythmShooterModule : public GameWork::Module
@@ -19,10 +19,10 @@ protected:
 
 private:
 	GameWork::Camera* myCamera = nullptr;
-	GameWork::DynamicProp* myShooterPlane = nullptr;
+	GameWork::SimpleGeometryProp* myShooterPlane = nullptr;
 	GameWork::glTFProp* myTestModel = nullptr;
 	GameWork::glTFProp* myTestAnimatedModel = nullptr;
 #if DEBUG_BUILD
-	GameWork::DynamicProp* myVectorBase = nullptr;
+	GameWork::SimpleGeometryProp* myVectorBase = nullptr;
 #endif
 };

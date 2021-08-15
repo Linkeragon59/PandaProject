@@ -8,7 +8,7 @@
 #include "Camera.h"
 #include "Prop.h"
 #include "glTFProp.h"
-#include "DynamicProp.h"
+#include "SimpleGeometryProp.h"
 #include "PointLight.h"
 
 #if LINUX_BUILD

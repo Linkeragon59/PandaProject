@@ -1,4 +1,4 @@
-#include "VulkanDynamicModel.h"
+#include "VulkanSimpleGeometryModel.h"
 
 #include "VulkanHelpers.h"
 #include "VulkanShaderHelpers.h"
@@ -11,14 +11,14 @@
 
 namespace Render::Vulkan
 {
-	DynamicModel::DynamicModel(const BaseModelData& someData)
+	SimpleGeometryModel::SimpleGeometryModel(const ModelData& someData)
 	{
-		Assert(someData.GetType() == BaseModelData::Type::Dynamic);
-		const DynamicModelData& modelData = static_cast<const DynamicModelData&>(someData);
+		Assert(someData.GetType() == ModelData::Type::SimpleGeometry);
+		const SimpleGeometryModelData& modelData = static_cast<const SimpleGeometryModelData&>(someData);
 
 		std::vector< ShaderHelpers::Vertex> fullVertices;
 		fullVertices.reserve(modelData.myVertices.size());
-		for (const DynamicModelData::Vertex& vertex : modelData.myVertices)
+		for (const SimpleGeometryModelData::Vertex& vertex : modelData.myVertices)
 		{
 			ShaderHelpers::Vertex fullVertex =
 			{
@@ -122,7 +122,7 @@ namespace Render::Vulkan
 		myUBOObject.Map();
 	}
 
-	DynamicModel::~DynamicModel()
+	SimpleGeometryModel::~SimpleGeometryModel()
 	{
 		myUBOObject.Destroy();
 		myTexture.Destroy();
@@ -132,12 +132,12 @@ namespace Render::Vulkan
 		myIndexCount = 0;
 	}
 
-	void DynamicModel::Update(const BaseModelData& someData)
+	void SimpleGeometryModel::Update(const ModelData& someData)
 	{
 		memcpy(myUBOObject.myMappedData, &someData.myMatrix, sizeof(glm::mat4));
 	}
 
-	void DynamicModel::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType)
+	void SimpleGeometryModel::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType)
 	{
 		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT32);
 		std::array<VkBuffer, 1> modelVertexBuffers = { myVertexBuffer.myBuffer };

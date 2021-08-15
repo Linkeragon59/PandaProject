@@ -15,7 +15,6 @@ target_sources(Render
 		VulkanDeferredRenderer.h
 		VulkanDescriptorContainer.h
 		VulkanDevice.h
-		VulkanDynamicModel.h
 		VulkanglTFAnimation.h
 		VulkanglTFMaterial.h
 		VulkanglTFMesh.h
@@ -31,6 +30,7 @@ target_sources(Render
 		VulkanRender.h
 		VulkanRenderer.h
 		VulkanShaderHelpers.h
+		VulkanSimpleGeometryModel.h
 		VulkanSwapChain.h
 
 		RenderFacade.cpp
@@ -43,7 +43,6 @@ target_sources(Render
 		VulkanDeferredRenderer.cpp
 		VulkanDescriptorContainer.cpp
 		VulkanDevice.cpp
-		VulkanDynamicModel.cpp
 		VulkanglTFAnimation.cpp
 		VulkanglTFMaterial.cpp
 		VulkanglTFMesh.cpp
@@ -58,6 +57,7 @@ target_sources(Render
 		VulkanRender.cpp
 		VulkanRenderer.cpp
 		VulkanShaderHelpers.cpp
+		VulkanSimpleGeometryModel.cpp
 		VulkanSwapChain.cpp
 )
 

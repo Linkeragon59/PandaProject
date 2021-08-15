@@ -4,7 +4,6 @@ add_library(GameWork "")
 target_sources(GameWork
 	PRIVATE
 		Camera.h
-		DynamicProp.h
 		Entity.h
 		GameWork.h
 		GameWorkPrecompile.h
@@ -14,10 +13,10 @@ target_sources(GameWork
 		Module.h
 		Prop.h
 		PropManager.h
+		SimpleGeometryProp.h
 		Window.h
 
 		Camera.cpp
-		DynamicProp.cpp
 		Entity.cpp
 		GameWork.cpp
 		glTFProp.cpp
@@ -25,6 +24,7 @@ target_sources(GameWork
 		PointLight.cpp
 		Prop.cpp
 		PropManager.cpp
+		SimpleGeometryProp.cpp
 		Window.cpp
 )
 

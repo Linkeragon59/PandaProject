@@ -6,13 +6,13 @@
 
 namespace Render::Vulkan
 {
-	class DynamicModel : public Model
+	class SimpleGeometryModel : public Model
 	{
 	public:
-		DynamicModel(const BaseModelData& someData);
-		~DynamicModel();
+		SimpleGeometryModel(const ModelData& someData);
+		~SimpleGeometryModel();
 
-		void Update(const BaseModelData& someData) override;
+		void Update(const ModelData& someData) override;
 		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType) override;
 
 	private:
