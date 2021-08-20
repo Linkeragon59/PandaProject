@@ -1,82 +1,67 @@
 #include "RhythmShooterModule.h"
 
 #include "GameWork.h"
+#include "CameraManager.h"
 #include "Camera.h"
-#include "SimpleGeometryProp.h"
-#include "glTFProp.h"
+#include "PropManager.h"
+#include "Prop.h"
+
 #include "RenderRenderer.h"
 #include "Input.h"
 
 RhythmShooterModule* RhythmShooterModule::ourInstance = nullptr;
 
-namespace
-{
-}
-
 void RhythmShooterModule::OnRegister()
 {
-	myCamera = new GameWork::Camera();
+	GameWork::CameraManager* cameraManager = GameWork::GameWork::GetInstance()->GetCameraManager();
+
+	myCamera = cameraManager->AddCamera();
 	myCamera->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
 	myCamera->SetDirection(glm::vec3(0.0f, 0.0f, -1.0f));
-	myCamera->SetPerspective(1280.0f / 720.0f, 45.0f, 0.1f, 256.0f);
 
-	mySimpleGeometryTest = new GameWork::SimpleGeometryProp();
-	mySimpleGeometryTest->SetGeometry(Render::SimpleGeometryModelData::Preset::Sphere);
-	mySimpleGeometryTest->SetTexture("Games/RhythmShooter/textures/earth.png");
-	mySimpleGeometryTest->SetPosition(glm::vec3(-1.5f, 0.0f, 0.0f));
-	mySimpleGeometryTest->Spawn();
+	GameWork::PropManager* propManager = GameWork::GameWork::GetInstance()->GetPropManager();
 
-	myTestModel = new GameWork::glTFProp();
-	myTestModel->SetModelFilename("Games/RhythmShooter/models/cube/Cube.gltf");
-	myTestModel->SetPosition(glm::vec3(0.0f, 2.5f, 0.0f));
-	myTestModel->Spawn();
+	{
+		Render::SimpleGeometryModelData modelData;
+		modelData.FillWithPreset(Render::SimpleGeometryModelData::Preset::Sphere);
+		modelData.myTextureFilename = "Games/RhythmShooter/textures/earth.png";
+		mySimpleGeometryTest = propManager->Spawn(modelData, glm::vec3(-1.5f, 0.0f, 0.0f));
+	}
 
-	myTestAnimatedModel = new GameWork::glTFProp();
-	myTestAnimatedModel->SetModelFilename("Frameworks/models/CesiumMan/CesiumMan.gltf");
-	myTestAnimatedModel->SetPosition(glm::vec3(0.0f, 0.0f, 1.0f));
-	myTestAnimatedModel->Spawn();
+	{
+		Render::glTFModelData modelData;
+		modelData.myFilename = "Games/RhythmShooter/models/cube/Cube.gltf";
+		myTestModel = propManager->Spawn(modelData, glm::vec3(0.0f, 2.5f, 0.0f));
+	}
 
-#if DEBUG_BUILD
-	myVectorBase = new GameWork::SimpleGeometryProp();
-	myVectorBase->SetGeometry(Render::SimpleGeometryModelData::Preset::VectorBaseWidget);
-	myVectorBase->SetTexture("Games/RhythmShooter/textures/white.png");
-	myVectorBase->Spawn();
-#endif
+	{
+		Render::glTFModelData modelData;
+		modelData.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
+		myTestAnimatedModel = propManager->Spawn(modelData, glm::vec3(0.0f, 0.0f, 1.0f));
+	}
 }
 
 void RhythmShooterModule::OnUnregister()
 {
-	delete myCamera;
+	GameWork::CameraManager* cameraManager = GameWork::GameWork::GetInstance()->GetCameraManager();
+
+	cameraManager->RemoveCamera(myCamera);
 	myCamera = nullptr;
 
-	mySimpleGeometryTest->Despawn();
-	delete mySimpleGeometryTest;
+	GameWork::PropManager* propManager = GameWork::GameWork::GetInstance()->GetPropManager();
+
+	propManager->Despawn(mySimpleGeometryTest);
 	mySimpleGeometryTest = nullptr;
 
-	myTestModel->Despawn();
-	delete myTestModel;
+	propManager->Despawn(myTestModel);
 	myTestModel = nullptr;
 
-	myTestAnimatedModel->Despawn();
-	delete myTestAnimatedModel;
+	propManager->Despawn(myTestAnimatedModel);
 	myTestAnimatedModel = nullptr;
-
-#if DEBUG_BUILD
-	myVectorBase->Despawn();
-	delete myVectorBase;
-	myVectorBase = nullptr;
-#endif
 }
 
 void RhythmShooterModule::OnUpdate()
 {
-	Render::Renderer* renderer = GameWork::GameWork::GetInstance()->GetMainRenderer();
-	myCamera->Update();
-	myCamera->Bind(renderer);
-
-	mySimpleGeometryTest->Update();
-	mySimpleGeometryTest->Draw(renderer);
-
 	Input::InputManager* inputManager = Input::InputManager::GetInstance();
 	if (inputManager->PollRawInput(Input::RawInput::KeyR) == Input::RawInputState::Pressed)
 	{
@@ -86,14 +71,4 @@ void RhythmShooterModule::OnUpdate()
 	{
 		myTestModel->Scale(glm::vec3(1.01f, 1.0f, 0.99f));
 	}
-	myTestModel->Update();
-	myTestModel->Draw(renderer);
-
-	myTestAnimatedModel->Update();
-	myTestAnimatedModel->Draw(renderer);
-
-#if DEBUG_BUILD
-	myVectorBase->Update();
-	myVectorBase->Draw(renderer, Render::Renderer::DrawType::Debug);
-#endif
 }

@@ -42,8 +42,7 @@ namespace Render::Vulkan
 
 		ourInstance->Finalize();
 
-		delete ourInstance;
-		ourInstance = nullptr;
+		SafeDelete(ourInstance);
 	}
 
 	RenderCore::RenderCore()
@@ -115,27 +114,31 @@ namespace Render::Vulkan
 
 	void RenderCore::UnregisterWindow(GLFWwindow* aWindow)
 	{
-		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
+		auto it = std::find_if(mySwapChains.begin(), mySwapChains.end(), [aWindow](SwapChain* aSwapChain) { return aSwapChain->GetWindowHandle() == aWindow; });
+		if (it != mySwapChains.end())
 		{
-			if (mySwapChains[i]->GetWindowHandle() == aWindow)
-			{
-				delete mySwapChains[i];
-				mySwapChains.erase(mySwapChains.begin() + i);
-				break;
-			}
+			delete (*it);
+			mySwapChains.erase(it);
 		}
 
 		UpdateMaxInFlightFrmaesCount();
 	}
 
+	void RenderCore::ResizeWindow(GLFWwindow* aWindow)
+	{
+		auto it = std::find_if(mySwapChains.begin(), mySwapChains.end(), [aWindow](SwapChain* aSwapChain) { return aSwapChain->GetWindowHandle() == aWindow; });
+		if (it != mySwapChains.end())
+		{
+			(*it)->OnWindowFramebufferReisze();
+		}
+	}
+
 	Render::Renderer* RenderCore::GetRenderer(GLFWwindow* aWindow)
 	{
-		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
+		auto it = std::find_if(mySwapChains.begin(), mySwapChains.end(), [aWindow](SwapChain* aSwapChain) { return aSwapChain->GetWindowHandle() == aWindow; });
+		if (it != mySwapChains.end())
 		{
-			if (mySwapChains[i]->GetWindowHandle() == aWindow)
-			{
-				return mySwapChains[i]->GetRenderer();
-			}
+			return (*it)->GetRenderer();
 		}
 		return nullptr;
 	}

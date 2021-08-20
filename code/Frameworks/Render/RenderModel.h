@@ -46,14 +46,17 @@ namespace Render
 			Cube,
 			Disc,
 			Sphere,
+			Panda,
 		};
 		void FillWithPreset(Preset aPreset);
 
+	private:
 		void FillVectorBaseWidget();
 		void FillSquare();
 		void FillCube();
 		void FillDisc();
 		void FillSphere();
+		void FillPanda();
 	};
 
 	class Model

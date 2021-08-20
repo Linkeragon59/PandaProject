@@ -43,8 +43,7 @@ namespace GameWork
 
 			bool res = GameWork::GetInstance()->UnregisterModule(anInstance);
 
-			delete anInstance;
-			anInstance = nullptr;
+			SafeDelete(anInstance);
 
 			return res;
 		}

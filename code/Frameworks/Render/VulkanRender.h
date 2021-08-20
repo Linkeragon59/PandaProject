@@ -30,6 +30,7 @@ namespace Render::Vulkan
 
 		void RegisterWindow(GLFWwindow* aWindow, Render::Renderer::Type aType);
 		void UnregisterWindow(GLFWwindow* aWindow);
+		void ResizeWindow(GLFWwindow* aWindow);
 		Render::Renderer* GetRenderer(GLFWwindow* aWindow);
 
 		Render::Model* SpawnModel(const ModelData& someData);

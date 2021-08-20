@@ -1,8 +1,3 @@
-#include <stdexcept>
-#include <iostream>
-
-#include "Types.h"
-
 #include "GameWork.h"
 #include "PandaModule.h"
 

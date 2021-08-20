@@ -14,8 +14,8 @@ namespace GameWork
 	class Prop : public Entity
 	{
 	public:
-		Prop();
 		virtual ~Prop();
+		void Init(const Render::ModelData& someData);
 
 		void Update() override;
 		void Draw(Render::Renderer* aRenderer, Render::Renderer::DrawType aDrawType = Render::Renderer::DrawType::Default);
@@ -28,12 +28,12 @@ namespace GameWork
 		bool IsVisible() const { return myIsVisible; }
 
 	protected:
+		virtual Render::ModelData* CreateModelData(const Render::ModelData& someData) = 0;
+
 		Render::ModelData* myModelData = nullptr;
 		Render::Model* myModel = nullptr;
 
 		bool myIsSpawned = false;
-
-		float myScale = 1.0f;
 		bool myIsVisible = true;
 	};
 }

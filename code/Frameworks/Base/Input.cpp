@@ -84,8 +84,17 @@ namespace Input
 	
 	void InputManager::Destroy()
 	{
-		delete ourInstance;
-		ourInstance = nullptr;
+		SafeDelete(ourInstance);
+	}
+
+	void InputManager::AddWindow(GLFWwindow* aWindow)
+	{
+		myWindows.push_back(aWindow);
+	}
+
+	void InputManager::RemoveWindow(GLFWwindow* aWindow)
+	{
+		std::erase(myWindows, aWindow);
 	}
 
 	RawInputState InputManager::PollRawInput(RawInput anInput, uint aWindowIdx /*= 0*/) const
@@ -109,13 +118,6 @@ namespace Input
 		}
 
 		glfwGetCursorPos(myWindows[aWindowIdx], &anOutX, &anOutY);
-	}
-
-	void InputManager::SetupCallbacks(uint aWindowIdx /*= 0*/)
-	{
-		glfwSetKeyCallback(myWindows[aWindowIdx], InputManager::KeyCallback);
-		glfwSetMouseButtonCallback(myWindows[aWindowIdx], InputManager::MouseCallback);
-		glfwSetScrollCallback(myWindows[aWindowIdx], InputManager::ScrollCallback);
 	}
 
 	uint InputManager::AddCallback(RawInput anInput, std::function<void()> aCallback, uint aWindowIdx /*= 0*/)
@@ -214,5 +216,4 @@ namespace Input
 			}
 		}
 	}
-
 }

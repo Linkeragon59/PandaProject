@@ -7,9 +7,9 @@ namespace GameWork
 	class glTFProp : public Prop
 	{
 	public:
-		glTFProp();
-		~glTFProp() {}
-
 		void SetModelFilename(const std::string& aFilename);
+
+	private:
+		Render::ModelData* CreateModelData(const Render::ModelData& someData) override;
 	};
 }

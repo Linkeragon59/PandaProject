@@ -6,17 +6,17 @@
 
 namespace GameWork
 {
-	Prop::Prop()
-		: Entity()
-	{
-	}
-
 	Prop::~Prop()
 	{
 		if (myIsSpawned)
 			Despawn();
 
 		delete myModelData;
+	}
+
+	void Prop::Init(const Render::ModelData& someData)
+	{
+		myModelData = CreateModelData(someData);
 	}
 
 	void Prop::Update()

@@ -10,6 +10,10 @@ namespace Render
 namespace GameWork
 {
 	class Module;
+	class WindowManager;
+	class CameraManager;
+	class Prop;
+	class PropManager;
 
 	class GameWork
 	{
@@ -23,7 +27,19 @@ namespace GameWork
 		bool RegisterModule(Module* aModule);
 		bool UnregisterModule(Module* aModule);
 
-		Render::Renderer* GetMainRenderer();
+		Render::Renderer* GetMainWindowRenderer() const;
+		float GetMainWindowAspectRatio() const { return myMainWindowAspectRatio; }
+#if DEBUG_BUILD
+		void OpenDebugWindow();
+		void CloseDebugWindow();
+		Render::Renderer* GetDebugWindowRenderer();
+#endif
+
+		CameraManager* GetCameraManager() const { return myCameraManager; }
+		PropManager* GetPropManager() const { return myPropManager; }
+
+		static void OnWindowResize(GLFWwindow* aWindow, int aWidth, int aHeight);
+		static void OnWindowFramebufferResize(GLFWwindow* aWindow, int aWidth, int aHeight);
 
 	private:
 		static GameWork* ourInstance;
@@ -32,9 +48,19 @@ namespace GameWork
 
 		bool Update();
 
-		std::vector<Module*> myModules;
+		GLFWwindow* myMainWindow = nullptr;
+		float myMainWindowAspectRatio = 1.0f;
+#if DEBUG_BUILD
+		GLFWwindow* myDebugWindow = nullptr;
+#endif
 
-		GLFWwindow* myWindow = nullptr;
-		//GLFWwindow* myWindow2 = nullptr;
+		std::vector<Module*> myModules;
+		WindowManager* myWindowManager = nullptr;
+		CameraManager* myCameraManager = nullptr;
+		PropManager* myPropManager = nullptr;
+#if DEBUG_BUILD
+		PropManager* myDebugPropManager = nullptr;
+		Prop* myVectorBase = nullptr;
+#endif
 	};
 }

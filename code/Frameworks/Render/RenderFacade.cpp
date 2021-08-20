@@ -15,8 +15,7 @@ namespace Render
 	void Facade::Destroy()
 	{
 		Assert(ourInstance);
-		delete ourInstance;
-		ourInstance = nullptr;
+		SafeDelete(ourInstance);
 	}
 
 	void Facade::InitializeRendering()
@@ -47,6 +46,11 @@ namespace Render
 	void Facade::UnregisterWindow(GLFWwindow* aWindow)
 	{
 		Vulkan::RenderCore::GetInstance()->UnregisterWindow(aWindow);
+	}
+
+	void Facade::ResizeWindow(GLFWwindow* aWindow)
+	{
+		Vulkan::RenderCore::GetInstance()->ResizeWindow(aWindow);
 	}
 
 	Renderer* Facade::GetRenderer(GLFWwindow* aWindow)

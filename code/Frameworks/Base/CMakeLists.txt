@@ -10,6 +10,7 @@ target_sources(Base
 		Input.h
 		Thread.h
 		Types.h
+		Utils.h
 
 		Assert.cpp
 		File.cpp

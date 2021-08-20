@@ -4,8 +4,7 @@
 namespace GameWork
 {
 	class Camera;
-	class glTFProp;
-	class SimpleGeometryProp;
+	class Prop;
 }
 
 class RhythmShooterModule : public GameWork::Module
@@ -19,10 +18,7 @@ protected:
 
 private:
 	GameWork::Camera* myCamera = nullptr;
-	GameWork::SimpleGeometryProp* mySimpleGeometryTest = nullptr;
-	GameWork::glTFProp* myTestModel = nullptr;
-	GameWork::glTFProp* myTestAnimatedModel = nullptr;
-#if DEBUG_BUILD
-	GameWork::SimpleGeometryProp* myVectorBase = nullptr;
-#endif
+	GameWork::Prop* mySimpleGeometryTest = nullptr;
+	GameWork::Prop* myTestModel = nullptr;
+	GameWork::Prop* myTestAnimatedModel = nullptr;
 };

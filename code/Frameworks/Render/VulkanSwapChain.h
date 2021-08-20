@@ -23,6 +23,7 @@ namespace Render::Vulkan
 		void Present();
 
 		GLFWwindow* GetWindowHandle() const { return myWindow; }
+		void OnWindowFramebufferReisze() { myFramebufferResized = true; }
 
 		uint GetImagesCount() const { return (uint)myImages.size(); };
 		VkExtent2D GetExtent() const { return myExtent; }
@@ -33,8 +34,6 @@ namespace Render::Vulkan
 		Renderer* GetRenderer() const { return myRenderer; }
 
 	private:
-		static void FramebufferResizedCallback(GLFWwindow* aWindow, int aWidth, int aHeight);
-
 		void SetupVkSwapChain();
 		void CleanupVkSwapChain();
 

@@ -16,8 +16,6 @@ namespace Render::Vulkan
 	{
 		myDevice = RenderCore::GetInstance()->GetDevice();
 
-		glfwSetWindowUserPointer(myWindow, this);
-		glfwSetFramebufferSizeCallback(myWindow, FramebufferResizedCallback);
 		VK_CHECK_RESULT(glfwCreateWindowSurface(RenderCore::GetInstance()->GetVkInstance(), myWindow, nullptr, &mySurface), "Failed to create the surface!");
 
 		Setup();
@@ -110,14 +108,6 @@ namespace Render::Vulkan
 		}
 	}
 
-	void SwapChain::FramebufferResizedCallback(GLFWwindow* aWindow, int aWidth, int aHeight)
-	{
-		(void)aWidth;
-		(void)aHeight;
-		auto app = reinterpret_cast<SwapChain*>(glfwGetWindowUserPointer(aWindow));
-		app->myFramebufferResized = true;
-	}
-
 	void SwapChain::SetupVkSwapChain()
 	{
 		VkPhysicalDevice physicalDevice = RenderCore::GetInstance()->GetPhysicalDevice();
@@ -141,8 +131,7 @@ namespace Render::Vulkan
 		else
 		{
 			int width = 0, height = 0;
-			// TODO : use glfwGetFramebufferSize instead ?
-			glfwGetWindowSize(myWindow, &width, &height);
+			glfwGetFramebufferSize(myWindow, &width, &height);
 			myExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, (uint)width));
 			myExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, (uint)height));
 		}
@@ -279,7 +268,6 @@ namespace Render::Vulkan
 	void SwapChain::DestroyRenderer()
 	{
 		myRenderer->Cleanup();
-		delete myRenderer;
-		myRenderer = nullptr;
+		SafeDelete(myRenderer);
 	}
 }

@@ -32,8 +32,8 @@ namespace GameWork
 
 	void Camera::Update()
 	{
-		myRight = glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), myDirection);
-		myUp = glm::cross(myDirection, myRight);
+		myLeft = glm::cross(glm::vec3(0.0f, 1.0f, 0.0f), myDirection);
+		myUp = glm::cross(myDirection, myLeft);
 
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 
@@ -59,7 +59,7 @@ namespace GameWork
 				pitch = 89.0f;
 			if (pitch < -89.0f)
 				pitch = -89.0f;
-			yaw += (float)-deltaMouseX;
+			yaw -= (float)deltaMouseX;
 
 			myDirection.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
 			myDirection.y = sin(glm::radians(pitch));
@@ -68,7 +68,7 @@ namespace GameWork
 		}
 		if (inputManager->PollRawInput(Input::RawInput::MouseMiddle) == Input::RawInputState::Pressed)
 		{
-			myPosition += -0.1f * ((float)deltaMouseX * myRight + (float)deltaMouseY * myUp);
+			myPosition += -0.1f * ((float)deltaMouseX * myLeft + (float)deltaMouseY * myUp);
 		}
 		if (inputManager->PollRawInput(Input::RawInput::KeyW) == Input::RawInputState::Pressed)
 		{
@@ -80,11 +80,11 @@ namespace GameWork
 		}
 		if (inputManager->PollRawInput(Input::RawInput::KeyA) == Input::RawInputState::Pressed)
 		{
-			myPosition += locSpeed * myRight;
+			myPosition += locSpeed * myLeft;
 		}
 		if (inputManager->PollRawInput(Input::RawInput::KeyD) == Input::RawInputState::Pressed)
 		{
-			myPosition -= locSpeed * myRight;
+			myPosition -= locSpeed * myLeft;
 		}
 	}
 
@@ -94,13 +94,5 @@ namespace GameWork
 		glm::mat4 perspective = glm::perspective(glm::radians(myFov), myAspectRatio, myZNear, myZFar);
 		perspective[1][1] *= -1;
 		aRenderer->SetViewProj(view, perspective);
-	}
-
-	void Camera::SetPerspective(float anAspectRatio, float aFov, float aZNear, float aZFar)
-	{
-		myAspectRatio = anAspectRatio;
-		myFov = aFov;
-		myZNear = aZNear;
-		myZFar = aZFar;
 	}
 }

@@ -2,12 +2,6 @@
 
 namespace GameWork
 {
-
-	SimpleGeometryProp::SimpleGeometryProp()
-	{
-		myModelData = new Render::SimpleGeometryModelData;
-	}
-
 	void SimpleGeometryProp::SetGeometry(Render::SimpleGeometryModelData::Preset aPreset)
 	{
 		static_cast<Render::SimpleGeometryModelData*>(myModelData)->FillWithPreset(aPreset);
@@ -22,5 +16,11 @@ namespace GameWork
 	void SimpleGeometryProp::SetTexture(const std::string& aTextureFilename)
 	{
 		static_cast<Render::SimpleGeometryModelData*>(myModelData)->myTextureFilename = aTextureFilename;
+	}
+
+	Render::ModelData* SimpleGeometryProp::CreateModelData(const Render::ModelData& someData)
+	{
+		Assert(someData.GetType() == Render::ModelData::Type::SimpleGeometry);
+		return new Render::SimpleGeometryModelData(static_cast<const Render::SimpleGeometryModelData&>(someData));
 	}
 }
