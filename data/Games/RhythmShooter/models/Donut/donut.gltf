@@ -1,0 +1,257 @@
+{
+    "asset" : {
+        "generator" : "Khronos glTF Blender I/O v1.5.17",
+        "version" : "2.0"
+    },
+    "scene" : 0,
+    "scenes" : [
+        {
+            "name" : "Scene",
+            "nodes" : [
+                1,
+                2,
+                3
+            ]
+        }
+    ],
+    "nodes" : [
+        {
+            "mesh" : 0,
+            "name" : "Icing"
+        },
+        {
+            "children" : [
+                0
+            ],
+            "mesh" : 1,
+            "name" : "Donut",
+            "translation" : [
+                0,
+                0.000978296622633934,
+                0
+            ]
+        },
+        {
+            "name" : "Light",
+            "rotation" : [
+                0.16907575726509094,
+                0.7558803558349609,
+                -0.27217137813568115,
+                0.570947527885437
+            ],
+            "translation" : [
+                0.18672597408294678,
+                0.7646236419677734,
+                -1.039967656135559
+            ]
+        },
+        {
+            "name" : "Camera",
+            "rotation" : [
+                0.23567721247673035,
+                -0.7607669234275818,
+                0.467654287815094,
+                0.383392333984375
+            ],
+            "translation" : [
+                -0.36352476477622986,
+                0.24637404084205627,
+                -0.2609322965145111
+            ]
+        }
+    ],
+    "materials" : [
+        {
+            "doubleSided" : true,
+            "name" : "IcingMaterial",
+            "pbrMetallicRoughness" : {
+                "baseColorFactor" : [
+                    0.8000000715255737,
+                    0.6763814091682434,
+                    0.08301419764757156,
+                    1
+                ],
+                "metallicFactor" : 0,
+                "roughnessFactor" : 0.32857146859169006
+            }
+        },
+        {
+            "doubleSided" : true,
+            "name" : "DonutMaterial",
+            "pbrMetallicRoughness" : {
+                "baseColorTexture" : {
+                    "index" : 0
+                },
+                "metallicFactor" : 0,
+                "roughnessFactor" : 0.7279411554336548
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "Torus.001",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TEXCOORD_0" : 2
+                    },
+                    "indices" : 3,
+                    "material" : 0
+                }
+            ]
+        },
+        {
+            "name" : "Torus",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 4,
+                        "NORMAL" : 5,
+                        "TEXCOORD_0" : 6
+                    },
+                    "indices" : 7,
+                    "material" : 1
+                }
+            ]
+        }
+    ],
+    "textures" : [
+        {
+            "sampler" : 0,
+            "source" : 0
+        }
+    ],
+    "images" : [
+        {
+            "mimeType" : "image/png",
+            "name" : "DonutTexture",
+            "uri" : "DonutTexture.png"
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 10228,
+            "max" : [
+                0.06882163882255554,
+                0.030427236109972,
+                0.07109773904085159
+            ],
+            "min" : [
+                -0.07370591908693314,
+                -0.00685031246393919,
+                -0.07035302370786667
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 10228,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 10228,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5123,
+            "count" : 56160,
+            "type" : "SCALAR"
+        },
+        {
+            "bufferView" : 4,
+            "componentType" : 5126,
+            "count" : 3321,
+            "max" : [
+                0.0696987509727478,
+                0.026433538645505905,
+                0.07046091556549072
+            ],
+            "min" : [
+                -0.07379141449928284,
+                -0.025441251695156097,
+                -0.07100779563188553
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 5,
+            "componentType" : 5126,
+            "count" : 3321,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 6,
+            "componentType" : 5126,
+            "count" : 3321,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 7,
+            "componentType" : 5123,
+            "count" : 19200,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 122736,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 122736,
+            "byteOffset" : 122736
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 81824,
+            "byteOffset" : 245472
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 112320,
+            "byteOffset" : 327296
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 39852,
+            "byteOffset" : 439616
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 39852,
+            "byteOffset" : 479468
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 26568,
+            "byteOffset" : 519320
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 38400,
+            "byteOffset" : 545888
+        }
+    ],
+    "samplers" : [
+        {
+            "magFilter" : 9729,
+            "minFilter" : 9987
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 584288,
+            "uri" : "donut.bin"
+        }
+    ]
+}

@@ -51,25 +51,26 @@ namespace Render::Vulkan::glTF
 				switch (accessor.type)
 				{
 				case TINYGLTF_TYPE_VEC3:
-				{
-					const glm::vec3* buf = static_cast<const glm::vec3*>(dataPtr);
-					for (size_t index = 0; index < accessor.count; index++)
 					{
-						mySamplers[i].myOutputValues.push_back(glm::vec4(buf[index], 0.0f));
+						const glm::vec3* buf = static_cast<const glm::vec3*>(dataPtr);
+						for (size_t index = 0; index < accessor.count; index++)
+						{
+							mySamplers[i].myOutputValues.push_back(glm::vec4(buf[index], 0.0f));
+						}
 					}
-				}
-				break;
+					break;
 				case TINYGLTF_TYPE_VEC4:
-				{
-					const glm::vec4* buf = static_cast<const glm::vec4*>(dataPtr);
-					for (size_t index = 0; index < accessor.count; index++)
 					{
-						mySamplers[i].myOutputValues.push_back(buf[index]);
+						const glm::vec4* buf = static_cast<const glm::vec4*>(dataPtr);
+						for (size_t index = 0; index < accessor.count; index++)
+						{
+							mySamplers[i].myOutputValues.push_back(buf[index]);
+						}
 					}
-				}
-				break;
+					break;
 				default:
 					Assert(false, "AnimationSampler output format not supported yet");
+					break;
 				}
 			}
 		}
