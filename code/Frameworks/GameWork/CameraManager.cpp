@@ -42,7 +42,14 @@ namespace GameWork
 
 	void CameraManager::RemoveCamera(Camera* aCamera)
 	{
-		std::erase(myCameras, aCamera);
-		delete aCamera;
+		for (auto it = myCameras.begin(); it != myCameras.end(); ++it)
+		{
+			if ((*it) == aCamera)
+			{
+				delete (*it);
+				myCameras.erase(it);
+				return;
+			}		
+		}
 	}
 }

@@ -94,7 +94,14 @@ namespace Input
 
 	void InputManager::RemoveWindow(GLFWwindow* aWindow)
 	{
-		std::erase(myWindows, aWindow);
+		for (auto it = myWindows.begin(); it != myWindows.end(); ++it)
+		{
+			if ((*it) == aWindow)
+			{
+				myWindows.erase(it);
+				return;
+			}
+		}
 	}
 
 	RawInputState InputManager::PollRawInput(RawInput anInput, uint aWindowIdx /*= 0*/) const

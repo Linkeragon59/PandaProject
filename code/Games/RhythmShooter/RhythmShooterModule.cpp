@@ -36,8 +36,8 @@ void RhythmShooterModule::OnRegister()
 
 	{
 		Render::glTFModelData modelData;
-		//modelData.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
-		modelData.myFilename = "Games/RhythmShooter/models/Asteroid01/Asteroid01.gltf";
+		modelData.myFilename = "Frameworks/models/CesiumMan/CesiumMan.gltf";
+		//modelData.myFilename = "Games/RhythmShooter/models/Asteroid01/Asteroid01.gltf";
 		myTestAnimatedModel = propManager->Spawn(modelData, glm::vec3(0.0f, 0.0f, 1.0f));
 	}
 }

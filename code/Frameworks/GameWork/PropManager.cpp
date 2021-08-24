@@ -68,8 +68,15 @@ namespace GameWork
 
 	void PropManager::Despawn(Prop* aProp)
 	{
-		std::erase(myProps, aProp);
-		aProp->Despawn();
-		delete aProp;
+		for (auto it = myProps.begin(); it != myProps.end(); ++it)
+		{
+			if ((*it) == aProp)
+			{
+				(*it)->Despawn();
+				delete (*it);
+				myProps.erase(it);
+				return;
+			}
+		}
 	}
 }
