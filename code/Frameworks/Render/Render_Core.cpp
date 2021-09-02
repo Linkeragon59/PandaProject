@@ -1,4 +1,4 @@
-#include "Render_core.h"
+#include "Render_Core.h"
 
 #include "Render_ShaderHelpers.h"
 #include "Render_Debug.h"
@@ -108,7 +108,7 @@ namespace Render
 		SwapChain* swapChain = new SwapChain(aWindow, aType);
 		mySwapChains.push_back(swapChain);
 
-		UpdateMaxInFlightFrmaesCount();
+		UpdateMaxInFlightFramesCount();
 	}
 
 	void RenderCore::UnregisterWindow(GLFWwindow* aWindow)
@@ -120,7 +120,7 @@ namespace Render
 			mySwapChains.erase(it);
 		}
 
-		UpdateMaxInFlightFrmaesCount();
+		UpdateMaxInFlightFramesCount();
 	}
 
 	void RenderCore::ResizeWindow(GLFWwindow* aWindow)
@@ -369,7 +369,7 @@ namespace Render
 		anImage.SetupDescriptor();
 	}
 
-	void RenderCore::UpdateMaxInFlightFrmaesCount()
+	void RenderCore::UpdateMaxInFlightFramesCount()
 	{
 		myMaxInFlightFramesCount = 0;
 		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)

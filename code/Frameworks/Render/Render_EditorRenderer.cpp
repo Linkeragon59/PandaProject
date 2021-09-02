@@ -1,4 +1,6 @@
-#include "Render_GuiRenderer.h"
+#include "Render_EditorRenderer.h"
+
+#if DEBUG_BUILD
 
 #include "Render_SwapChain.h"
 #include "Render_ShaderHelpers.h"
@@ -6,7 +8,7 @@
 
 namespace Render
 {
-	void GuiRenderer::Setup(SwapChain* aSwapChain)
+	void EditorRenderer::Setup(SwapChain* aSwapChain)
 	{
 		RendererImpl::Setup(aSwapChain);
 		myExtent = mySwapChain->GetExtent();
@@ -15,11 +17,9 @@ namespace Render
 		SetupRenderPass();
 		SetupPipeline();
 		SetupFrameBuffers();
-
-		myTestGui = new Gui();
 	}
 
-	void GuiRenderer::Cleanup()
+	void EditorRenderer::Cleanup()
 	{
 		SafeDelete(myTestGui);
 
@@ -33,7 +33,7 @@ namespace Render
 		RendererImpl::Cleanup();
 	}
 
-	void GuiRenderer::StartFrame()
+	void EditorRenderer::StartFrame()
 	{
 		RendererImpl::StartFrame();
 
@@ -102,7 +102,7 @@ namespace Render
 		SetScissor(scissor);
 	}
 
-	void GuiRenderer::EndFrame()
+	void EditorRenderer::EndFrame()
 	{
 		Debug::EndRegion(mySecondaryCommandBuffersGui[myCurrentFrameIndex]);
 		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersGui[myCurrentFrameIndex]), "Failed to end a command buffer");
@@ -114,22 +114,26 @@ namespace Render
 		RendererImpl::EndFrame();
 	}
 
-	void GuiRenderer::SetViewport(const VkViewport& aViewport)
+	void EditorRenderer::SetViewport(const VkViewport& aViewport)
 	{
 		vkCmdSetViewport(mySecondaryCommandBuffersGui[myCurrentFrameIndex], 0, 1, &aViewport);
 	}
 
-	void GuiRenderer::SetScissor(const VkRect2D& aScissor)
+	void EditorRenderer::SetScissor(const VkRect2D& aScissor)
 	{
 		vkCmdSetScissor(mySecondaryCommandBuffersGui[myCurrentFrameIndex], 0, 1, &aScissor);
 	}
 
-	void GuiRenderer::DrawGui()
+	void EditorRenderer::DrawGui(ImGuiContext* aGuiContext)
 	{
+		if (!myTestGui)
+		{
+			myTestGui = new Gui(aGuiContext);
+		}
 		myTestGui->Draw(mySecondaryCommandBuffersGui[myCurrentFrameIndex], myGuiPipeline.myPipelineLayout, 0);
 	}
 
-	void GuiRenderer::SetupRenderPass()
+	void EditorRenderer::SetupRenderPass()
 	{
 		std::array<VkAttachmentDescription, 1> attachments{};
 		{
@@ -185,23 +189,23 @@ namespace Render
 		VK_CHECK_RESULT(vkCreateRenderPass(myDevice, &renderPassInfo, nullptr, &myRenderPass), "Failed to create the render pass!");
 	}
 
-	void GuiRenderer::DestroyRenderPass()
+	void EditorRenderer::DestroyRenderPass()
 	{
 		vkDestroyRenderPass(RenderCore::GetInstance()->GetDevice(), myRenderPass, nullptr);
 		myRenderPass = VK_NULL_HANDLE;
 	}
 
-	void GuiRenderer::SetupPipeline()
+	void EditorRenderer::SetupPipeline()
 	{
 		myGuiPipeline.Prepare(myRenderPass);
 	}
 
-	void GuiRenderer::DestroyPipeline()
+	void EditorRenderer::DestroyPipeline()
 	{
 		myGuiPipeline.Destroy();
 	}
 
-	void GuiRenderer::SetupCommandBuffers()
+	void EditorRenderer::SetupCommandBuffers()
 	{
 		RendererImpl::SetupCommandBuffers();
 
@@ -217,19 +221,19 @@ namespace Render
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, mySecondaryCommandBuffersGui.data()), "Failed to create command buffers!");
 	}
 
-	void GuiRenderer::DestroyCommandBuffers()
+	void EditorRenderer::DestroyCommandBuffers()
 	{
 		RendererImpl::DestroyCommandBuffers();
 
 		mySecondaryCommandBuffersGui.clear();
 	}
 
-	void GuiRenderer::SetupFrameBuffers()
+	void EditorRenderer::SetupFrameBuffers()
 	{
 		myFrameBuffers.resize(mySwapChain->GetImagesCount(), VK_NULL_HANDLE);
 	}
 
-	void GuiRenderer::DestroyFrameBuffers()
+	void EditorRenderer::DestroyFrameBuffers()
 	{
 		for (uint i = 0; i < mySwapChain->GetImagesCount(); ++i)
 		{
@@ -239,3 +243,5 @@ namespace Render
 		myFrameBuffers.clear();
 	}
 }
+
+#endif

@@ -75,7 +75,7 @@ namespace Render
 		VulkanBuffer myDefaultJointsMatrix;
 
 		std::vector<SwapChain*> mySwapChains;
-		void UpdateMaxInFlightFrmaesCount();
+		void UpdateMaxInFlightFramesCount();
 		uint myMaxInFlightFramesCount = 0;
 
 		void DeleteUnusedModels(bool aDeleteNow = false);

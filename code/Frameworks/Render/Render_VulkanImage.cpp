@@ -174,7 +174,6 @@ namespace Render
 		{
 			vkDestroySampler(myDevice, myImageSampler, nullptr);
 			myImageSampler = VK_NULL_HANDLE;
-
 		}
 
 		if (myImageView)

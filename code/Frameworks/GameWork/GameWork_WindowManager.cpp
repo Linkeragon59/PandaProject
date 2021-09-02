@@ -21,7 +21,6 @@ namespace GameWork
 	GLFWwindow* WindowManager::OpenWindow(int aWidth, int aHeight, const char* aTitle)
 	{
 		GLFWwindow* window = glfwCreateWindow(aWidth, aHeight, aTitle, nullptr, nullptr);
-		Input::InputManager::GetInstance()->AddWindow(window);
 		RegisterCallbacks(window);
 		return window;
 	}
@@ -29,7 +28,6 @@ namespace GameWork
 	void WindowManager::CloseWindow(GLFWwindow* aWindow)
 	{
 		UnregisterCallbacks(aWindow);
-		Input::InputManager::GetInstance()->RemoveWindow(aWindow);
 		glfwDestroyWindow(aWindow);
 	}
 

@@ -6,6 +6,7 @@ target_sources(Base
 		Base_Assert.h
 		Base_File.h
 		Base_glm.h
+		Base_imgui.h
 		Base_Input.h
 		Base_Precompile.h
 		Base_Thread.h
@@ -15,6 +16,7 @@ target_sources(Base
 		Base_Assert.cpp
 		Base_File.cpp
 		Base_Thread.cpp
+		Base_imgui.cpp
 		Base_Input.cpp
 
 		glm.natvis
@@ -27,3 +29,4 @@ target_include_directories(Base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(Base GLFW)
 target_link_libraries(Base GLM)
+target_link_libraries(Base ImGui)

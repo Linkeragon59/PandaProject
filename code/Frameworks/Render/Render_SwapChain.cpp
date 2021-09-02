@@ -3,7 +3,7 @@
 #include "Render_VulkanDevice.h"
 #include "Render_Renderer.h"
 #include "Render_DeferredRenderer.h"
-#include "Render_GuiRenderer.h"
+#include "Render_EditorRenderer.h"
 
 #include <GLFW/glfw3.h>
 
@@ -263,10 +263,12 @@ namespace Render
 			myRenderer = new DeferredRenderer();
 			myRenderer->Setup(this);
 			break;
-		case Renderer::Type::Gui:
-			myRenderer = new GuiRenderer();
+#if DEBUG_BUILD
+		case Renderer::Type::Editor:
+			myRenderer = new EditorRenderer();
 			myRenderer->Setup(this);
 			break;
+#endif
 		default:
 			Assert(false, "Unsupported renderer type");
 			break;

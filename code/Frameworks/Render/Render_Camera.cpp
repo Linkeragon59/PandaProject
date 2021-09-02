@@ -1,7 +1,6 @@
 #include "Render_Camera.h"
-#include "Render_Helpers.h"
+
 #include "Render_ShaderHelpers.h"
-#include "Render_Core.h"
 
 namespace Render
 {

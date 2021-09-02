@@ -88,49 +88,35 @@ namespace Input
 		SafeDelete(ourInstance);
 	}
 
-	void InputManager::AddWindow(GLFWwindow* aWindow)
+	RawInputState InputManager::PollRawInput(RawInput anInput, GLFWwindow* aWindow /*= nullptr*/) const
 	{
-		myWindows.push_back(aWindow);
-	}
-
-	void InputManager::RemoveWindow(GLFWwindow* aWindow)
-	{
-		for (auto it = myWindows.begin(); it != myWindows.end(); ++it)
-		{
-			if ((*it) == aWindow)
-			{
-				myWindows.erase(it);
-				return;
-			}
-		}
-	}
-
-	RawInputState InputManager::PollRawInput(RawInput anInput, uint aWindowIdx /*= 0*/) const
-	{
-		if (aWindowIdx >= myWindows.size())
+		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
+		if (!window)
 			return RawInputState::Unknown;
 
 		if (anInput <= RawInput::MouseEnd)
-			return locGlfwInputStateToRawInputState(glfwGetMouseButton(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
+			return locGlfwInputStateToRawInputState(glfwGetMouseButton(window, locRawInputToGlfwInput(anInput)));
 		else
-			return locGlfwInputStateToRawInputState(glfwGetKey(myWindows[aWindowIdx], locRawInputToGlfwInput(anInput)));
+			return locGlfwInputStateToRawInputState(glfwGetKey(window, locRawInputToGlfwInput(anInput)));
 	}
 
-	void InputManager::PollMousePosition(double& anOutX, double& anOutY, uint aWindowIdx /*= 0*/) const
+	void InputManager::PollMousePosition(double& anOutX, double& anOutY, GLFWwindow* aWindow /*= nullptr*/) const
 	{
-		if (aWindowIdx >= myWindows.size())
+		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
+		if (!window)
 		{
 			anOutX = -1;
 			anOutY = -1;
 			return;
 		}
 
-		glfwGetCursorPos(myWindows[aWindowIdx], &anOutX, &anOutY);
+		glfwGetCursorPos(window, &anOutX, &anOutY);
 	}
 
-	uint InputManager::AddCallback(RawInput anInput, std::function<void()> aCallback, uint aWindowIdx /*= 0*/)
+	uint InputManager::AddCallback(RawInput anInput, std::function<void()> aCallback, GLFWwindow* aWindow /*= nullptr*/)
 	{
-		if (aWindowIdx >= myWindows.size())
+		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
+		if (!window)
 			return UINT_MAX;
 
 		for (uint i = 0; i < myInputCallbacks.size(); ++i)
@@ -139,13 +125,13 @@ namespace Input
 			if (callback.myCallback == nullptr)
 			{
 				callback.myInput = anInput;
-				callback.myWindow = myWindows[aWindowIdx];
+				callback.myWindow = window;
 				callback.myCallback = aCallback;
 				return i;
 			}
 		}
 
-		myInputCallbacks.push_back({ anInput, myWindows[aWindowIdx], aCallback });
+		myInputCallbacks.push_back({ anInput, window, aCallback });
 		return (uint)myInputCallbacks.size() - 1;
 	}
 
@@ -157,9 +143,10 @@ namespace Input
 		myInputCallbacks[aCallbakId].myCallback = nullptr;
 	}
 
-	uint InputManager::AddScrollCallback(std::function<void(double, double)> aCallback, uint aWindowIdx /*= 0*/)
+	uint InputManager::AddScrollCallback(std::function<void(double, double)> aCallback, GLFWwindow* aWindow /*= nullptr*/)
 	{
-		if (aWindowIdx >= myWindows.size())
+		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
+		if (!window)
 			return UINT_MAX;
 
 		for (uint i = 0; i < myScrollInputCallbacks.size(); ++i)
@@ -167,13 +154,13 @@ namespace Input
 			ScrollInputCallback& callback = myScrollInputCallbacks[i];
 			if (callback.myCallback == nullptr)
 			{
-				callback.myWindow = myWindows[aWindowIdx];
+				callback.myWindow = window;
 				callback.myCallback = aCallback;
 				return i;
 			}
 		}
 
-		myScrollInputCallbacks.push_back({ myWindows[aWindowIdx], aCallback });
+		myScrollInputCallbacks.push_back({ window, aCallback });
 		return (uint)myScrollInputCallbacks.size() - 1;
 	}
 

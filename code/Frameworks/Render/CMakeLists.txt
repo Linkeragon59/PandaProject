@@ -9,6 +9,7 @@ target_sources(Render
 		Render_DeferredPipeline.h
 		Render_DeferredRenderer.h
 		Render_DescriptorContainer.h
+		Render_EditorRenderer.h
 		Render_Facade.h
 		Render_glTFAnimation.h
 		Render_glTFMaterial.h
@@ -19,7 +20,6 @@ target_sources(Render
 		Render_glTFTexture.h
 		Render_Gui.h
 		Render_GuiPipeline.h
-		Render_GuiRenderer.h
 		Render_Helpers.h
 		Render_Light.h
 		Render_Model.h
@@ -41,6 +41,7 @@ target_sources(Render
 		Render_DeferredPipeline.cpp
 		Render_DeferredRenderer.cpp
 		Render_DescriptorContainer.cpp
+		Render_EditorRenderer.cpp
 		Render_Facade.cpp
 		Render_glTFAnimation.cpp
 		Render_glTFMaterial.cpp
@@ -51,7 +52,6 @@ target_sources(Render
 		Render_glTFTexture.cpp
 		Render_Gui.cpp
 		Render_GuiPipeline.cpp
-		Render_GuiRenderer.cpp
 		Render_Helpers.cpp
 		Render_Model.cpp
 		Render_PointLightsSet.cpp

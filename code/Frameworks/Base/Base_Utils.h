@@ -1,3 +1,3 @@
 #pragma once
 
-#define SafeDelete(ptr)	{ delete ptr; ptr = nullptr; }
+#define SafeDelete(ptr)	{ if (ptr) { delete ptr; ptr = nullptr; } }

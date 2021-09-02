@@ -14,6 +14,7 @@ namespace GameWork
 	class CameraManager;
 	class Prop;
 	class PropManager;
+	class Editor;
 
 	class GameWork
 	{
@@ -30,11 +31,11 @@ namespace GameWork
 		Render::Renderer* GetMainWindowRenderer() const;
 		float GetMainWindowAspectRatio() const { return myMainWindowAspectRatio; }
 #if DEBUG_BUILD
-		void OpenDebugWindow();
-		void CloseDebugWindow();
-		Render::Renderer* GetDebugWindowRenderer();
+		void OpenEditor();
+		void CloseEditor();
 #endif
 
+		WindowManager* GetWindowManager() const { return myWindowManager; }
 		CameraManager* GetCameraManager() const { return myCameraManager; }
 		PropManager* GetPropManager() const { return myPropManager; }
 
@@ -51,7 +52,7 @@ namespace GameWork
 		GLFWwindow* myMainWindow = nullptr;
 		float myMainWindowAspectRatio = 1.0f;
 #if DEBUG_BUILD
-		GLFWwindow* myDebugWindow = nullptr;
+		Editor* myEditor = nullptr;
 #endif
 
 		std::vector<Module*> myModules;

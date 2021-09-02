@@ -4,17 +4,21 @@
 #include "Render_VulkanBuffer.h"
 #include "Render_ShaderHelpers.h"
 
+struct ImGuiContext;
+
 namespace Render
 {
 	class Gui
 	{
 	public:
-		Gui();
+		Gui(ImGuiContext* aGuiContext);
 		~Gui();
 
 		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex);
 
 	private:
+		ImGuiContext* myGuiContext = nullptr;
+
 		void PrepareFont();
 		VulkanImage myFontTexture;
 

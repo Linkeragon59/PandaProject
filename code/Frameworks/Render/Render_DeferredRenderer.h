@@ -24,7 +24,7 @@ namespace Render
 
 		void DrawModel(Model* aModel, const ModelData& someData, DrawType aDrawType = DrawType::Default) override;
 		void AddLight(const PointLight& aPointLight) override;
-		void DrawGui() override {};
+		void DrawGui(ImGuiContext* /*aGuiContext*/) override {};
 
 	private:
 		VkExtent2D myExtent = {};

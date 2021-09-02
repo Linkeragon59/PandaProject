@@ -8,6 +8,7 @@
 #include "GameWork_WindowManager.h"
 #include "GameWork_CameraManager.h"
 #include "GameWork_PropManager.h"
+#include "GameWork_Editor.h"
 
 #if LINUX_BUILD
 #pragma GCC diagnostic push
@@ -107,30 +108,20 @@ namespace GameWork
 	}
 
 #if DEBUG_BUILD
-	void GameWork::OpenDebugWindow()
+	void GameWork::OpenEditor()
 	{
-		if (myDebugWindow)
+		if (myEditor)
 			return;
 
-		myDebugWindow = myWindowManager->OpenWindow(locWindowWidth, locWindowHeight, "Debug");
-
-		Render::Facade::GetInstance()->RegisterWindow(myDebugWindow, Render::Renderer::Type::Gui);
+		myEditor = new Editor();
 	}
 
-	void GameWork::CloseDebugWindow()
+	void GameWork::CloseEditor()
 	{
-		if (!myDebugWindow)
+		if (!myEditor)
 			return;
 
-		Render::Facade::GetInstance()->UnregisterWindow(myDebugWindow);
-
-		myWindowManager->CloseWindow(myDebugWindow);
-		myDebugWindow = nullptr;
-	}
-
-	Render::Renderer* GameWork::GetDebugWindowRenderer()
-	{
-		return Render::Facade::GetInstance()->GetRenderer(myDebugWindow);
+		SafeDelete(myEditor);
 	}
 #endif
 
@@ -140,6 +131,7 @@ namespace GameWork
 
 		myWindowManager = new WindowManager();
 		myMainWindow = myWindowManager->OpenWindow(locWindowWidth, locWindowHeight, "Panda Project v0.1");
+		Input::InputManager::GetInstance()->SetMainWindow(myMainWindow);
 		int width = 0, height = 0;
 		glfwGetWindowSize(myMainWindow, &width, &height);
 		myMainWindowAspectRatio = (height != 0) ? (float)width / (float)height : 1.0f;
@@ -209,11 +201,11 @@ namespace GameWork
 #if DEBUG_BUILD
 		if (inputManager->PollRawInput(Input::RawInput::KeyK) == Input::RawInputState::Pressed)
 		{
-			OpenDebugWindow();
+			OpenEditor();
 		}
 		if (inputManager->PollRawInput(Input::RawInput::KeyL) == Input::RawInputState::Pressed)
 		{
-			CloseDebugWindow();
+			CloseEditor();
 		}
 #endif
 		
@@ -232,8 +224,8 @@ namespace GameWork
 #endif
 
 #if DEBUG_BUILD
-		if (Render::Renderer* debugRenderer = GetDebugWindowRenderer())
-			debugRenderer->DrawGui();
+		if (myEditor)
+			myEditor->Update();
 #endif
 
 		Render::Facade::GetInstance()->EndFrame();

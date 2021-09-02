@@ -1,12 +1,14 @@
 #pragma once
 
+#if DEBUG_BUILD
+
 #include "Render_RendererImpl.h"
 #include "Render_GuiPipeline.h"
 #include "Render_Gui.h"
 
 namespace Render
 {
-	class GuiRenderer : public RendererImpl
+	class EditorRenderer : public RendererImpl
 	{
 	public:
 		void Setup(SwapChain* aSwapChain) override;
@@ -20,7 +22,7 @@ namespace Render
 
 		void DrawModel(Model* /*aModel*/, const ModelData& /*someData*/, DrawType /*aDrawType*/ = DrawType::Default) override {};
 		void AddLight(const PointLight& /*aPointLight*/) override {};
-		void DrawGui() override;
+		void DrawGui(ImGuiContext* aGuiContext) override;
 
 	private:
 		VkExtent2D myExtent = {};
@@ -46,7 +48,9 @@ namespace Render
 		void DestroyFrameBuffers();
 		std::vector<VkFramebuffer> myFrameBuffers;
 
-		// Temp
+		// TODO : Temp - should have a Gui manager instead
 		Gui* myTestGui = nullptr;
 	};
 }
+
+#endif
