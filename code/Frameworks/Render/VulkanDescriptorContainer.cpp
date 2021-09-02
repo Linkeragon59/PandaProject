@@ -180,6 +180,41 @@ namespace Render::Vulkan
 					"Failed to create the LightsSet DescriptorPool");
 			}
 			break;
+		case ShaderHelpers::BindType::Gui:
+			{
+				const uint maxGuiCount = 64;
+
+				std::array<VkDescriptorSetLayoutBinding, 1> bindings{};
+				// Binding 0 : Font Sampler
+				bindings[0].binding = 0;
+				bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				bindings[0].descriptorCount = 1;
+				bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+				VkDescriptorSetLayoutCreateInfo descriptorLayoutInfo{};
+				descriptorLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+				descriptorLayoutInfo.bindingCount = (uint)bindings.size();
+				descriptorLayoutInfo.pBindings = bindings.data();
+
+				VK_CHECK_RESULT(
+					vkCreateDescriptorSetLayout(myDevice, &descriptorLayoutInfo, nullptr, &myLayout),
+					"Failed to create the Gui DescriptorSetLayout");
+
+				std::array<VkDescriptorPoolSize, 1> poolSizes{};
+				poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				poolSizes[0].descriptorCount = maxGuiCount;
+
+				VkDescriptorPoolCreateInfo descriptorPoolInfo{};
+				descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+				descriptorPoolInfo.poolSizeCount = (uint)poolSizes.size();
+				descriptorPoolInfo.pPoolSizes = poolSizes.data();
+				descriptorPoolInfo.maxSets = maxGuiCount;
+
+				VK_CHECK_RESULT(
+					vkCreateDescriptorPool(myDevice, &descriptorPoolInfo, nullptr, &myPool),
+					"Failed to create the Gui DescriptorPool");
+			}
+			break;
 		default:
 			Assert(false, "Unsupported Descriptor Layout");
 			break;
@@ -348,8 +383,24 @@ namespace Render::Vulkan
 				vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
 			}
 			break;
+		case ShaderHelpers::BindType::Gui:
+			{
+				const ShaderHelpers::GuiDescriptorInfo& info = static_cast<const ShaderHelpers::GuiDescriptorInfo&>(someDescriptorInfo);
+
+				std::array<VkWriteDescriptorSet, 1> writeDescriptorSets{};
+				// Binding 0 : Font Sampler
+				writeDescriptorSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				writeDescriptorSets[0].descriptorCount = 1;
+				writeDescriptorSets[0].dstSet = aDescriptorSet;
+				writeDescriptorSets[0].dstBinding = 0;
+				writeDescriptorSets[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				writeDescriptorSets[0].pImageInfo = info.myFontSamplerInfo;
+
+				vkUpdateDescriptorSets(myDevice, static_cast<uint>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, NULL);
+			}
+			break;
 		default:
-			Assert(false, "Unsupported Descriptor Layout");
+			Assert(false, "Unsupported Descriptor Type");
 			break;
 		}
 	}

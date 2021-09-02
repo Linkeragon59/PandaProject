@@ -114,8 +114,7 @@ namespace GameWork
 
 		myDebugWindow = myWindowManager->OpenWindow(locWindowWidth, locWindowHeight, "Debug");
 
-		// TODO : Add a debug renderer type
-		Render::Facade::GetInstance()->RegisterWindow(myDebugWindow, Render::Renderer::Type::Deferred);
+		Render::Facade::GetInstance()->RegisterWindow(myDebugWindow, Render::Renderer::Type::Gui);
 	}
 
 	void GameWork::CloseDebugWindow()
@@ -207,6 +206,14 @@ namespace GameWork
 				locSoloud.stopAll(); // Stop the wave
 			}
 		}*/
+		if (inputManager->PollRawInput(Input::RawInput::KeyK) == Input::RawInputState::Pressed)
+		{
+			OpenDebugWindow();
+		}
+		if (inputManager->PollRawInput(Input::RawInput::KeyL) == Input::RawInputState::Pressed)
+		{
+			CloseDebugWindow();
+		}
 		
 		Render::Facade::GetInstance()->StartFrame();
 
@@ -220,6 +227,11 @@ namespace GameWork
 		myPropManager->Update();
 #if DEBUG_BUILD
 		myDebugPropManager->Update();
+#endif
+
+#if DEBUG_BUILD
+		if (Render::Renderer* debugRenderer = GetDebugWindowRenderer())
+			debugRenderer->DrawGui();
 #endif
 
 		Render::Facade::GetInstance()->EndFrame();

@@ -24,6 +24,7 @@ namespace Render::Vulkan
 
 		void DrawModel(Render::Model* aModel, const ModelData& someData, DrawType aDrawType = DrawType::Default) override;
 		void AddLight(const PointLight& aPointLight) override;
+		void DrawGui() override {};
 
 	private:
 		VkExtent2D myExtent = {};

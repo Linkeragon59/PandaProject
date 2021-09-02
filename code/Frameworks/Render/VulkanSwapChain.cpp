@@ -5,6 +5,7 @@
 #include "VulkanDevice.h"
 #include "VulkanRenderer.h"
 #include "VulkanDeferredRenderer.h"
+#include "VulkanGuiRenderer.h"
 
 #include <GLFW/glfw3.h>
 
@@ -257,6 +258,10 @@ namespace Render::Vulkan
 		{
 		case Render::Renderer::Type::Deferred:
 			myRenderer = new DeferredRenderer();
+			myRenderer->Setup(this);
+			break;
+		case Render::Renderer::Type::Gui:
+			myRenderer = new GuiRenderer();
 			myRenderer->Setup(this);
 			break;
 		default:

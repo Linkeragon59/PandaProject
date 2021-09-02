@@ -22,6 +22,9 @@ target_sources(Render
 		VulkanglTFNode.h
 		VulkanglTFSkin.h
 		VulkanglTFTexture.h
+		VulkanGui.h
+		VulkanGuiPipeline.h
+		VulkanGuiRenderer.h
 		VulkanHelpers.h
 		VulkanImage.h
 		VulkanImGuiOverlay.h
@@ -50,6 +53,9 @@ target_sources(Render
 		VulkanglTFNode.cpp
 		VulkanglTFSkin.cpp
 		VulkanglTFTexture.cpp
+		VulkanGui.cpp
+		VulkanGuiPipeline.cpp
+		VulkanGuiRenderer.cpp
 		VulkanHelpers.cpp
 		VulkanImage.cpp
 		VulkanImGuiOverlay.cpp

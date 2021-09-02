@@ -58,6 +58,12 @@ namespace Render::Vulkan::ShaderHelpers
 		const VkDescriptorBufferInfo* myLightsInfo = nullptr;
 	};
 
+	// Guis must provide the following info to get a DescriptorSet to bind to a pipeline
+	struct GuiDescriptorInfo : public DescriptorInfo
+	{
+		const VkDescriptorImageInfo* myFontSamplerInfo = nullptr;
+	};
+
 	struct ViewProjMatricesData
 	{
 		glm::mat4 myProjection = glm::mat4(1.0f);
@@ -79,6 +85,12 @@ namespace Render::Vulkan::ShaderHelpers
 		glm::mat4 myJointsMatrix = glm::mat4(1.0f);
 	};
 
+	struct GuiPushConstBlock
+	{
+		glm::vec2 myScale = glm::vec2(1.0f);
+		glm::vec2 myTranslate = glm::vec2(0.0f);
+	};
+
 	// All shader pipelines must choose from the following available bindings
 	enum class BindType
 	{
@@ -86,6 +98,7 @@ namespace Render::Vulkan::ShaderHelpers
 		SimpleObject,
 		Object,
 		LightsSet,
+		Gui,
 		Count,
 	};
 
