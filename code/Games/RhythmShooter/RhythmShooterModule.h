@@ -1,5 +1,5 @@
 #pragma once
-#include "Module.h"
+#include "GameWork_Module.h"
 
 namespace GameWork
 {

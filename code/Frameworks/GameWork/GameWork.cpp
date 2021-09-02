@@ -1,13 +1,13 @@
 #include "GameWork.h"
 
-#include "Input.h"
-#include "RenderFacade.h"
-#include "RenderRenderer.h"
+#include "Base_Input.h"
+#include "Render_Facade.h"
+#include "Render_Renderer.h"
 
-#include "Module.h"
-#include "WindowManager.h"
-#include "CameraManager.h"
-#include "PropManager.h"
+#include "GameWork_Module.h"
+#include "GameWork_WindowManager.h"
+#include "GameWork_CameraManager.h"
+#include "GameWork_PropManager.h"
 
 #if LINUX_BUILD
 #pragma GCC diagnostic push
@@ -206,6 +206,7 @@ namespace GameWork
 				locSoloud.stopAll(); // Stop the wave
 			}
 		}*/
+#if DEBUG_BUILD
 		if (inputManager->PollRawInput(Input::RawInput::KeyK) == Input::RawInputState::Pressed)
 		{
 			OpenDebugWindow();
@@ -214,6 +215,7 @@ namespace GameWork
 		{
 			CloseDebugWindow();
 		}
+#endif
 		
 		Render::Facade::GetInstance()->StartFrame();
 

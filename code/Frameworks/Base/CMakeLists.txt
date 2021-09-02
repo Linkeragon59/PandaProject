@@ -3,24 +3,24 @@ cmake_minimum_required(VERSION 3.16)
 add_library(Base "")
 target_sources(Base
 	PRIVATE
-		Assert.h
-		BasePrecompile.h
-		File.h
-		glmInclude.h
-		Input.h
-		Thread.h
-		Types.h
-		Utils.h
+		Base_Assert.h
+		Base_File.h
+		Base_glm.h
+		Base_Input.h
+		Base_Precompile.h
+		Base_Thread.h
+		Base_Types.h
+		Base_Utils.h
 
-		Assert.cpp
-		File.cpp
-		Thread.cpp
-		Input.cpp
+		Base_Assert.cpp
+		Base_File.cpp
+		Base_Thread.cpp
+		Base_Input.cpp
 
 		glm.natvis
 )
 
-target_precompile_headers(Base PRIVATE BasePrecompile.h)
+target_precompile_headers(Base PRIVATE Base_Precompile.h)
 target_compile_features(Base PRIVATE cxx_std_20)
 
 target_include_directories(Base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

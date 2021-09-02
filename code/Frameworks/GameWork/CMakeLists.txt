@@ -3,34 +3,32 @@ cmake_minimum_required(VERSION 3.16)
 add_library(GameWork "")
 target_sources(GameWork
 	PRIVATE
-		Camera.h
-		CameraManager.h
-		Entity.h
 		GameWork.h
-		GameWorkPrecompile.h
-		glTFProp.h
-		Gui.h
-		PointLight.h
-		Module.h
-		Prop.h
-		PropManager.h
-		SimpleGeometryProp.h
-		WindowManager.h
+		GameWork_Camera.h
+		GameWork_CameraManager.h
+		GameWork_Entity.h
+		GameWork_glTFProp.h
+		GameWork_PointLight.h
+		GameWork_Module.h
+		GameWork_Precompile.h
+		GameWork_Prop.h
+		GameWork_PropManager.h
+		GameWork_SimpleGeometryProp.h
+		GameWork_WindowManager.h
 
-		Camera.cpp
-		CameraManager.cpp
-		Entity.cpp
 		GameWork.cpp
-		glTFProp.cpp
-		Gui.cpp
-		PointLight.cpp
-		Prop.cpp
-		PropManager.cpp
-		SimpleGeometryProp.cpp
-		WindowManager.cpp
+		GameWork_Camera.cpp
+		GameWork_CameraManager.cpp
+		GameWork_Entity.cpp
+		GameWork_glTFProp.cpp
+		GameWork_PointLight.cpp
+		GameWork_Prop.cpp
+		GameWork_PropManager.cpp
+		GameWork_SimpleGeometryProp.cpp
+		GameWork_WindowManager.cpp
 )
 
-target_precompile_headers(GameWork PRIVATE GameWorkPrecompile.h)
+target_precompile_headers(GameWork PRIVATE GameWork_Precompile.h)
 target_compile_features(GameWork PRIVATE cxx_std_20)
 
 target_include_directories(GameWork PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

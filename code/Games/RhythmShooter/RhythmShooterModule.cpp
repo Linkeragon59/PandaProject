@@ -1,13 +1,13 @@
 #include "RhythmShooterModule.h"
 
 #include "GameWork.h"
-#include "CameraManager.h"
-#include "Camera.h"
-#include "PropManager.h"
-#include "Prop.h"
+#include "GameWork_CameraManager.h"
+#include "GameWork_Camera.h"
+#include "GameWork_PropManager.h"
+#include "GameWork_Prop.h"
 
-#include "RenderRenderer.h"
-#include "Input.h"
+#include "Render_Renderer.h"
+#include "Base_Input.h"
 
 RhythmShooterModule* RhythmShooterModule::ourInstance = nullptr;
 
