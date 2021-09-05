@@ -5,6 +5,7 @@
 #include "Render_SwapChain.h"
 #include "Render_ShaderHelpers.h"
 #include "Render_Debug.h"
+#include "Render_GuiImpl.h"
 
 namespace Render
 {
@@ -21,8 +22,6 @@ namespace Render
 
 	void EditorRenderer::Cleanup()
 	{
-		SafeDelete(myTestGui);
-
 		DestroyFrameBuffers();
 		DestroyPipeline();
 		DestroyRenderPass();
@@ -124,13 +123,10 @@ namespace Render
 		vkCmdSetScissor(mySecondaryCommandBuffersGui[myCurrentFrameIndex], 0, 1, &aScissor);
 	}
 
-	void EditorRenderer::DrawGui(ImGuiContext* aGuiContext)
+	void EditorRenderer::DrawGui(Gui* aGui)
 	{
-		if (!myTestGui)
-		{
-			myTestGui = new Gui(aGuiContext);
-		}
-		myTestGui->Draw(mySecondaryCommandBuffersGui[myCurrentFrameIndex], myGuiPipeline.myPipelineLayout, 0);
+		GuiImpl* guiImpl = static_cast<GuiImpl*>(aGui);
+		guiImpl->Draw(mySecondaryCommandBuffersGui[myCurrentFrameIndex], myGuiPipeline.myPipelineLayout, 0);
 	}
 
 	void EditorRenderer::SetupRenderPass()

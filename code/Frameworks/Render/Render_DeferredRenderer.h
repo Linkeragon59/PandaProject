@@ -24,14 +24,14 @@ namespace Render
 
 		void DrawModel(Model* aModel, const ModelData& someData, DrawType aDrawType = DrawType::Default) override;
 		void AddLight(const PointLight& aPointLight) override;
-		void DrawGui(ImGuiContext* /*aGuiContext*/) override {};
+		void DrawGui(Gui* /*aGui*/) override {};
 
 	private:
 		VkExtent2D myExtent = {};
 		VkFormat myColorFormat = VK_FORMAT_UNDEFINED;
 		VkFormat myDepthFormat = VK_FORMAT_UNDEFINED;
 
-		// Attachments - TODO : one per frame?
+		// Attachments
 		void SetupAttachments();
 		void DestroyAttachments();
 		// GBuffer attachments

@@ -1,16 +1,16 @@
-#include "Render_Gui.h"
+#include "Render_GuiImpl.h"
 
 #include "Base_imgui.h"
 
 namespace Render
 {
-	Gui::Gui(ImGuiContext* aGuiContext)
+	GuiImpl::GuiImpl(ImGuiContext* aGuiContext)
 		: myGuiContext(aGuiContext)
 	{
 		PrepareFont();
 	}
 
-	void Gui::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
+	void GuiImpl::Update()
 	{
 		ImGui::SetCurrentContext(myGuiContext);
 		ImDrawData* imDrawData = ImGui::GetDrawData();
@@ -53,6 +53,14 @@ namespace Render
 
 		myVertexBuffer->Flush();
 		myIndexBuffer->Flush();
+	}
+
+	void GuiImpl::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
+	{
+		ImGui::SetCurrentContext(myGuiContext);
+		ImDrawData* imDrawData = ImGui::GetDrawData();
+		if (!imDrawData || imDrawData->CmdListsCount == 0)
+			return;
 
 		ShaderHelpers::GuiDescriptorInfo info;
 		info.myFontSamplerInfo = &myFontTexture->myDescriptor;
@@ -89,7 +97,7 @@ namespace Render
 		}
 	}
 
-	void Gui::PrepareFont()
+	void GuiImpl::PrepareFont()
 	{
 		ImGui::SetCurrentContext(myGuiContext);
 		ImGuiIO& io = ImGui::GetIO();

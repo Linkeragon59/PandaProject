@@ -65,4 +65,14 @@ namespace Render
 	{
 		RenderCore::GetInstance()->DespawnModel(aModel);
 	}
+
+	Gui* Facade::AddGui(ImGuiContext* aGuiContext)
+	{
+		return RenderCore::GetInstance()->AddGui(aGuiContext);
+	}
+
+	void Facade::RemoveGui(Gui* aRenderGui)
+	{
+		RenderCore::GetInstance()->RemoveGui(aRenderGui);
+	}
 }

@@ -4,7 +4,6 @@
 
 #include "Render_RendererImpl.h"
 #include "Render_GuiPipeline.h"
-#include "Render_Gui.h"
 
 namespace Render
 {
@@ -22,7 +21,7 @@ namespace Render
 
 		void DrawModel(Model* /*aModel*/, const ModelData& /*someData*/, DrawType /*aDrawType*/ = DrawType::Default) override {};
 		void AddLight(const PointLight& /*aPointLight*/) override {};
-		void DrawGui(ImGuiContext* aGuiContext) override;
+		void DrawGui(Gui* aGui) override;
 
 	private:
 		VkExtent2D myExtent = {};
@@ -47,9 +46,6 @@ namespace Render
 		void SetupFrameBuffers();
 		void DestroyFrameBuffers();
 		std::vector<VkFramebuffer> myFrameBuffers;
-
-		// TODO : Temp - should have a Gui manager instead
-		Gui* myTestGui = nullptr;
 	};
 }
 

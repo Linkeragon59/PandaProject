@@ -4,6 +4,7 @@ add_library(GameWork "")
 target_sources(GameWork
 	PRIVATE
 		GameWork.h
+		GameWork_CallbackGui.h
 		GameWork_Camera.h
 		GameWork_CameraManager.h
 		GameWork_ConsoleLog.h
@@ -11,6 +12,8 @@ target_sources(GameWork
 		GameWork_Entity.h
 		GameWork_glTFProp.h
 		GameWork_GraphEditor.h
+		GameWork_Gui.h
+		GameWork_GuiManager.h
 		GameWork_PointLight.h
 		GameWork_Module.h
 		GameWork_Precompile.h
@@ -20,6 +23,7 @@ target_sources(GameWork
 		GameWork_WindowManager.h
 
 		GameWork.cpp
+		GameWork_CallbackGui.cpp
 		GameWork_Camera.cpp
 		GameWork_CameraManager.cpp
 		GameWork_ConsoleLog.cpp
@@ -27,6 +31,8 @@ target_sources(GameWork
 		GameWork_Entity.cpp
 		GameWork_glTFProp.cpp
 		GameWork_GraphEditor.cpp
+		GameWork_Gui.cpp
+		GameWork_GuiManager.cpp
 		GameWork_PointLight.cpp
 		GameWork_Prop.cpp
 		GameWork_PropManager.cpp

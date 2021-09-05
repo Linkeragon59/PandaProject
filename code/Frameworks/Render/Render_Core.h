@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Render_Model.h"
 #include "Render_Renderer.h"
 #include "Render_VulkanBuffer.h"
 #include "Render_VulkanImage.h"
@@ -13,6 +12,9 @@ namespace Render
 {
 	struct VulkanDevice;
 	class SwapChain;
+	struct ModelData;
+	class Model;
+	class Gui;
 
 	class RenderCore
 	{
@@ -34,6 +36,9 @@ namespace Render
 
 		Model* SpawnModel(const ModelData& someData);
 		void DespawnModel(Model* aModel);
+
+		Gui* AddGui(ImGuiContext* aGuiContext);
+		void RemoveGui(Gui* aRenderGui);
 
 		VkInstance GetVkInstance() const { return myVkInstance; }
 

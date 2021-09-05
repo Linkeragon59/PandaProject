@@ -9,6 +9,7 @@
 #include "Render_SimpleGeometryModel.h"
 #include "Render_Renderer.h"
 #include "Render_Resource.h"
+#include "Render_GuiImpl.h"
 
 #include <GLFW/glfw3.h>
 
@@ -159,6 +160,16 @@ namespace Render
 	void RenderCore::DespawnModel(Model* aModel)
 	{
 		delete aModel;
+	}
+
+	Gui* RenderCore::AddGui(ImGuiContext* aGuiContext)
+	{
+		return new GuiImpl(aGuiContext);
+	}
+
+	void RenderCore::RemoveGui(Gui* aRenderGui)
+	{
+		delete aRenderGui;
 	}
 
 	VkPhysicalDevice RenderCore::GetPhysicalDevice() const

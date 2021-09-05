@@ -19,6 +19,7 @@ target_sources(Render
 		Render_glTFSkin.h
 		Render_glTFTexture.h
 		Render_Gui.h
+		Render_GuiImpl.h
 		Render_GuiPipeline.h
 		Render_Helpers.h
 		Render_Light.h
@@ -51,7 +52,7 @@ target_sources(Render
 		Render_glTFNode.cpp
 		Render_glTFSkin.cpp
 		Render_glTFTexture.cpp
-		Render_Gui.cpp
+		Render_GuiImpl.cpp
 		Render_GuiPipeline.cpp
 		Render_Helpers.cpp
 		Render_Model.cpp

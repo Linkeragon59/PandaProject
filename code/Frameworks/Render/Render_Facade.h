@@ -1,9 +1,11 @@
 #pragma once
 
 #include "Render_Model.h"
+#include "Render_Gui.h"
 #include "Render_Renderer.h"
 
 struct GLFWwindow;
+struct ImGuiContext;
 
 namespace Render
 {
@@ -27,6 +29,9 @@ namespace Render
 
 		Model* SpawnModel(const ModelData& someData);
 		void DespawnModel(Model* aModel);
+
+		Gui* AddGui(ImGuiContext* aGuiContext);
+		void RemoveGui(Gui* aRenderGui);
 
 	private:
 		static Facade* ourInstance;

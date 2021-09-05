@@ -3,10 +3,11 @@
 #if DEBUG_BUILD
 
 struct GLFWwindow;
-struct ImGuiContext;
 
 namespace GameWork
 {
+	class CallbackGui;
+
 	class Editor
 	{
 	public:
@@ -28,7 +29,7 @@ namespace GameWork
 		Tab myTab = Tab::ConsoleLog;
 
 		GLFWwindow* myWindow = nullptr;
-		ImGuiContext* myGuiContext = nullptr;
+		CallbackGui* myGui = nullptr;
 	};
 }
 
