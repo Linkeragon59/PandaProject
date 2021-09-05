@@ -53,6 +53,8 @@ namespace Render
 		VkDescriptorSetLayout GetDescriptorSetLayout(ShaderHelpers::BindType aType);
 		VkDescriptorSet GetDescriptorSet(ShaderHelpers::BindType aType, const ShaderHelpers::DescriptorInfo& someDescriptorInfo);
 
+		uint GetMaxInFlightFramesCount() const { return myMaxInFlightFramesCount; }
+
 	private:
 		static RenderCore* ourInstance;
 
@@ -77,10 +79,6 @@ namespace Render
 		std::vector<SwapChain*> mySwapChains;
 		void UpdateMaxInFlightFramesCount();
 		uint myMaxInFlightFramesCount = 0;
-
-		void DeleteUnusedModels(bool aDeleteNow = false);
-		typedef std::pair<Model*, uint> ModelLifeTime;
-		std::vector<ModelLifeTime> myModelsToDelete;
 
 		void RecycleDescriptorSets();
 		std::array<DescriptorContainer, (size_t)ShaderHelpers::BindType::Count> myDescriptorContainers;

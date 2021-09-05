@@ -60,8 +60,8 @@ namespace Render
 		VkDevice myDevice = VK_NULL_HANDLE;
 		VkQueue myTransferQueue = VK_NULL_HANDLE;
 
-		VulkanBuffer myVertexBuffer;
-		VulkanBuffer myIndexBuffer;
+		VulkanBufferPtr myVertexBuffer;
+		VulkanBufferPtr myIndexBuffer;
 
 		uint myNodeCount = 0;
 		std::vector<glTFNode*> myNodes;

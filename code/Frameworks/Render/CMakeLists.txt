@@ -28,6 +28,7 @@ target_sources(Render
 		Render_Precompile.h
 		Render_Renderer.h
 		Render_RendererImpl.h
+		Render_Resource.h
 		Render_ShaderHelpers.h
 		Render_SimpleGeometryModel.h
 		Render_SwapChain.h
@@ -57,6 +58,7 @@ target_sources(Render
 		Render_PointLightsSet.cpp
 		Render_Precompile.cpp
 		Render_RendererImpl.cpp
+		Render_Resource.cpp
 		Render_ShaderHelpers.cpp
 		Render_SimpleGeometryModel.cpp
 		Render_SwapChain.cpp

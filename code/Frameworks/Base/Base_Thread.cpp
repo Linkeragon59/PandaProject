@@ -5,7 +5,7 @@
 #elif LINUX_BUILD
 #endif
 
-namespace ThreadHelpers
+namespace Thread
 {
 	void JobData::Wait()
 	{
@@ -219,5 +219,61 @@ namespace ThreadHelpers
 
 		myWaitingJobQueue.pop();
 		return true;
+	}
+
+	void WorkerThread::Start(std::function<void()> aFunction, WorkerPriority aPriority, uint aSleepIntervalMs /*= 16*/)
+	{
+		StopAndWait();
+
+		myFunction = std::move(aFunction);
+		mySleepIntervalMs = aSleepIntervalMs;
+		myThread = std::thread(&WorkerThread::Run, this);
+
+#if WINDOWS_BUILD
+
+		int priority = THREAD_PRIORITY_NORMAL;
+		switch (aPriority)
+		{
+		case WorkerPriority::High:
+			priority = THREAD_PRIORITY_ABOVE_NORMAL;
+			break;
+		case WorkerPriority::Low:
+			priority = THREAD_PRIORITY_BELOW_NORMAL;
+			break;
+		default:
+			break;
+		}
+		SetThreadPriority(myThread.native_handle(), priority);
+
+#if DEBUG_BUILD
+		if (!myThreadName.empty())
+		{
+			std::wstring name = std::wstring(myThreadName.begin(), myThreadName.end());
+			SetThreadDescription(myThread.native_handle(), name.c_str());
+		}
+#endif
+
+#elif LINUX_BUILD
+		// TODO
+#endif
+	}
+
+	void WorkerThread::StopAndWait()
+	{
+		myStopRequested = true;
+
+		if (myThread.joinable())
+			myThread.join();
+
+		myStopRequested = false;
+	}
+
+	void WorkerThread::Run()
+	{
+		while (!myStopRequested)
+		{
+			myFunction();
+			std::this_thread::sleep_for(std::chrono::milliseconds(mySleepIntervalMs));
+		}
 	}
 }

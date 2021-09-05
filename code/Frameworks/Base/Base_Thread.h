@@ -6,7 +6,7 @@
 #include <mutex>
 #include <condition_variable>
 
-namespace ThreadHelpers
+namespace Thread
 {
 	class WorkerPool;
 
@@ -30,6 +30,7 @@ namespace ThreadHelpers
 	};
 	typedef std::shared_ptr<JobData> JobHandle;
 
+	// Use to start multiple threads which will wait for work to be assigned to them
 	class WorkerPool
 	{
 	public:
@@ -80,5 +81,26 @@ namespace ThreadHelpers
 		mutable std::mutex myWaitingJobQueueMutex;
 		std::queue<JobHandle> myWaitingJobQueue;
 	};
-}
 
+	// Use to start a thread that will run a function in a loop until it is stopped
+	class WorkerThread
+	{
+	public:
+#if DEBUG_BUILD
+		void SetName(const std::string& aThreadName) { myThreadName = aThreadName; }
+#endif
+		void Start(std::function<void()> aFunction, WorkerPriority aPriority, uint aSleepIntervalMs = 10);
+		void StopAndWait();
+
+	private:
+		void Run();
+
+		std::thread myThread;
+#if DEBUG_BUILD
+		std::string myThreadName;
+#endif
+		uint mySleepIntervalMs = 0;
+		std::atomic<bool> myStopRequested = false;
+		std::function<void()> myFunction;
+	};
+}

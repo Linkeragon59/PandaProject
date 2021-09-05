@@ -2,11 +2,6 @@
 
 namespace Render
 {
-	glTFMaterial::~glTFMaterial()
-	{
-		mySSBO.Destroy();
-	}
-
 	void glTFMaterial::Load(const tinygltf::Model& aModel, uint aMaterialIndex)
 	{
 		const tinygltf::Material& gltfMaterial = aModel.materials[aMaterialIndex];
@@ -72,12 +67,12 @@ namespace Render
 	{
 		// Store material info in a shader storage buffer object (SSBO)
 		VkDeviceSize ssboSize = sizeof(glm::vec4);
-		mySSBO.Create(ssboSize,
+		mySSBO = new VulkanBuffer(ssboSize,
 			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		mySSBO.SetupDescriptor();
-		mySSBO.Map();
-		memcpy(mySSBO.myMappedData, &myBaseColorFactor, ssboSize);
-		mySSBO.Unmap();
+		mySSBO->SetupDescriptor();
+		mySSBO->Map();
+		memcpy(mySSBO->myMappedData, &myBaseColorFactor, ssboSize);
+		mySSBO->Unmap();
 	}
 }

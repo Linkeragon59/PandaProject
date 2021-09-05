@@ -2,9 +2,14 @@
 
 namespace Render
 {
+	VulkanBuffer::VulkanBuffer(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
+	{
+		Create(aSize, aUsage, someProperties);
+	}
+
 	VulkanBuffer::~VulkanBuffer()
 	{
-		Assert(!myBuffer);
+		Destroy();
 	}
 
 	void VulkanBuffer::Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
@@ -45,6 +50,23 @@ namespace Render
 		VK_CHECK_RESULT(vmaCreateBuffer(myAllocator, &bufferInfo, &allocInfo, &myBuffer, &myAllocation, nullptr), "Failed to create a buffer!");
 	}
 
+	void VulkanBuffer::Destroy()
+	{
+		myDescriptor = {};
+
+		if (myMappedData)
+		{
+			Unmap();
+		}
+
+		if (myBuffer)
+		{
+			vmaDestroyBuffer(myAllocator, myBuffer, myAllocation);
+			myBuffer = VK_NULL_HANDLE;
+			myAllocation = VK_NULL_HANDLE;
+		}
+	}
+
 	void VulkanBuffer::Map()
 	{
 		VK_CHECK_RESULT(vmaMapMemory(myAllocator, myAllocation, &myMappedData), "Failed to map a buffer allocation!");
@@ -66,22 +88,5 @@ namespace Render
 		myDescriptor.buffer = myBuffer;
 		myDescriptor.offset = anOffset;
 		myDescriptor.range = aSize;
-	}
-
-	void VulkanBuffer::Destroy()
-	{
-		myDescriptor = {};
-
-		if (myMappedData)
-		{
-			Unmap();
-		}
-
-		if (myBuffer)
-		{
-			vmaDestroyBuffer(myAllocator, myBuffer, myAllocation);
-			myBuffer = VK_NULL_HANDLE;
-			myAllocation = VK_NULL_HANDLE;
-		}
 	}
 }

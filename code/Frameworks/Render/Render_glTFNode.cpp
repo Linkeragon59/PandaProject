@@ -9,8 +9,6 @@ namespace Render
 	{
 		for (glTFNode* child : myChildren)
 			delete child;
-
-		myUBO.Destroy();
 	}
 
 	void glTFNode::Load(const tinygltf::Model& aModel, uint aNodeIndex, std::vector<glTFMesh::Vertex>& someOutVertices, std::vector<uint>& someOutIndices)
@@ -43,18 +41,18 @@ namespace Render
 		if (gltfNode.mesh > -1)
 			myMesh.Load(aModel, gltfNode.mesh, someOutVertices, someOutIndices);
 
-		myUBO.Create(
+		myUBO = new VulkanBuffer(
 			sizeof(ShaderHelpers::ModelMatrixData),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		myUBO.SetupDescriptor();
-		myUBO.Map();
+		myUBO->SetupDescriptor();
+		myUBO->Map();
 	}
 
 	void glTFNode::UpdateUBO(const glm::mat4& aMatrix)
 	{
 		glm::mat4 matrix = aMatrix * GetMatrix();
-		memcpy(myUBO.myMappedData, &matrix, sizeof(glm::mat4));
+		memcpy(myUBO->myMappedData, &matrix, sizeof(glm::mat4));
 
 		for (glTFNode* child : myChildren)
 			child->UpdateUBO(aMatrix);
@@ -76,7 +74,7 @@ namespace Render
 				jointMatrices[i] = inverseTransform * jointMatrices[i];
 			}
 
-			memcpy(skin->mySSBO.myMappedData, jointMatrices.data(), jointMatrices.size() * sizeof(glm::mat4));
+			memcpy(skin->mySSBO->myMappedData, jointMatrices.data(), jointMatrices.size() * sizeof(glm::mat4));
 		}
 
 		for (glTFNode* child : myChildren)
@@ -123,10 +121,10 @@ namespace Render
 			}
 
 			ShaderHelpers::ObjectDescriptorInfo info;
-			info.myModelMatrixInfo = &myUBO.myDescriptor;
-			info.myImageSamplerInfo = &image->myImage.myDescriptor;
-			info.myMaterialInfo = &material->mySSBO.myDescriptor;
-			info.myJointMatricesInfo = &skin->mySSBO.myDescriptor;
+			info.myModelMatrixInfo = &myUBO->myDescriptor;
+			info.myImageSamplerInfo = &image->myImage->myDescriptor;
+			info.myMaterialInfo = &material->mySSBO->myDescriptor;
+			info.myJointMatricesInfo = &skin->mySSBO->myDescriptor;
 			VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(aType, info);
 			vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
 

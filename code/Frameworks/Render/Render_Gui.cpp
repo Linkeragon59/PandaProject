@@ -10,14 +10,6 @@ namespace Render
 		PrepareFont();
 	}
 
-	Gui::~Gui()
-	{
-		myFontTexture.Destroy();
-
-		myVertexBuffer.Destroy();
-		myIndexBuffer.Destroy();
-	}
-
 	void Gui::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
 	{
 		ImGui::SetCurrentContext(myGuiContext);
@@ -32,26 +24,24 @@ namespace Render
 			return;
 
 		// Vertex buffer
-		if (myVertexBuffer.myBuffer == VK_NULL_HANDLE || myVertexCount != imDrawData->TotalVtxCount)
+		if (!myVertexBuffer || myVertexCount != imDrawData->TotalVtxCount)
 		{
-			myVertexBuffer.Destroy();
-			myVertexBuffer.Create(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			myVertexBuffer = new VulkanBuffer(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 			myVertexCount = imDrawData->TotalVtxCount;
-			myVertexBuffer.Map();
+			myVertexBuffer->Map();
 		}
 
 		// Index buffer
-		if (myIndexBuffer.myBuffer == VK_NULL_HANDLE || myIndexCount != imDrawData->TotalIdxCount)
+		if (!myIndexBuffer || myIndexCount != imDrawData->TotalIdxCount)
 		{
-			myIndexBuffer.Destroy();
-			myIndexBuffer.Create(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+			myIndexBuffer = new VulkanBuffer(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 			myIndexCount = imDrawData->TotalIdxCount;
-			myIndexBuffer.Map();
+			myIndexBuffer->Map();
 		}
 
 		// Update data
-		ImDrawVert* vtxDst = (ImDrawVert*)myVertexBuffer.myMappedData;
-		ImDrawIdx* idxDst = (ImDrawIdx*)myIndexBuffer.myMappedData;
+		ImDrawVert* vtxDst = (ImDrawVert*)myVertexBuffer->myMappedData;
+		ImDrawIdx* idxDst = (ImDrawIdx*)myIndexBuffer->myMappedData;
 		for (int i = 0; i < imDrawData->CmdListsCount; ++i)
 		{
 			const ImDrawList* cmdList = imDrawData->CmdLists[i];
@@ -61,11 +51,11 @@ namespace Render
 			idxDst += cmdList->IdxBuffer.Size;
 		}
 
-		myVertexBuffer.Flush();
-		myIndexBuffer.Flush();
+		myVertexBuffer->Flush();
+		myIndexBuffer->Flush();
 
 		ShaderHelpers::GuiDescriptorInfo info;
-		info.myFontSamplerInfo = &myFontTexture.myDescriptor;
+		info.myFontSamplerInfo = &myFontTexture->myDescriptor;
 		VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(ShaderHelpers::BindType::Gui, info);
 		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
 
@@ -75,8 +65,8 @@ namespace Render
 		vkCmdPushConstants(aCommandBuffer, aPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(myPushConstBlock), &myPushConstBlock);
 
 		VkDeviceSize offsets[1] = { 0 };
-		vkCmdBindVertexBuffers(aCommandBuffer, 0, 1, &myVertexBuffer.myBuffer, offsets);
-		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT16); // See ImDrawIdx declaration
+		vkCmdBindVertexBuffers(aCommandBuffer, 0, 1, &myVertexBuffer->myBuffer, offsets);
+		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer->myBuffer, 0, VK_INDEX_TYPE_UINT16); // See ImDrawIdx declaration
 
 		int vertexOffset = 0;
 		int indexOffset = 0;
@@ -119,13 +109,13 @@ namespace Render
 		memcpy(textureStaging.myMappedData, fontData, static_cast<size_t>(textureSize));
 		textureStaging.Unmap();
 
-		myFontTexture.Create(texWidth, texHeight,
+		myFontTexture = new VulkanImage(texWidth, texHeight,
 			VK_FORMAT_R8G8B8A8_UNORM,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		myFontTexture.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
+		myFontTexture->TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			RenderCore::GetInstance()->GetGraphicsQueue());
 
@@ -137,18 +127,18 @@ namespace Render
 			imageCopyRegion.imageSubresource.baseArrayLayer = 0;
 			imageCopyRegion.imageSubresource.layerCount = 1;
 			imageCopyRegion.imageExtent = { static_cast<uint>(texWidth), static_cast<uint>(texHeight), 1 };
-			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myFontTexture.myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
+			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myFontTexture->myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
 		}
 		Helpers::EndOneTimeCommand(commandBuffer, RenderCore::GetInstance()->GetGraphicsQueue());
 
 		textureStaging.Destroy();
 
-		myFontTexture.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		myFontTexture->TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			RenderCore::GetInstance()->GetGraphicsQueue());
 
-		myFontTexture.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		myFontTexture.CreateImageSampler();
-		myFontTexture.SetupDescriptor();
+		myFontTexture->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		myFontTexture->CreateImageSampler();
+		myFontTexture->SetupDescriptor();
 	}
 }

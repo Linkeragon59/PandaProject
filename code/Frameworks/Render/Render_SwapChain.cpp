@@ -226,6 +226,7 @@ namespace Render
 		{
 			vkDestroyImageView(myDevice, myImages[i].myImageView, nullptr);
 			myImages[i].myImage = VK_NULL_HANDLE;
+			myImages[i].myImageView = VK_NULL_HANDLE;
 		}
 		myImages.clear();
 

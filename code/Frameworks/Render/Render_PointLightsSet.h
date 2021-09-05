@@ -25,6 +25,6 @@ namespace Render
 		} myLightsData;
 		uint myNumLights = 0;
 
-		VulkanBuffer myLightsUBO;
+		VulkanBufferPtr myLightsUBO;
 	};
 }

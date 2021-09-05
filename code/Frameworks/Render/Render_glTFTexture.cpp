@@ -4,11 +4,6 @@
 
 namespace Render
 {
-	glTFImage::~glTFImage()
-	{
-		myImage.Destroy();
-	}
-
 	void glTFImage::Load(const tinygltf::Model& aModel, uint anImageIndex, VkQueue aTransferQueue)
 	{
 		const tinygltf::Image& gltfImage = aModel.images[anImageIndex];
@@ -51,14 +46,14 @@ namespace Render
 		memcpy(stagingBuffer.myMappedData, aBuffer, aBufferSize);
 		stagingBuffer.Unmap();
 
-		myImage.Create(aWidth, aHeight,
+		myImage = new VulkanImage(aWidth, aHeight,
 			VK_FORMAT_R8G8B8A8_UNORM,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 		// TODO: Could merge all the commands together instead of doing several commands
-		myImage.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, aTransferQueue);
+		myImage->TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, aTransferQueue);
 		VkCommandBuffer commandBuffer = Helpers::BeginOneTimeCommand();
 		{
 			VkBufferImageCopy copyRegion{};
@@ -67,15 +62,15 @@ namespace Render
 			copyRegion.imageSubresource.baseArrayLayer = 0;
 			copyRegion.imageSubresource.layerCount = 1;
 			copyRegion.imageExtent = { aWidth, aHeight, 1 };
-			vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.myBuffer, myImage.myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+			vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.myBuffer, myImage->myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 		}
 		Helpers::EndOneTimeCommand(commandBuffer, aTransferQueue);
-		myImage.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, aTransferQueue);
+		myImage->TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, aTransferQueue);
 
 		stagingBuffer.Destroy();
 
-		myImage.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		myImage.CreateImageSampler();
-		myImage.SetupDescriptor();
+		myImage->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		myImage->CreateImageSampler();
+		myImage->SetupDescriptor();
 	}
 }

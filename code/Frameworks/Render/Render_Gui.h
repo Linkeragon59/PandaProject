@@ -12,7 +12,6 @@ namespace Render
 	{
 	public:
 		Gui(ImGuiContext* aGuiContext);
-		~Gui();
 
 		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex);
 
@@ -20,13 +19,13 @@ namespace Render
 		ImGuiContext* myGuiContext = nullptr;
 
 		void PrepareFont();
-		VulkanImage myFontTexture;
+		VulkanImagePtr myFontTexture;
 
 		ShaderHelpers::GuiPushConstBlock myPushConstBlock;
 
-		VulkanBuffer myVertexBuffer;
+		VulkanBufferPtr myVertexBuffer;
 		int myVertexCount = 0;
-		VulkanBuffer myIndexBuffer;
+		VulkanBufferPtr myIndexBuffer;
 		int myIndexCount = 0;
 	};
 }

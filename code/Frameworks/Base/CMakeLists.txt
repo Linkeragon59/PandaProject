@@ -9,13 +9,16 @@ target_sources(Base
 		Base_imgui.h
 		Base_Input.h
 		Base_Precompile.h
+		Base_SharedPtr.h
 		Base_Thread.h
+		Base_Time.h
 		Base_Types.h
 		Base_Utils.h
 
 		Base_Assert.cpp
 		Base_File.cpp
 		Base_Thread.cpp
+		Base_Time.cpp
 		Base_imgui.cpp
 		Base_Input.cpp
 

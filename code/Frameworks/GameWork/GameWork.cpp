@@ -1,6 +1,8 @@
 #include "GameWork.h"
 
+#include "Base_Time.h"
 #include "Base_Input.h"
+
 #include "Render_Facade.h"
 #include "Render_Renderer.h"
 
@@ -127,6 +129,7 @@ namespace GameWork
 
 	GameWork::GameWork()
 	{
+		Time::TimeManager::Create();
 		Input::InputManager::Create();
 
 		myWindowManager = new WindowManager();
@@ -175,10 +178,13 @@ namespace GameWork
 		delete myWindowManager;
 
 		Input::InputManager::Destroy();
+		Time::TimeManager::Destroy();
 	}
 
 	bool GameWork::Update()
 	{
+		Time::TimeManager::GetInstance()->NextFrame();
+
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		bool escapePressed = inputManager->PollRawInput(Input::RawInput::KeyEscape) == Input::RawInputState::Pressed;
 

@@ -9,8 +9,6 @@ namespace Render
 
 	struct glTFSkin
 	{
-		~glTFSkin();
-
 		void Load(glTFModel* aContainer, const tinygltf::Model& aModel, uint aSkinIndex);
 		void LoadEmpty();
 
@@ -20,6 +18,6 @@ namespace Render
 		std::vector<glTFNode*> myJoints;
 		std::vector<glm::mat4> myInverseBindMatrices;
 
-		VulkanBuffer mySSBO;
+		VulkanBufferPtr mySSBO;
 	};
 }

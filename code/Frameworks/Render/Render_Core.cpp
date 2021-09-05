@@ -8,6 +8,7 @@
 #include "Render_glTFModel.h"
 #include "Render_SimpleGeometryModel.h"
 #include "Render_Renderer.h"
+#include "Render_Resource.h"
 
 #include <GLFW/glfw3.h>
 
@@ -74,13 +75,14 @@ namespace Render
 	void RenderCore::Initialize()
 	{
 		SetupDefaultData();
+		RenderResource::EnableDeleteQueue(true);
 	}
 
 	void RenderCore::Finalize()
 	{
 		Assert(mySwapChains.empty(), "Renderering is being finalized while swapchains are still alive!");
 
-		DeleteUnusedModels(true);
+		RenderResource::EnableDeleteQueue(false);
 
 		for (DescriptorContainer& container : myDescriptorContainers)
 			container.Destroy();
@@ -90,7 +92,6 @@ namespace Render
 
 	void RenderCore::StartFrame()
 	{
-		DeleteUnusedModels();
 		RecycleDescriptorSets();
 
 		for (SwapChain* swapChain : mySwapChains)
@@ -157,7 +158,7 @@ namespace Render
 
 	void RenderCore::DespawnModel(Model* aModel)
 	{
-		myModelsToDelete.push_back(std::make_pair(static_cast<Model*>(aModel), myMaxInFlightFramesCount));
+		delete aModel;
 	}
 
 	VkPhysicalDevice RenderCore::GetPhysicalDevice() const
@@ -375,20 +376,6 @@ namespace Render
 		for (uint i = 0; i < (uint)mySwapChains.size(); ++i)
 		{
 			myMaxInFlightFramesCount = std::max(myMaxInFlightFramesCount, mySwapChains[i]->GetImagesCount());
-		}
-	}
-
-	void RenderCore::DeleteUnusedModels(bool aDeleteNow)
-	{
-		for (uint i = 0; i < myModelsToDelete.size();)
-		{
-			if (aDeleteNow || myModelsToDelete[i].second-- == 0)
-			{
-				delete myModelsToDelete[i].first;
-				myModelsToDelete.erase(myModelsToDelete.begin() + i);
-				continue;
-			}
-			i++;
 		}
 	}
 

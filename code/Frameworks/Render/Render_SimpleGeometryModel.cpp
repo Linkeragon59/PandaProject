@@ -63,22 +63,22 @@ namespace Render
 
 		stbi_image_free(pixels);
 
-		myVertexBuffer.Create(vertexBufferSize,
+		myVertexBuffer = new VulkanBuffer(vertexBufferSize,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		myIndexBuffer.Create(indexBufferSize,
+		myIndexBuffer = new VulkanBuffer(indexBufferSize,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		myIndexCount = (uint)modelData.myIndices.size();
 
-		myTexture.Create(texWidth, texHeight,
+		myTexture = new VulkanImage(texWidth, texHeight,
 			VK_FORMAT_R8G8B8A8_SRGB,
 			VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		myTexture.TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
+		myTexture->TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			RenderCore::GetInstance()->GetGraphicsQueue());
 
@@ -86,10 +86,10 @@ namespace Render
 		{
 			VkBufferCopy bufferCopyRegion{};
 			bufferCopyRegion.size = vertexBufferSize;
-			vkCmdCopyBuffer(commandBuffer, vertexStaging.myBuffer, myVertexBuffer.myBuffer, 1, &bufferCopyRegion);
+			vkCmdCopyBuffer(commandBuffer, vertexStaging.myBuffer, myVertexBuffer->myBuffer, 1, &bufferCopyRegion);
 
 			bufferCopyRegion.size = indexBufferSize;
-			vkCmdCopyBuffer(commandBuffer, indexStaging.myBuffer, myIndexBuffer.myBuffer, 1, &bufferCopyRegion);
+			vkCmdCopyBuffer(commandBuffer, indexStaging.myBuffer, myIndexBuffer->myBuffer, 1, &bufferCopyRegion);
 
 			VkBufferImageCopy imageCopyRegion{};
 			imageCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -97,7 +97,7 @@ namespace Render
 			imageCopyRegion.imageSubresource.baseArrayLayer = 0;
 			imageCopyRegion.imageSubresource.layerCount = 1;
 			imageCopyRegion.imageExtent = { static_cast<uint>(texWidth), static_cast<uint>(texHeight), 1 };
-			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myTexture.myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
+			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myTexture->myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
 		}
 		Helpers::EndOneTimeCommand(commandBuffer, RenderCore::GetInstance()->GetGraphicsQueue());
 
@@ -105,46 +105,36 @@ namespace Render
 		indexStaging.Destroy();
 		textureStaging.Destroy();
 
-		myTexture.TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		myTexture->TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			RenderCore::GetInstance()->GetGraphicsQueue());
 
-		myTexture.CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
-		myTexture.CreateImageSampler();
-		myTexture.SetupDescriptor();
+		myTexture->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
+		myTexture->CreateImageSampler();
+		myTexture->SetupDescriptor();
 
-		myUBOObject.Create(sizeof(ShaderHelpers::ModelMatrixData),
+		myUBOObject = new VulkanBuffer(sizeof(ShaderHelpers::ModelMatrixData),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		myUBOObject.SetupDescriptor();
-		myUBOObject.Map();
-	}
-
-	SimpleGeometryModel::~SimpleGeometryModel()
-	{
-		myUBOObject.Destroy();
-		myTexture.Destroy();
-
-		myVertexBuffer.Destroy();
-		myIndexBuffer.Destroy();
-		myIndexCount = 0;
+		myUBOObject->SetupDescriptor();
+		myUBOObject->Map();
 	}
 
 	void SimpleGeometryModel::Update(const ModelData& someData)
 	{
-		memcpy(myUBOObject.myMappedData, &someData.myMatrix, sizeof(glm::mat4));
+		memcpy(myUBOObject->myMappedData, &someData.myMatrix, sizeof(glm::mat4));
 	}
 
 	void SimpleGeometryModel::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType)
 	{
-		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT32);
-		std::array<VkBuffer, 1> modelVertexBuffers = { myVertexBuffer.myBuffer };
+		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer->myBuffer, 0, VK_INDEX_TYPE_UINT32);
+		std::array<VkBuffer, 1> modelVertexBuffers = { myVertexBuffer->myBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(aCommandBuffer, 0, (uint)modelVertexBuffers.size(), modelVertexBuffers.data(), offsets);
 
 		ShaderHelpers::ObjectDescriptorInfo info;
-		info.myModelMatrixInfo = &myUBOObject.myDescriptor;
-		info.myImageSamplerInfo = &myTexture.myDescriptor;
+		info.myModelMatrixInfo = &myUBOObject->myDescriptor;
+		info.myImageSamplerInfo = &myTexture->myDescriptor;
 		VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(aType, info);
 		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
 

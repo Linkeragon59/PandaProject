@@ -6,16 +6,16 @@ namespace Render
 {
 	void PointLightsSet::Setup()
 	{
-		myLightsUBO.Create(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		myLightsUBO.SetupDescriptor();
-		myLightsUBO.Map();
+		myLightsUBO = new VulkanBuffer(sizeof(LightData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		myLightsUBO->SetupDescriptor();
+		myLightsUBO->Map();
 
 		ClearLightData();
 	}
 
 	void PointLightsSet::Destroy()
 	{
-		myLightsUBO.Destroy();
+		myLightsUBO = nullptr;
 	}
 
 	void PointLightsSet::ClearLightData()
@@ -39,13 +39,13 @@ namespace Render
 
 	void PointLightsSet::UpdateUBO()
 	{
-		memcpy(myLightsUBO.myMappedData, &myLightsData, sizeof(LightData));
+		memcpy(myLightsUBO->myMappedData, &myLightsData, sizeof(LightData));
 	}
 
 	void PointLightsSet::Bind(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
 	{
 		ShaderHelpers::LightsSetDescriptorInfo info;
-		info.myLightsInfo = &myLightsUBO.myDescriptor;
+		info.myLightsInfo = &myLightsUBO->myDescriptor;
 		VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(ShaderHelpers::BindType::LightsSet, info);
 		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
 	}

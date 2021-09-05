@@ -6,8 +6,6 @@ namespace Render
 {
 	struct glTFMaterial
 	{
-		~glTFMaterial();
-
 		void Load(const tinygltf::Model& aModel, uint aMaterialIndex);
 		void LoadEmpty();
 		void Load();
@@ -32,8 +30,6 @@ namespace Render
 		AlphaMode myAlphaMode = AlphaMode::ALPHAMODE_OPAQUE;
 		float myAlphaCutoff = 1.0f;
 
-		void SetupDescriptorSet(VkDescriptorPool aDescriptorPool);
-		VulkanBuffer mySSBO;
-		VkDescriptorSet myDescriptorSet = VK_NULL_HANDLE;
+		VulkanBufferPtr mySSBO;
 	};
 }

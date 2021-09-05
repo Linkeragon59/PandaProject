@@ -36,6 +36,6 @@ namespace Render
 		glm::vec3 myScale{ 1.0f };
 		glm::mat4 myMatrix = glm::mat4(1.0f);
 		
-		VulkanBuffer myUBO;
+		VulkanBufferPtr myUBO;
 	};
 }

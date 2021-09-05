@@ -8,7 +8,6 @@ namespace Render
 	{
 	public:
 		Camera();
-		~Camera();
 
 		const glm::mat4& GetView() const { return myView; }
 		const glm::mat4& GetProjection() const { return myProjection; }
@@ -19,6 +18,6 @@ namespace Render
 	private:
 		glm::mat4 myView = glm::mat4(1.0f);
 		glm::mat4 myProjection = glm::mat4(1.0f);
-		VulkanBuffer myViewProjUBO;
+		VulkanBufferPtr myViewProjUBO;
 	};
 }

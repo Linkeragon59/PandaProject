@@ -4,9 +4,15 @@
 
 namespace Render
 {
+
+	VulkanImage::VulkanImage(uint aWidth, uint aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
+	{
+		Create(aWidth, aHeight, aFormat, aTiling, aUsage, someProperties);
+	}
+
 	VulkanImage::~VulkanImage()
 	{
-		Assert(!myImage);
+		Destroy();
 	}
 
 	void VulkanImage::Create(uint aWidth, uint aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
@@ -44,6 +50,31 @@ namespace Render
 		allocInfo.requiredFlags = someProperties;
 
 		VK_CHECK_RESULT(vmaCreateImage(myAllocator, &imageInfo, &allocInfo, &myImage, &myAllocation, nullptr), "Failed to create an image!");
+	}
+
+	void VulkanImage::Destroy()
+	{
+		myDescriptor = {};
+
+		if (myImageSampler)
+		{
+			vkDestroySampler(myDevice, myImageSampler, nullptr);
+			myImageSampler = VK_NULL_HANDLE;
+		}
+
+		if (myImageView)
+		{
+			vkDestroyImageView(myDevice, myImageView, nullptr);
+			myImageView = VK_NULL_HANDLE;
+		}
+
+		if (myImage)
+		{
+			vmaDestroyImage(myAllocator, myImage, myAllocation);
+			myImage = VK_NULL_HANDLE;
+			myAllocation = VK_NULL_HANDLE;
+			myFormat = VK_FORMAT_UNDEFINED;
+		}
 	}
 
 	void VulkanImage::CreateImageView(VkImageAspectFlags someAspects)
@@ -164,30 +195,5 @@ namespace Render
 		);
 
 		Helpers::EndOneTimeCommand(commandBuffer, aQueue, aCommandPool);
-	}
-
-	void VulkanImage::Destroy()
-	{
-		myDescriptor = {};
-
-		if (myImageSampler)
-		{
-			vkDestroySampler(myDevice, myImageSampler, nullptr);
-			myImageSampler = VK_NULL_HANDLE;
-		}
-
-		if (myImageView)
-		{
-			vkDestroyImageView(myDevice, myImageView, nullptr);
-			myImageView = VK_NULL_HANDLE;
-		}
-		
-		if (myImage)
-		{
-			vmaDestroyImage(myAllocator, myImage, myAllocation);
-			myImage = VK_NULL_HANDLE;
-			myAllocation = VK_NULL_HANDLE;
-			myFormat = VK_FORMAT_UNDEFINED;
-		}
 	}
 }

@@ -13,9 +13,6 @@ namespace Render
 
 	glTFModel::~glTFModel()
 	{
-		myVertexBuffer.Destroy();
-		myIndexBuffer.Destroy();
-
 		for (glTFNode* node : myNodes)
 			delete node;
 	}
@@ -36,8 +33,8 @@ namespace Render
 	{
 		// All vertices and indices are stored in a single buffer, so we only need to bind once
 		VkDeviceSize offsets[1] = { 0 };
-		vkCmdBindVertexBuffers(aCommandBuffer, 0, 1, &myVertexBuffer.myBuffer, offsets);
-		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer.myBuffer, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindVertexBuffers(aCommandBuffer, 0, 1, &myVertexBuffer->myBuffer, offsets);
+		vkCmdBindIndexBuffer(aCommandBuffer, myIndexBuffer->myBuffer, 0, VK_INDEX_TYPE_UINT32);
 
 		for (glTFNode* node : myNodes)
 			node->Draw(this, aCommandBuffer, aPipelineLayout, aDescriptorSetIndex, aType);
@@ -98,11 +95,11 @@ namespace Render
 		memcpy(indexStagingBuffer.myMappedData, indexBuffer.data(), indexBufferSize);
 		indexStagingBuffer.Unmap();
 
-		myVertexBuffer.Create(vertexBufferSize,
+		myVertexBuffer = new VulkanBuffer(vertexBufferSize,
 			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-		myIndexBuffer.Create(indexBufferSize,
+		myIndexBuffer = new VulkanBuffer(indexBufferSize,
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
@@ -111,10 +108,10 @@ namespace Render
 			VkBufferCopy copyRegion = {};
 
 			copyRegion.size = vertexBufferSize;
-			vkCmdCopyBuffer(commandBuffer, vertexStagingBuffer.myBuffer, myVertexBuffer.myBuffer, 1, &copyRegion);
+			vkCmdCopyBuffer(commandBuffer, vertexStagingBuffer.myBuffer, myVertexBuffer->myBuffer, 1, &copyRegion);
 
 			copyRegion.size = indexBufferSize;
-			vkCmdCopyBuffer(commandBuffer, indexStagingBuffer.myBuffer, myIndexBuffer.myBuffer, 1, &copyRegion);
+			vkCmdCopyBuffer(commandBuffer, indexStagingBuffer.myBuffer, myIndexBuffer->myBuffer, 1, &copyRegion);
 		}
 		Helpers::EndOneTimeCommand(commandBuffer, myTransferQueue);
 
