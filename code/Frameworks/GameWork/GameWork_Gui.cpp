@@ -5,7 +5,6 @@
 #include "Base_Input.h"
 
 #include "Render_Facade.h"
-#include "Render_Gui.h"
 
 namespace GameWork
 {
@@ -34,12 +33,12 @@ namespace GameWork
 		style.Colors[ImGuiCol_ButtonHovered] = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
 		style.Colors[ImGuiCol_ButtonActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
 
-		myRenderGui = Render::Facade::GetInstance()->AddGui(myGuiContext);
+		myGui = Render::AddGui(myGuiContext);
 	}
 
 	Gui::~Gui()
 	{
-		Render::Facade::GetInstance()->RemoveGui(myRenderGui);
+		Render::RemoveGui(myGui);
 
 		ImGui::DestroyContext(myGuiContext);
 	}
@@ -66,12 +65,11 @@ namespace GameWork
 
 		ImGui::Render();
 
-		myRenderGui->Update();
+		Render::UpdateGui(myGui);
 	}
 
 	void Gui::Draw()
 	{
-		Render::Facade::GetInstance()->GetRenderer(myWindow)->DrawGui(myRenderGui);
+		Render::GetRenderer(myWindow)->DrawGui(myGui);
 	}
-
 }

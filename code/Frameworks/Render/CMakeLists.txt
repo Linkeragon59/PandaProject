@@ -19,12 +19,14 @@ target_sources(Render
 		Render_glTFSkin.h
 		Render_glTFTexture.h
 		Render_Gui.h
-		Render_GuiImpl.h
+		Render_GuiContainer.h
 		Render_GuiPipeline.h
+		Render_Handle.h
 		Render_Helpers.h
 		Render_Light.h
 		Render_Model.h
-		Render_ModelImpl.h
+		Render_ModelData.h
+		Render_ModelContainer.h
 		Render_PointLightsSet.h
 		Render_Precompile.h
 		Render_Renderer.h
@@ -52,12 +54,15 @@ target_sources(Render
 		Render_glTFNode.cpp
 		Render_glTFSkin.cpp
 		Render_glTFTexture.cpp
-		Render_GuiImpl.cpp
+		Render_Gui.cpp
+		Render_GuiContainer.cpp
 		Render_GuiPipeline.cpp
 		Render_Helpers.cpp
-		Render_Model.cpp
+		Render_ModelData.cpp
+		Render_ModelContainer.cpp
 		Render_PointLightsSet.cpp
 		Render_Precompile.cpp
+		Render_Renderer.cpp
 		Render_RendererImpl.cpp
 		Render_Resource.cpp
 		Render_ShaderHelpers.cpp

@@ -19,9 +19,9 @@ namespace Render
 		void SetViewport(const VkViewport& aViewport);
 		void SetScissor(const VkRect2D& aScissor);
 
-		void DrawModel(Model* /*aModel*/, const ModelData& /*someData*/, DrawType /*aDrawType*/ = DrawType::Default) override {};
 		void AddLight(const PointLight& /*aPointLight*/) override {};
-		void DrawGui(Gui* aGui) override;
+		void DrawModel(Handle /*aModelHandle*/, const ModelData& /*someData*/, Renderer::DrawType /*aDrawType*/) override {};
+		void DrawGui(Handle aGuiHandle) override;
 
 	private:
 		VkExtent2D myExtent = {};

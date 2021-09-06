@@ -1,6 +1,6 @@
 #include "GameWork_glTFProp.h"
 
-#include "Render_Model.h"
+#include "Render_ModelData.h"
 
 namespace GameWork
 {

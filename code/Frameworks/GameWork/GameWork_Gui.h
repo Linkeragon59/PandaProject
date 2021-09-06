@@ -1,12 +1,9 @@
 #pragma once
 
+#include "Render_Handle.h"
+
 struct GLFWwindow;
 struct ImGuiContext;
-
-namespace Render
-{
-	class Gui;
-}
 
 namespace GameWork
 {
@@ -24,7 +21,7 @@ namespace GameWork
 		ImGuiContext* myGuiContext = nullptr;
 
 	private:
+		Render::Handle myGui = Render::NullHandle;
 		GLFWwindow* myWindow = nullptr;
-		Render::Gui* myRenderGui = nullptr;
 	};
 }

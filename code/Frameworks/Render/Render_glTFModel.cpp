@@ -2,13 +2,12 @@
 
 namespace Render
 {
-	glTFModel::glTFModel(const ModelData& someData)
+	glTFModel::glTFModel(const glTFModelData& someData)
 	{
 		myDevice = RenderCore::GetInstance()->GetDevice();
 
 		Assert(someData.GetType() == ModelData::Type::glTF);
-		const glTFModelData& glTFData = static_cast<const glTFModelData&>(someData);
-		LoadFromFile(glTFData.myFilename, RenderCore::GetInstance()->GetGraphicsQueue(), someData);
+		LoadFromFile(someData.myFilename, RenderCore::GetInstance()->GetGraphicsQueue(), someData);
 	}
 
 	glTFModel::~glTFModel()

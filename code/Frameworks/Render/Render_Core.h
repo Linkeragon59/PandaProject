@@ -12,9 +12,8 @@ namespace Render
 {
 	struct VulkanDevice;
 	class SwapChain;
-	struct ModelData;
-	class Model;
-	class Gui;
+	class ModelContainer;
+	class GuiContainer;
 
 	class RenderCore
 	{
@@ -32,13 +31,9 @@ namespace Render
 		void RegisterWindow(GLFWwindow* aWindow, Renderer::Type aType);
 		void UnregisterWindow(GLFWwindow* aWindow);
 		void ResizeWindow(GLFWwindow* aWindow);
-		Renderer* GetRenderer(GLFWwindow* aWindow);
-
-		Model* SpawnModel(const ModelData& someData);
-		void DespawnModel(Model* aModel);
-
-		Gui* AddGui(ImGuiContext* aGuiContext);
-		void RemoveGui(Gui* aRenderGui);
+		Renderer* GetRenderer(GLFWwindow* aWindow) const;
+		ModelContainer* GetModelContainer() const { return myModelContainer; }
+		GuiContainer* GetGuiContainer() const { return myGuiContainer; }
 
 		VkInstance GetVkInstance() const { return myVkInstance; }
 
@@ -87,5 +82,8 @@ namespace Render
 
 		void RecycleDescriptorSets();
 		std::array<DescriptorContainer, (size_t)ShaderHelpers::BindType::Count> myDescriptorContainers;
+
+		ModelContainer* myModelContainer = nullptr;
+		GuiContainer* myGuiContainer = nullptr;
 	};
 }

@@ -106,7 +106,7 @@ namespace GameWork
 
 	Render::Renderer* GameWork::GetMainWindowRenderer() const
 	{
-		return Render::Facade::GetInstance()->GetRenderer(myMainWindow);
+		return Render::GetRenderer(myMainWindow);
 	}
 
 #if DEBUG_BUILD
@@ -139,9 +139,8 @@ namespace GameWork
 		glfwGetWindowSize(myMainWindow, &width, &height);
 		myMainWindowAspectRatio = (height != 0) ? (float)width / (float)height : 1.0f;
 
-		Render::Facade::Create();
-		Render::Facade::GetInstance()->InitializeRendering();
-		Render::Facade::GetInstance()->RegisterWindow(myMainWindow, Render::Renderer::Type::Deferred);
+		Render::InitializeRendering();
+		Render::RegisterWindow(myMainWindow, Render::Renderer::Type::Deferred);
 
 		myCameraManager = new CameraManager();
 		myPropManager = new PropManager();
@@ -168,9 +167,8 @@ namespace GameWork
 		delete myDebugPropManager;
 #endif
 
-		Render::Facade::GetInstance()->UnregisterWindow(myMainWindow);
-		Render::Facade::GetInstance()->FinalizeRendering();
-		Render::Facade::Destroy();
+		Render::UnregisterWindow(myMainWindow);
+		Render::FinalizeRendering();
 
 		myWindowManager->CloseWindow(myMainWindow);
 		myMainWindow = nullptr;
@@ -215,7 +213,7 @@ namespace GameWork
 		}
 #endif
 		
-		Render::Facade::GetInstance()->StartFrame();
+		Render::StartFrame();
 
 		// Update Modules
 		for (Module* mod : myModules)
@@ -234,7 +232,7 @@ namespace GameWork
 			myEditor->Update();
 #endif
 
-		Render::Facade::GetInstance()->EndFrame();
+		Render::EndFrame();
 
 		return !escapePressed;
 	}
@@ -252,6 +250,6 @@ namespace GameWork
 	{
 		(void)aWidth;
 		(void)aHeight;
-		Render::Facade::GetInstance()->ResizeWindow(aWindow);
+		Render::ResizeWindow(aWindow);
 	}
 }

@@ -5,11 +5,10 @@
 #include "Render_VulkanBuffer.h"
 #include "Render_VulkanDevice.h"
 #include "Render_SwapChain.h"
-#include "Render_glTFModel.h"
-#include "Render_SimpleGeometryModel.h"
 #include "Render_Renderer.h"
 #include "Render_Resource.h"
-#include "Render_GuiImpl.h"
+#include "Render_ModelContainer.h"
+#include "Render_GuiContainer.h"
 
 #include <GLFW/glfw3.h>
 
@@ -77,12 +76,16 @@ namespace Render
 	{
 		SetupDefaultData();
 		RenderResource::EnableDeleteQueue(true);
+		myModelContainer = new ModelContainer();
+		myGuiContainer = new GuiContainer();
 	}
 
 	void RenderCore::Finalize()
 	{
 		Assert(mySwapChains.empty(), "Renderering is being finalized while swapchains are still alive!");
 
+		SafeDelete(myModelContainer);
+		SafeDelete(myGuiContainer);
 		RenderResource::EnableDeleteQueue(false);
 
 		for (DescriptorContainer& container : myDescriptorContainers)
@@ -134,7 +137,7 @@ namespace Render
 		}
 	}
 
-	Renderer* RenderCore::GetRenderer(GLFWwindow* aWindow)
+	Renderer* RenderCore::GetRenderer(GLFWwindow* aWindow) const
 	{
 		auto it = std::find_if(mySwapChains.begin(), mySwapChains.end(), [aWindow](SwapChain* aSwapChain) { return aSwapChain->GetWindowHandle() == aWindow; });
 		if (it != mySwapChains.end())
@@ -142,34 +145,6 @@ namespace Render
 			return (*it)->GetRenderer();
 		}
 		return nullptr;
-	}
-
-	Model* RenderCore::SpawnModel(const ModelData& someData)
-	{
-		switch (someData.GetType())
-		{
-		case ModelData::Type::glTF:
-			return new glTFModel(someData);
-		case ModelData::Type::SimpleGeometry:
-			return new SimpleGeometryModel(someData);
-		default:
-			return nullptr;
-		}
-	}
-
-	void RenderCore::DespawnModel(Model* aModel)
-	{
-		delete aModel;
-	}
-
-	Gui* RenderCore::AddGui(ImGuiContext* aGuiContext)
-	{
-		return new GuiImpl(aGuiContext);
-	}
-
-	void RenderCore::RemoveGui(Gui* aRenderGui)
-	{
-		delete aRenderGui;
 	}
 
 	VkPhysicalDevice RenderCore::GetPhysicalDevice() const

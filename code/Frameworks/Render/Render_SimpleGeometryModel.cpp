@@ -9,14 +9,11 @@
 
 namespace Render
 {
-	SimpleGeometryModel::SimpleGeometryModel(const ModelData& someData)
+	SimpleGeometryModel::SimpleGeometryModel(const SimpleGeometryModelData& someData)
 	{
-		Assert(someData.GetType() == ModelData::Type::SimpleGeometry);
-		const SimpleGeometryModelData& modelData = static_cast<const SimpleGeometryModelData&>(someData);
-
 		std::vector<ShaderHelpers::Vertex> fullVertices;
-		fullVertices.reserve(modelData.myVertices.size());
-		for (const SimpleGeometryModelData::Vertex& vertex : modelData.myVertices)
+		fullVertices.reserve(someData.myVertices.size());
+		for (const SimpleGeometryModelData::Vertex& vertex : someData.myVertices)
 		{
 			ShaderHelpers::Vertex fullVertex =
 			{
@@ -31,10 +28,10 @@ namespace Render
 			fullVertices.push_back(fullVertex);
 		}
 
-		VkDeviceSize vertexBufferSize = sizeof(ShaderHelpers::Vertex) * modelData.myVertices.size();
-		VkDeviceSize indexBufferSize = sizeof(uint) * modelData.myIndices.size();
+		VkDeviceSize vertexBufferSize = sizeof(ShaderHelpers::Vertex) * someData.myVertices.size();
+		VkDeviceSize indexBufferSize = sizeof(uint) * someData.myIndices.size();
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load(modelData.myTextureFilename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load(someData.myTextureFilename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		Assert(pixels, "Failed to load an image!");
 
 		VkDeviceSize textureSize = static_cast<VkDeviceSize>(texWidth) * static_cast<VkDeviceSize>(texHeight) * 4;
@@ -51,7 +48,7 @@ namespace Render
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		indexStaging.Map();
-		memcpy(indexStaging.myMappedData, modelData.myIndices.data(), (size_t)indexBufferSize);
+		memcpy(indexStaging.myMappedData, someData.myIndices.data(), (size_t)indexBufferSize);
 		indexStaging.Unmap();
 
 		textureStaging.Create(textureSize,
@@ -70,7 +67,7 @@ namespace Render
 		myIndexBuffer = new VulkanBuffer(indexBufferSize,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		myIndexCount = (uint)modelData.myIndices.size();
+		myIndexCount = (uint)someData.myIndices.size();
 
 		myTexture = new VulkanImage(texWidth, texHeight,
 			VK_FORMAT_R8G8B8A8_SRGB,

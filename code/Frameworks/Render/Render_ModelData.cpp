@@ -1,8 +1,7 @@
-#include "Render_Model.h"
+#include "Render_ModelData.h"
 
 namespace Render
 {
-
 	void SimpleGeometryModelData::FillWithPreset(Preset aPreset)
 	{
 		switch (aPreset)
@@ -316,7 +315,7 @@ namespace Render
 	void SimpleGeometryModelData::FillDisc()
 	{
 		const uint polyPrecision = 60;
-		
+
 		myVertices.resize(polyPrecision + 1);
 		myIndices.resize(3 * polyPrecision);
 

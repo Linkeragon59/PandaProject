@@ -5,7 +5,8 @@
 #include "Render_SwapChain.h"
 #include "Render_ShaderHelpers.h"
 #include "Render_Debug.h"
-#include "Render_ModelImpl.h"
+#include "Render_Model.h"
+#include "Render_ModelContainer.h"
 
 namespace Render
 {
@@ -189,30 +190,30 @@ namespace Render
 #endif
 	}
 
-	void DeferredRenderer::DrawModel(Model* aModel, const ModelData& someData, DrawType aDrawType /*= DrawType::Normal*/)
+	void DeferredRenderer::AddLight(const PointLight& aPointLight)
+	{
+		myPointLightsSet.AddLight(aPointLight);
+	}
+
+	void DeferredRenderer::DrawModel(Handle aModelHandle, const ModelData& someData, Renderer::DrawType aDrawType)
 	{
 		(void)someData;
-		ModelImpl* modelImpl = static_cast<ModelImpl*>(aModel);
+		Model* model = RenderCore::GetInstance()->GetModelContainer()->GetModel(aModelHandle);
 
 		switch (aDrawType)
 		{
 		case Renderer::DrawType::Default:
-			modelImpl->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1, ShaderHelpers::BindType::Object);
+			model->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1, ShaderHelpers::BindType::Object);
 			break;
 #if DEBUG_BUILD
 		case Renderer::DrawType::Debug:
-			modelImpl->Draw(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], myDeferredPipeline.myDebug3DPipelineLayout, 1, ShaderHelpers::BindType::SimpleObject);
+			model->Draw(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], myDeferredPipeline.myDebug3DPipelineLayout, 1, ShaderHelpers::BindType::SimpleObject);
 			break;
 #endif
 		default:
 			Assert(false, "Unsupported draw type");
 			break;
 		}		
-	}
-
-	void DeferredRenderer::AddLight(const PointLight& aPointLight)
-	{
-		myPointLightsSet.AddLight(aPointLight);
 	}
 
 	void DeferredRenderer::SetupAttachments()

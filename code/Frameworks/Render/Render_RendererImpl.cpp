@@ -2,7 +2,6 @@
 
 #include "Render_Camera.h"
 #include "Render_SwapChain.h"
-#include "Render_Model.h"
 
 namespace Render
 {

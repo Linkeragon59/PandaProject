@@ -2,12 +2,8 @@
 
 #include "GameWork_Entity.h"
 #include "Render_Renderer.h"
-
-namespace Render
-{
-	struct ModelData;
-	class Model;
-}
+#include "Render_Handle.h"
+#include "Render_ModelData.h"
 
 namespace GameWork
 {
@@ -30,8 +26,8 @@ namespace GameWork
 	protected:
 		virtual Render::ModelData* CreateModelData(const Render::ModelData& someData) = 0;
 
+		Render::Handle myModel = Render::NullHandle;
 		Render::ModelData* myModelData = nullptr;
-		Render::Model* myModel = nullptr;
 
 		bool myIsSpawned = false;
 		bool myIsVisible = true;

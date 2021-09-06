@@ -78,14 +78,14 @@ namespace Render
 			Assert(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire a swapchain image!");
 		}
 
-		myRenderer->StartFrame();
+		myRenderer->GetImpl()->StartFrame();
 	}
 
 	void SwapChain::Present()
 	{
-		VkSemaphore renderCompleteSemaphore = myRenderer->GetCurrentRenderFinishedSemaphore();
+		VkSemaphore renderCompleteSemaphore = myRenderer->GetImpl()->GetCurrentRenderFinishedSemaphore();
 
-		myRenderer->EndFrame();
+		myRenderer->GetImpl()->EndFrame();
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -258,27 +258,13 @@ namespace Render
 
 	void SwapChain::CreateRenderer()
 	{
-		switch (myRendererType)
-		{
-		case Renderer::Type::Deferred:
-			myRenderer = new DeferredRenderer();
-			myRenderer->Setup(this);
-			break;
-#if DEBUG_BUILD
-		case Renderer::Type::Editor:
-			myRenderer = new EditorRenderer();
-			myRenderer->Setup(this);
-			break;
-#endif
-		default:
-			Assert(false, "Unsupported renderer type");
-			break;
-		}
+		myRenderer = new Renderer(myRendererType);
+		myRenderer->GetImpl()->Setup(this);
 	}
 
 	void SwapChain::DestroyRenderer()
 	{
-		myRenderer->Cleanup();
+		myRenderer->GetImpl()->Cleanup();
 		SafeDelete(myRenderer);
 	}
 }

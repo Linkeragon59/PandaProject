@@ -1,16 +1,16 @@
-#include "Render_GuiImpl.h"
+#include "Render_Gui.h"
 
 #include "Base_imgui.h"
 
 namespace Render
 {
-	GuiImpl::GuiImpl(ImGuiContext* aGuiContext)
+	Gui::Gui(ImGuiContext* aGuiContext)
 		: myGuiContext(aGuiContext)
 	{
 		PrepareFont();
 	}
 
-	void GuiImpl::Update()
+	void Gui::Update()
 	{
 		ImGui::SetCurrentContext(myGuiContext);
 		ImDrawData* imDrawData = ImGui::GetDrawData();
@@ -55,7 +55,7 @@ namespace Render
 		myIndexBuffer->Flush();
 	}
 
-	void GuiImpl::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
+	void Gui::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex)
 	{
 		ImGui::SetCurrentContext(myGuiContext);
 		ImDrawData* imDrawData = ImGui::GetDrawData();
@@ -97,7 +97,7 @@ namespace Render
 		}
 	}
 
-	void GuiImpl::PrepareFont()
+	void Gui::PrepareFont()
 	{
 		ImGui::SetCurrentContext(myGuiContext);
 		ImGuiIO& io = ImGui::GetIO();

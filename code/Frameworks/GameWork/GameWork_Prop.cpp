@@ -1,8 +1,6 @@
 #include "GameWork_Prop.h"
 
 #include "Render_Facade.h"
-#include "Render_Model.h"
-#include "Render_Renderer.h"
 
 namespace GameWork
 {
@@ -24,9 +22,8 @@ namespace GameWork
 		if (!myIsSpawned)
 			return;
 
-		Assert(myModel);
 		myModelData->myMatrix = GetMatrix();
-		myModel->Update(*myModelData);
+		Render::UpdateModel(myModel, *myModelData);
 	}
 
 	void Prop::Draw(Render::Renderer* aRenderer, Render::Renderer::DrawType aDrawType)
@@ -34,7 +31,6 @@ namespace GameWork
 		if (!myIsSpawned || !myIsVisible)
 			return;
 
-		Assert(myModel);
 		aRenderer->DrawModel(myModel, *myModelData, aDrawType);
 	}
 
@@ -44,8 +40,7 @@ namespace GameWork
 			return;
 
 		myModelData->myMatrix = GetMatrix();
-		myModel = Render::Facade::GetInstance()->SpawnModel(*myModelData);
-		Assert(myModel);
+		myModel = Render::AddModel(*myModelData);
 
 		myIsSpawned = true;
 	}
@@ -55,9 +50,8 @@ namespace GameWork
 		if (!myIsSpawned)
 			return;
 
-		Assert(myModel);
-		Render::Facade::GetInstance()->DespawnModel(myModel);
-		myModel = nullptr;
+		Render::RemoveModel(myModel);
+		myModel = Render::NullHandle;
 
 		myIsSpawned = false;
 	}

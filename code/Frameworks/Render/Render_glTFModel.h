@@ -6,15 +6,15 @@
 #include "Render_glTFSkin.h"
 #include "Render_glTFTexture.h"
 
-#include "Render_ModelImpl.h"
+#include "Render_Model.h"
 #include "Render_VulkanBuffer.h"
 
 namespace Render
 {
-	class glTFModel : public ModelImpl
+	class glTFModel : public Model
 	{
 	public:
-		glTFModel(const ModelData& someData);
+		glTFModel(const glTFModelData& someData);
 		~glTFModel();
 
 		void Update(const ModelData& someData) override;

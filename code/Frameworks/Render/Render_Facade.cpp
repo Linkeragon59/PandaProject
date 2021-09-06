@@ -1,78 +1,77 @@
 #include "Render_Facade.h"
 
+#include "Render_ModelContainer.h"
+#include "Render_GuiContainer.h"
+
 namespace Render
 {
-	Facade* Facade::ourInstance = nullptr;
-
-	void Facade::Create()
-	{
-		Assert(!ourInstance);
-		ourInstance = new Facade;
-	}
-
-	void Facade::Destroy()
-	{
-		Assert(ourInstance);
-		SafeDelete(ourInstance);
-	}
-
-	void Facade::InitializeRendering()
+	void InitializeRendering()
 	{
 		RenderCore::Create();
 	}
 
-	void Facade::FinalizeRendering()
+	void FinalizeRendering()
 	{
 		RenderCore::Destroy();
 	}
 
-	void Facade::StartFrame()
+	void StartFrame()
 	{
 		RenderCore::GetInstance()->StartFrame();
 	}
 
-	void Facade::EndFrame()
+	void EndFrame()
 	{
 		RenderCore::GetInstance()->EndFrame();
 	}
 
-	void Facade::RegisterWindow(GLFWwindow* aWindow, Renderer::Type aRendererType)
+	void RegisterWindow(GLFWwindow* aWindow, Renderer::Type aRendererType)
 	{
 		RenderCore::GetInstance()->RegisterWindow(aWindow, aRendererType);
 	}
 
-	void Facade::UnregisterWindow(GLFWwindow* aWindow)
+	void UnregisterWindow(GLFWwindow* aWindow)
 	{
 		RenderCore::GetInstance()->UnregisterWindow(aWindow);
 	}
 
-	void Facade::ResizeWindow(GLFWwindow* aWindow)
+	void ResizeWindow(GLFWwindow* aWindow)
 	{
 		RenderCore::GetInstance()->ResizeWindow(aWindow);
 	}
 
-	Renderer* Facade::GetRenderer(GLFWwindow* aWindow)
+	Renderer* GetRenderer(GLFWwindow* aWindow)
 	{
 		return RenderCore::GetInstance()->GetRenderer(aWindow);
 	}
 
-	Model* Facade::SpawnModel(const ModelData& someData)
+	Handle AddModel(const ModelData& someData)
 	{
-		return RenderCore::GetInstance()->SpawnModel(someData);
+		return RenderCore::GetInstance()->GetModelContainer()->AddModel(someData);
 	}
 
-	void Facade::DespawnModel(Model* aModel)
+	void RemoveModel(Handle aModelHandle)
 	{
-		RenderCore::GetInstance()->DespawnModel(aModel);
+		RenderCore::GetInstance()->GetModelContainer()->RemoveModel(aModelHandle);
 	}
 
-	Gui* Facade::AddGui(ImGuiContext* aGuiContext)
+	void UpdateModel(Handle aModelHandle, const ModelData& someData)
 	{
-		return RenderCore::GetInstance()->AddGui(aGuiContext);
+		RenderCore::GetInstance()->GetModelContainer()->UpdateModel(aModelHandle, someData);
 	}
 
-	void Facade::RemoveGui(Gui* aRenderGui)
+	Handle AddGui(ImGuiContext* aGuiContext)
 	{
-		RenderCore::GetInstance()->RemoveGui(aRenderGui);
+		return RenderCore::GetInstance()->GetGuiContainer()->AddGui(aGuiContext);
+	}
+
+	void RemoveGui(Handle aGuiHandle)
+	{
+		RenderCore::GetInstance()->GetGuiContainer()->RemoveGui(aGuiHandle);
+	}
+
+	void UpdateGui(Handle aGuiHandle)
+	{
+		RenderCore::GetInstance()->GetGuiContainer()->UpdateGui(aGuiHandle);
 	}
 }

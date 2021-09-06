@@ -1,15 +1,15 @@
 #pragma once
 
-#include "Render_ModelImpl.h"
+#include "Render_Model.h"
 #include "Render_VulkanBuffer.h"
 #include "Render_VulkanImage.h"
 
 namespace Render
 {
-	class SimpleGeometryModel : public ModelImpl
+	class SimpleGeometryModel : public Model
 	{
 	public:
-		SimpleGeometryModel(const ModelData& someData);
+		SimpleGeometryModel(const SimpleGeometryModelData& someData);
 
 		void Update(const ModelData& someData) override;
 		void Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType) override;

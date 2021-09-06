@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Render_Model.h"
 #include "Render_Renderer.h"
 
 namespace Render
@@ -8,7 +7,7 @@ namespace Render
 	class SwapChain;
 	class Camera;
 
-	class RendererImpl : public Renderer
+	class RendererImpl
 	{
 	public:
 		RendererImpl();
@@ -20,7 +19,10 @@ namespace Render
 		virtual void StartFrame();
 		virtual void EndFrame();
 
-		void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection) override;
+		void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection);
+		virtual void AddLight(const PointLight& aPointLight) = 0;
+		virtual void DrawModel(Handle aModelHandle, const ModelData& someData, Renderer::DrawType aDrawType) = 0;
+		virtual void DrawGui(Handle aGuiHandle) = 0;
 
 		VkSemaphore GetCurrentRenderFinishedSemaphore() const { return myRenderFinishedSemaphores[myCurrentFrameIndex]; }
 

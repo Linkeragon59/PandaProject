@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GameWork_Prop.h"
-#include "Render_Model.h"
+#include "Render_ModelData.h"
 
 namespace GameWork
 {

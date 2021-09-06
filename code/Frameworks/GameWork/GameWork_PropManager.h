@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Render_Model.h"
+#include "Render_ModelData.h"
 #include "Render_Renderer.h"
 
 namespace GameWork

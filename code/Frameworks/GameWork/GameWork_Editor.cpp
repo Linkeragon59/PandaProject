@@ -25,7 +25,7 @@ namespace GameWork
 		Assert(GameWork::GetInstance() && GameWork::GetInstance()->GetWindowManager());
 		myWindow = GameWork::GetInstance()->GetWindowManager()->OpenWindow(locWindowWidth, locWindowHeight, "Editor");
 
-		Render::Facade::GetInstance()->RegisterWindow(myWindow, Render::Renderer::Type::Editor);
+		Render::RegisterWindow(myWindow, Render::Renderer::Type::Editor);
 
 		myGui = new CallbackGui(myWindow, [&]() {
 			int width, height;
@@ -64,7 +64,7 @@ namespace GameWork
 	{
 		delete myGui;
 
-		Render::Facade::GetInstance()->UnregisterWindow(myWindow);
+		Render::UnregisterWindow(myWindow);
 
 		GameWork::GetInstance()->GetWindowManager()->CloseWindow(myWindow);
 	}

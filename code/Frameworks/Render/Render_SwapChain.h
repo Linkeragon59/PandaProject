@@ -59,6 +59,6 @@ namespace Render
 
 		// For now, one renderer per swapchain
 		Renderer::Type myRendererType = Renderer::Type::Invalid;
-		RendererImpl* myRenderer = nullptr;
+		Renderer* myRenderer = nullptr;
 	};
 }

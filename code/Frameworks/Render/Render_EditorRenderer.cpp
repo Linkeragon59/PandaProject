@@ -5,7 +5,8 @@
 #include "Render_SwapChain.h"
 #include "Render_ShaderHelpers.h"
 #include "Render_Debug.h"
-#include "Render_GuiImpl.h"
+#include "Render_Gui.h"
+#include "Render_GuiContainer.h"
 
 namespace Render
 {
@@ -123,10 +124,10 @@ namespace Render
 		vkCmdSetScissor(mySecondaryCommandBuffersGui[myCurrentFrameIndex], 0, 1, &aScissor);
 	}
 
-	void EditorRenderer::DrawGui(Gui* aGui)
+	void EditorRenderer::DrawGui(Handle aGuiHandle)
 	{
-		GuiImpl* guiImpl = static_cast<GuiImpl*>(aGui);
-		guiImpl->Draw(mySecondaryCommandBuffersGui[myCurrentFrameIndex], myGuiPipeline.myPipelineLayout, 0);
+		Gui* gui = RenderCore::GetInstance()->GetGuiContainer()->GetGui(aGuiHandle);
+		gui->Draw(mySecondaryCommandBuffersGui[myCurrentFrameIndex], myGuiPipeline.myPipelineLayout, 0);
 	}
 
 	void EditorRenderer::SetupRenderPass()
