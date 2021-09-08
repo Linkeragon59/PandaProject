@@ -27,37 +27,7 @@ namespace GameWork
 
 		Render::RegisterWindow(myWindow, Render::Renderer::Type::Editor);
 
-		myGui = new CallbackGui(myWindow, [&]() {
-			int width, height;
-			glfwGetWindowSize(myWindow, &width, &height);
-
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-			ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-			ImGui::SetNextWindowSize(ImVec2((float)width, (float)height), ImGuiCond_Always);
-			ImGui::Begin("Vulkan Example", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
-			ImGui::PushItemWidth(110.0f);
-
-			ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-			if (ImGui::CollapsingHeader("Subpasses", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				ImGui::Text("Test Gui");
-			}
-			if (ImGui::CollapsingHeader("Subpasses", ImGuiTreeNodeFlags_DefaultOpen))
-			{
-				static char buf[32] = "hello";
-				ImGui::InputText("Input", buf, 32);
-				ImGui::Button("Test Button");
-			}
-
-			drawList->AddCircle(ImVec2(200.0f, 200.0f), 50.0f, ImGui::GetColorU32(IM_COL32(255, 255, 255, 255)), 0, 5.0f);
-
-			ImGui::PopItemWidth();
-
-			ImGui::End();
-			ImGui::PopStyleVar();
-		});
+		myGui = new CallbackGui(myWindow, std::bind(&Editor::CallbackUpdate, this));
 	}
 
 	Editor::~Editor()
@@ -73,6 +43,40 @@ namespace GameWork
 	{
 		myGui->Update();
 		myGui->Draw();
+	}
+
+	void Editor::CallbackUpdate()
+	{
+		int width, height;
+		glfwGetWindowSize(myWindow, &width, &height);
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+		ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+		ImGui::SetNextWindowSize(ImVec2((float)width, (float)height), ImGuiCond_Always);
+		ImGui::ShowDemoWindow();
+		/*ImGui::Begin("Vulkan Example", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+		ImGui::PushItemWidth(110.0f);
+
+		ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+		if (ImGui::CollapsingHeader("Subpasses", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::Text("Test Gui");
+		}
+		if (ImGui::CollapsingHeader("Subpasses", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			static char buf[32] = "hello";
+			ImGui::InputText("Input", buf, 32);
+			ImGui::Button("Test Button");
+		}
+
+		drawList->AddCircle(ImVec2(200.0f, 200.0f), 50.0f, ImGui::GetColorU32(IM_COL32(255, 255, 255, 255)), 0, 5.0f);
+
+		ImGui::PopItemWidth();
+
+		ImGui::End();*/
+		ImGui::PopStyleVar();
 	}
 }
 

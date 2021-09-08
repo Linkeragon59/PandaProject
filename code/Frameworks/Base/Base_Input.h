@@ -2,20 +2,25 @@
 
 #include <vector>
 #include <functional>
+
+#include "Base_SlotVector.h"
+
 struct GLFWwindow;
 
 namespace Input
-{	
-	enum class RawInput
+{
+	enum MouseButton
 	{
-		MouseStart,
-		MouseLeft = MouseStart,
+		MouseLeft,
 		MouseRight,
 		MouseMiddle,
-		MouseEnd = MouseMiddle,
 
-		KeyNumStart,
-		Key0 = KeyNumStart,
+		MouseCount,
+	};
+
+	enum Key
+	{
+		Key0,
 		Key1,
 		Key2,
 		Key3,
@@ -25,10 +30,8 @@ namespace Input
 		Key7,
 		Key8,
 		Key9,
-		KeyNumEnd = Key9,
 
-		KeyAlphaStart,
-		KeyA = KeyAlphaStart,
+		KeyA,
 		KeyB,
 		KeyC,
 		KeyD,
@@ -54,32 +57,137 @@ namespace Input
 		KeyX,
 		KeyY,
 		KeyZ,
-		KeyAlphaEnd = KeyZ,
 
 		KeySpace,
+		KeyApostrophe,
+		KeyGraveAccent,
+		KeyComma,
+		KeySemicolon,
+		KeyPeriod,
+		KeyHyphen,
+		KeyEqual,
+		KeySlash,
+		KeyBackSlash,
+		KeyLeftBracket,
+		KeyRightBracket,
+
 		KeyEscape,
+		KeyEnter,
+		KeyTab,
+		KeyBackspace,
+		KeyInsert,
+		KeyDelete,
+		KeyRight,
+		KeyLeft,
+		KeyDown,
+		KeyUp,
+		KeyPageUp,
+		KeyPageDown,
+		KeyHome,
+		KeyEnd,
+		KeyCapsLock,
+		KeyScrollLock,
+		KeyNumLock,
+		KeyPrintScreen,
+		KeyPause,
+		KeyF1,
+		KeyF2,
+		KeyF3,
+		KeyF4,
+		KeyF5,
+		KeyF6,
+		KeyF7,
+		KeyF8,
+		KeyF9,
+		KeyF10,
+		KeyF11,
+		KeyF12,
+		KeyLeftShift,
+		KeyLeftCtrl,
+		KeyLeftAlt,
+		KeyLeftSuper,
+		KeyRightShift,
+		KeyRightCtrl,
+		KeyRightAlt,
+		KeyRightSuper,
+		KeyMenu,
+
+		KeyNumPad0,
+		KeyNumPad1,
+		KeyNumPad2,
+		KeyNumPad3,
+		KeyNumPad4,
+		KeyNumPad5,
+		KeyNumPad6,
+		KeyNumPad7,
+		KeyNumPad8,
+		KeyNumPad9,
+		KeyNumPadDecimal,
+		KeyNumPadDivide,
+		KeyNumPadMultiply,
+		KeyNumPadSubtract,
+		KeyNumPadAdd,
+		KeyNumPadEnter,
+		KeyNumPadEqual,
+
+		KeyCount,
 	};
 
-	enum class RawInputState
+	enum class Status
 	{
-		Unknown,
-
-		Pressed,
 		Released,
+		Pressed,
 		Repeated,
+		Unknown,
 	};
 
-	struct InputCallback
+	enum Modifier
 	{
-		RawInput myInput;
-		GLFWwindow* myWindow;
-		std::function<void()> myCallback;
+		ModNone		= 0x00,
+		ModShift	= 0x01,
+		ModControl	= 0x02,
+		ModAlt		= 0x04,
+		ModSuper	= 0x08,
+		ModCapsLock	= 0x10,
+		ModNumLock	= 0x20,
 	};
 
-	struct ScrollInputCallback
+	typedef std::function<void(Status, Modifier)> MouseCallback;
+	struct MouseCallbackEntry
 	{
-		GLFWwindow* myWindow;
-		std::function<void(double, double)> myCallback;
+		void Clear() { myWindow = nullptr; myCallback = nullptr; }
+		bool IsSet() const { return myCallback != nullptr; }
+		MouseButton myButton;
+		GLFWwindow* myWindow = nullptr;
+		MouseCallback myCallback = nullptr;
+	};
+	
+	typedef std::function<void(Status, Modifier)> KeyCallback;
+	struct KeyCallbackEntry
+	{
+		void Clear() { myWindow = nullptr; myCallback = nullptr; }
+		bool IsSet() const { return myCallback != nullptr; }
+		Key myKey;
+		GLFWwindow* myWindow = nullptr;
+		KeyCallback myCallback = nullptr;
+	};
+
+	typedef std::function<void(double, double)> ScrollCallback;
+	struct ScrollCallbackEntry
+	{
+		void Clear() { myWindow = nullptr; myCallback = nullptr; }
+		bool IsSet() const { return myCallback != nullptr; }
+		GLFWwindow* myWindow = nullptr;
+		ScrollCallback myCallback = nullptr;
+	};
+
+	typedef std::function<void(uint)> CharacterCallback;
+	struct CharacterCallbackEntry
+	{
+		void Clear() { myWindow = nullptr; myCallback = nullptr; }
+		bool IsSet() const { return myCallback != nullptr; }
+		GLFWwindow* myWindow = nullptr;
+		CharacterCallback myCallback = nullptr;
 	};
 
 	class InputManager
@@ -91,24 +199,35 @@ namespace Input
 
 		void SetMainWindow(GLFWwindow* aWindow) { myMainWindow = aWindow; }
 
-		RawInputState PollRawInput(RawInput anInput, GLFWwindow* aWindow = nullptr) const;
+		Status PollMouseInput(MouseButton aButton, GLFWwindow* aWindow = nullptr) const;
+		Status PollKeyInput(Key aKey, GLFWwindow* aWindow = nullptr) const;
 		void PollMousePosition(double& anOutX, double& anOutY, GLFWwindow* aWindow = nullptr) const;
 
-		uint AddCallback(RawInput anInput, std::function<void()> aCallback, GLFWwindow* aWindow = nullptr);
-		void RemoveCallback(uint aCallbakId);
+		uint AddMouseCallback(MouseButton aButton, MouseCallback aCallback, GLFWwindow* aWindow = nullptr);
+		void RemoveMouseCallback(uint aCallbakId);
 
-		uint AddScrollCallback(std::function<void(double, double)> aCallback, GLFWwindow* aWindow = nullptr);
+		uint AddKeyCallback(Key aKey, KeyCallback aCallback, GLFWwindow* aWindow = nullptr);
+		void RemoveKeyCallback(uint aCallbakId);
+
+		uint AddScrollCallback(ScrollCallback aCallback, GLFWwindow* aWindow = nullptr);
 		void RemoveScrollCallback(uint aCallbakId);
 
-		static void KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods);
-		static void MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int someMods);
-		static void ScrollCallback(GLFWwindow* aWindow, double anX, double anY);
+		uint AddCharacterCallback(CharacterCallback aCallback, GLFWwindow* aWindow = nullptr);
+		void RemoveCharacterCallback(uint aCallbakId);
+
+		static void OnMouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int someMods);
+		static void OnKeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods);
+		static void OnScrollCallback(GLFWwindow* aWindow, double anX, double anY);
+		static void OnCharacterCallback(GLFWwindow* aWindow, uint aUnicodeCodePoint);
 
 	private:
 		static InputManager* ourInstance;
 
 		GLFWwindow* myMainWindow = nullptr;
-		std::vector<InputCallback> myInputCallbacks;
-		std::vector<ScrollInputCallback> myScrollInputCallbacks;
+
+		SlotVector<MouseCallbackEntry> myMouseCallbacks;
+		SlotVector<KeyCallbackEntry> myKeyCallbacks;
+		SlotVector<ScrollCallbackEntry> myScrollCallbacks;
+		SlotVector<CharacterCallbackEntry> myCharacterCallbacks;
 	};
 } // namespace Input

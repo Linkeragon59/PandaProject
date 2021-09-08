@@ -19,8 +19,9 @@ namespace GameWork
 
 		static void OnSizeCallback(GLFWwindow* aWindow, int aWidth, int aHeight);
 		static void OnFramebufferSizeCallback(GLFWwindow* aWindow, int aWidth, int aHeight);
-		static void OnKeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods);
 		static void OnMouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int someMods);
+		static void OnKeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods);
 		static void OnScrollCallback(GLFWwindow* aWindow, double anX, double anY);
+		static void OnCharacterCallback(GLFWwindow* aWindow, uint aUnicodeCodePoint);
 	};
 }

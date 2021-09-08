@@ -10,6 +10,7 @@ target_sources(Base
 		Base_Input.h
 		Base_Precompile.h
 		Base_SharedPtr.h
+		Base_SlotVector.h
 		Base_Thread.h
 		Base_Time.h
 		Base_Types.h

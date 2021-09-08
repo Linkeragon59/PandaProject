@@ -6,73 +6,154 @@ namespace Input
 {
 	namespace
 	{
-		int locRawInputToGlfwInput(RawInput aRawInput)
+		int locMouseButtonToGlfwMapping[MouseCount];
+		int locKeyToGlfwMapping[KeyCount];
+
+		void locInitInputToGlfwMapping()
 		{
-			#define RAW2GLFW(raw, glfw) case RawInput::raw: return glfw;
-			
-			switch (aRawInput)
-			{
-			RAW2GLFW(MouseLeft, GLFW_MOUSE_BUTTON_LEFT)
-			RAW2GLFW(MouseRight, GLFW_MOUSE_BUTTON_RIGHT)
-			RAW2GLFW(MouseMiddle, GLFW_MOUSE_BUTTON_MIDDLE)
+			locMouseButtonToGlfwMapping[MouseLeft] = GLFW_MOUSE_BUTTON_LEFT;
+			locMouseButtonToGlfwMapping[MouseRight] = GLFW_MOUSE_BUTTON_RIGHT;
+			locMouseButtonToGlfwMapping[MouseMiddle] = GLFW_MOUSE_BUTTON_MIDDLE;
 
-			RAW2GLFW(Key0, GLFW_KEY_0)
-			RAW2GLFW(Key1, GLFW_KEY_1)
-			RAW2GLFW(Key2, GLFW_KEY_2)
-			RAW2GLFW(Key3, GLFW_KEY_3)
-			RAW2GLFW(Key4, GLFW_KEY_4)
-			RAW2GLFW(Key5, GLFW_KEY_5)
-			RAW2GLFW(Key6, GLFW_KEY_6)
-			RAW2GLFW(Key7, GLFW_KEY_7)
-			RAW2GLFW(Key8, GLFW_KEY_8)
-			RAW2GLFW(Key9, GLFW_KEY_9)
+			locKeyToGlfwMapping[Key0] = GLFW_KEY_0;
+			locKeyToGlfwMapping[Key1] = GLFW_KEY_1;
+			locKeyToGlfwMapping[Key2] = GLFW_KEY_2;
+			locKeyToGlfwMapping[Key3] = GLFW_KEY_3;
+			locKeyToGlfwMapping[Key4] = GLFW_KEY_4;
+			locKeyToGlfwMapping[Key5] = GLFW_KEY_5;
+			locKeyToGlfwMapping[Key6] = GLFW_KEY_6;
+			locKeyToGlfwMapping[Key7] = GLFW_KEY_7;
+			locKeyToGlfwMapping[Key8] = GLFW_KEY_8;
+			locKeyToGlfwMapping[Key9] = GLFW_KEY_9;
 
-			RAW2GLFW(KeyA, GLFW_KEY_A)
-			RAW2GLFW(KeyB, GLFW_KEY_B)
-			RAW2GLFW(KeyC, GLFW_KEY_C)
-			RAW2GLFW(KeyD, GLFW_KEY_D)
-			RAW2GLFW(KeyE, GLFW_KEY_E)
-			RAW2GLFW(KeyF, GLFW_KEY_F)
-			RAW2GLFW(KeyG, GLFW_KEY_G)
-			RAW2GLFW(KeyH, GLFW_KEY_H)
-			RAW2GLFW(KeyI, GLFW_KEY_I)
-			RAW2GLFW(KeyJ, GLFW_KEY_J)
-			RAW2GLFW(KeyK, GLFW_KEY_K)
-			RAW2GLFW(KeyL, GLFW_KEY_L)
-			RAW2GLFW(KeyM, GLFW_KEY_M)
-			RAW2GLFW(KeyN, GLFW_KEY_N)
-			RAW2GLFW(KeyO, GLFW_KEY_O)
-			RAW2GLFW(KeyP, GLFW_KEY_P)
-			RAW2GLFW(KeyQ, GLFW_KEY_Q)
-			RAW2GLFW(KeyR, GLFW_KEY_R)
-			RAW2GLFW(KeyS, GLFW_KEY_S)
-			RAW2GLFW(KeyT, GLFW_KEY_T)
-			RAW2GLFW(KeyU, GLFW_KEY_U)
-			RAW2GLFW(KeyV, GLFW_KEY_V)
-			RAW2GLFW(KeyW, GLFW_KEY_W)
-			RAW2GLFW(KeyX, GLFW_KEY_X)
-			RAW2GLFW(KeyY, GLFW_KEY_Y)
-			RAW2GLFW(KeyZ, GLFW_KEY_Z)
+			locKeyToGlfwMapping[KeyA] = GLFW_KEY_A;
+			locKeyToGlfwMapping[KeyB] = GLFW_KEY_B;
+			locKeyToGlfwMapping[KeyC] = GLFW_KEY_C;
+			locKeyToGlfwMapping[KeyD] = GLFW_KEY_D;
+			locKeyToGlfwMapping[KeyE] = GLFW_KEY_E;
+			locKeyToGlfwMapping[KeyF] = GLFW_KEY_F;
+			locKeyToGlfwMapping[KeyG] = GLFW_KEY_G;
+			locKeyToGlfwMapping[KeyH] = GLFW_KEY_H;
+			locKeyToGlfwMapping[KeyI] = GLFW_KEY_I;
+			locKeyToGlfwMapping[KeyJ] = GLFW_KEY_J;
+			locKeyToGlfwMapping[KeyK] = GLFW_KEY_K;
+			locKeyToGlfwMapping[KeyL] = GLFW_KEY_L;
+			locKeyToGlfwMapping[KeyM] = GLFW_KEY_M;
+			locKeyToGlfwMapping[KeyN] = GLFW_KEY_N;
+			locKeyToGlfwMapping[KeyO] = GLFW_KEY_O;
+			locKeyToGlfwMapping[KeyP] = GLFW_KEY_P;
+			locKeyToGlfwMapping[KeyQ] = GLFW_KEY_Q;
+			locKeyToGlfwMapping[KeyR] = GLFW_KEY_R;
+			locKeyToGlfwMapping[KeyS] = GLFW_KEY_S;
+			locKeyToGlfwMapping[KeyT] = GLFW_KEY_T;
+			locKeyToGlfwMapping[KeyU] = GLFW_KEY_U;
+			locKeyToGlfwMapping[KeyV] = GLFW_KEY_V;
+			locKeyToGlfwMapping[KeyW] = GLFW_KEY_W;
+			locKeyToGlfwMapping[KeyX] = GLFW_KEY_X;
+			locKeyToGlfwMapping[KeyY] = GLFW_KEY_Y;
+			locKeyToGlfwMapping[KeyZ] = GLFW_KEY_Z;
 
-			RAW2GLFW(KeySpace, GLFW_KEY_SPACE)
-			RAW2GLFW(KeyEscape, GLFW_KEY_ESCAPE)
+			locKeyToGlfwMapping[KeySpace] = GLFW_KEY_SPACE;
+			locKeyToGlfwMapping[KeyApostrophe] = GLFW_KEY_APOSTROPHE;
+			locKeyToGlfwMapping[KeyGraveAccent] = GLFW_KEY_GRAVE_ACCENT;
+			locKeyToGlfwMapping[KeyComma] = GLFW_KEY_COMMA;
+			locKeyToGlfwMapping[KeySemicolon] = GLFW_KEY_SEMICOLON;
+			locKeyToGlfwMapping[KeyPeriod] = GLFW_KEY_PERIOD;
+			locKeyToGlfwMapping[KeyHyphen] = GLFW_KEY_MINUS;
+			locKeyToGlfwMapping[KeyEqual] = GLFW_KEY_EQUAL;
+			locKeyToGlfwMapping[KeySlash] = GLFW_KEY_SLASH;
+			locKeyToGlfwMapping[KeyBackSlash] = GLFW_KEY_BACKSLASH;
+			locKeyToGlfwMapping[KeyLeftBracket] = GLFW_KEY_LEFT_BRACKET;
+			locKeyToGlfwMapping[KeyRightBracket] = GLFW_KEY_RIGHT_BRACKET;
 
-			default: return GLFW_KEY_UNKNOWN;
-			}
+			locKeyToGlfwMapping[KeyEscape] = GLFW_KEY_ESCAPE;
+			locKeyToGlfwMapping[KeyEnter] = GLFW_KEY_ENTER;
+			locKeyToGlfwMapping[KeyTab] = GLFW_KEY_TAB;
+			locKeyToGlfwMapping[KeyBackspace] = GLFW_KEY_BACKSPACE;
+			locKeyToGlfwMapping[KeyInsert] = GLFW_KEY_INSERT;
+			locKeyToGlfwMapping[KeyDelete] = GLFW_KEY_DELETE;
+			locKeyToGlfwMapping[KeyRight] = GLFW_KEY_RIGHT;
+			locKeyToGlfwMapping[KeyLeft] = GLFW_KEY_LEFT;
+			locKeyToGlfwMapping[KeyDown] = GLFW_KEY_DOWN;
+			locKeyToGlfwMapping[KeyUp] = GLFW_KEY_UP;
+			locKeyToGlfwMapping[KeyPageUp] = GLFW_KEY_PAGE_UP;
+			locKeyToGlfwMapping[KeyPageDown] = GLFW_KEY_PAGE_DOWN;
+			locKeyToGlfwMapping[KeyHome] = GLFW_KEY_HOME;
+			locKeyToGlfwMapping[KeyEnd] = GLFW_KEY_END;
+			locKeyToGlfwMapping[KeyCapsLock] = GLFW_KEY_CAPS_LOCK;
+			locKeyToGlfwMapping[KeyScrollLock] = GLFW_KEY_SCROLL_LOCK;
+			locKeyToGlfwMapping[KeyNumLock] = GLFW_KEY_NUM_LOCK;
+			locKeyToGlfwMapping[KeyPrintScreen] = GLFW_KEY_PRINT_SCREEN;
+			locKeyToGlfwMapping[KeyPause] = GLFW_KEY_PAUSE;
+			locKeyToGlfwMapping[KeyF1] = GLFW_KEY_F1;
+			locKeyToGlfwMapping[KeyF2] = GLFW_KEY_F2;
+			locKeyToGlfwMapping[KeyF3] = GLFW_KEY_F3;
+			locKeyToGlfwMapping[KeyF4] = GLFW_KEY_F4;
+			locKeyToGlfwMapping[KeyF5] = GLFW_KEY_F5;
+			locKeyToGlfwMapping[KeyF6] = GLFW_KEY_F6;
+			locKeyToGlfwMapping[KeyF7] = GLFW_KEY_F7;
+			locKeyToGlfwMapping[KeyF8] = GLFW_KEY_F8;
+			locKeyToGlfwMapping[KeyF9] = GLFW_KEY_F9;
+			locKeyToGlfwMapping[KeyF10] = GLFW_KEY_F10;
+			locKeyToGlfwMapping[KeyF11] = GLFW_KEY_F11;
+			locKeyToGlfwMapping[KeyF12] = GLFW_KEY_F12;
+			locKeyToGlfwMapping[KeyLeftShift] = GLFW_KEY_LEFT_SHIFT;
+			locKeyToGlfwMapping[KeyLeftCtrl] = GLFW_KEY_LEFT_CONTROL;
+			locKeyToGlfwMapping[KeyLeftAlt] = GLFW_KEY_LEFT_ALT;
+			locKeyToGlfwMapping[KeyLeftSuper] = GLFW_KEY_LEFT_SUPER;
+			locKeyToGlfwMapping[KeyRightShift] = GLFW_KEY_RIGHT_SHIFT;
+			locKeyToGlfwMapping[KeyRightCtrl] = GLFW_KEY_RIGHT_CONTROL;
+			locKeyToGlfwMapping[KeyRightAlt] = GLFW_KEY_RIGHT_ALT;
+			locKeyToGlfwMapping[KeyRightSuper] = GLFW_KEY_RIGHT_SUPER;
+			locKeyToGlfwMapping[KeyMenu] = GLFW_KEY_MENU;
 
-			#undef RAW2GLFW
+			locKeyToGlfwMapping[KeyNumPad0] = GLFW_KEY_KP_0;
+			locKeyToGlfwMapping[KeyNumPad1] = GLFW_KEY_KP_1;
+			locKeyToGlfwMapping[KeyNumPad2] = GLFW_KEY_KP_2;
+			locKeyToGlfwMapping[KeyNumPad3] = GLFW_KEY_KP_3;
+			locKeyToGlfwMapping[KeyNumPad4] = GLFW_KEY_KP_4;
+			locKeyToGlfwMapping[KeyNumPad5] = GLFW_KEY_KP_5;
+			locKeyToGlfwMapping[KeyNumPad6] = GLFW_KEY_KP_6;
+			locKeyToGlfwMapping[KeyNumPad7] = GLFW_KEY_KP_7;
+			locKeyToGlfwMapping[KeyNumPad8] = GLFW_KEY_KP_8;
+			locKeyToGlfwMapping[KeyNumPad9] = GLFW_KEY_KP_9;
+			locKeyToGlfwMapping[KeyNumPadDecimal] = GLFW_KEY_KP_DECIMAL;
+			locKeyToGlfwMapping[KeyNumPadDivide] = GLFW_KEY_KP_DIVIDE;
+			locKeyToGlfwMapping[KeyNumPadMultiply] = GLFW_KEY_KP_MULTIPLY;
+			locKeyToGlfwMapping[KeyNumPadSubtract] = GLFW_KEY_KP_SUBTRACT;
+			locKeyToGlfwMapping[KeyNumPadAdd] = GLFW_KEY_KP_ADD;
+			locKeyToGlfwMapping[KeyNumPadEnter] = GLFW_KEY_KP_ENTER;
+			locKeyToGlfwMapping[KeyNumPadEqual] = GLFW_KEY_KP_EQUAL;
 		}
 
-		RawInputState locGlfwInputStateToRawInputState(int aGlfwInputState)
+		Status locGlfwToInputStatus(int aGlfwAction)
 		{
-			if (aGlfwInputState == GLFW_PRESS)
-				return RawInputState::Pressed;
-			else if (aGlfwInputState == GLFW_RELEASE)
-				return RawInputState::Released;
-			else if (aGlfwInputState == GLFW_REPEAT)
-				return RawInputState::Repeated;
+			if (aGlfwAction == GLFW_RELEASE)
+				return Status::Released;
+			else if (aGlfwAction == GLFW_PRESS)
+				return Status::Pressed;
+			else if (aGlfwAction == GLFW_REPEAT)
+				return Status::Repeated;
 			else
-				return RawInputState::Unknown;
+				return Status::Unknown;
+		}
+
+		Modifier locGlfwToModifier(int someGlfwMods)
+		{
+			uint mods = ModNone;
+			if (someGlfwMods & GLFW_MOD_SHIFT)
+				mods &= ModShift;
+			if (someGlfwMods & GLFW_MOD_CONTROL)
+				mods &= ModControl;
+			if (someGlfwMods & GLFW_MOD_ALT)
+				mods &= ModShift;
+			if (someGlfwMods & GLFW_MOD_SUPER)
+				mods &= ModSuper;
+			if (someGlfwMods & GLFW_MOD_CAPS_LOCK)
+				mods &= ModCapsLock;
+			if (someGlfwMods & GLFW_MOD_NUM_LOCK)
+				mods &= ModNumLock;
+			return Modifier(mods);
 		}
 	}
 
@@ -81,6 +162,7 @@ namespace Input
 	void InputManager::Create()
 	{
 		ourInstance = new InputManager;
+		locInitInputToGlfwMapping();
 	}
 	
 	void InputManager::Destroy()
@@ -88,16 +170,22 @@ namespace Input
 		SafeDelete(ourInstance);
 	}
 
-	RawInputState InputManager::PollRawInput(RawInput anInput, GLFWwindow* aWindow /*= nullptr*/) const
+	Status InputManager::PollMouseInput(MouseButton aButton, GLFWwindow* aWindow /*= nullptr*/) const
 	{
 		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
 		if (!window)
-			return RawInputState::Unknown;
+			return Status::Unknown;
 
-		if (anInput <= RawInput::MouseEnd)
-			return locGlfwInputStateToRawInputState(glfwGetMouseButton(window, locRawInputToGlfwInput(anInput)));
-		else
-			return locGlfwInputStateToRawInputState(glfwGetKey(window, locRawInputToGlfwInput(anInput)));
+		return locGlfwToInputStatus(glfwGetMouseButton(window, locMouseButtonToGlfwMapping[aButton]));
+	}
+
+	Status InputManager::PollKeyInput(Key aKey, GLFWwindow* aWindow /*= nullptr*/) const
+	{
+		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
+		if (!window)
+			return Status::Unknown;
+
+		return locGlfwToInputStatus(glfwGetKey(window, locKeyToGlfwMapping[aKey]));
 	}
 
 	void InputManager::PollMousePosition(double& anOutX, double& anOutY, GLFWwindow* aWindow /*= nullptr*/) const
@@ -105,109 +193,125 @@ namespace Input
 		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
 		if (!window)
 		{
-			anOutX = -1;
-			anOutY = -1;
+			anOutX = anOutY = -1;
 			return;
 		}
 
 		glfwGetCursorPos(window, &anOutX, &anOutY);
 	}
 
-	uint InputManager::AddCallback(RawInput anInput, std::function<void()> aCallback, GLFWwindow* aWindow /*= nullptr*/)
+	uint InputManager::AddMouseCallback(MouseButton aButton, MouseCallback aCallback, GLFWwindow* aWindow /*= nullptr*/)
 	{
 		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
 		if (!window)
 			return UINT_MAX;
 
-		for (uint i = 0; i < myInputCallbacks.size(); ++i)
-		{
-			InputCallback& callback = myInputCallbacks[i];
-			if (callback.myCallback == nullptr)
-			{
-				callback.myInput = anInput;
-				callback.myWindow = window;
-				callback.myCallback = aCallback;
-				return i;
-			}
-		}
-
-		myInputCallbacks.push_back({ anInput, window, aCallback });
-		return (uint)myInputCallbacks.size() - 1;
+		MouseCallbackEntry entry;
+		entry.myButton = aButton;
+		entry.myWindow = window;
+		entry.myCallback = aCallback;
+		return myMouseCallbacks.Add(entry);
 	}
 
-	void InputManager::RemoveCallback(uint aCallbakId)
+	void InputManager::RemoveMouseCallback(uint aCallbakId)
 	{
-		if (aCallbakId >= myInputCallbacks.size())
-			return;
-
-		myInputCallbacks[aCallbakId].myCallback = nullptr;
+		myMouseCallbacks.Remove(aCallbakId);
 	}
 
-	uint InputManager::AddScrollCallback(std::function<void(double, double)> aCallback, GLFWwindow* aWindow /*= nullptr*/)
+	uint InputManager::AddKeyCallback(Key aKey, KeyCallback aCallback, GLFWwindow* aWindow /*= nullptr*/)
 	{
 		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
 		if (!window)
 			return UINT_MAX;
 
-		for (uint i = 0; i < myScrollInputCallbacks.size(); ++i)
-		{
-			ScrollInputCallback& callback = myScrollInputCallbacks[i];
-			if (callback.myCallback == nullptr)
-			{
-				callback.myWindow = window;
-				callback.myCallback = aCallback;
-				return i;
-			}
-		}
+		KeyCallbackEntry entry;
+		entry.myKey = aKey;
+		entry.myWindow = window;
+		entry.myCallback = aCallback;
+		return myKeyCallbacks.Add(entry);
+	}
 
-		myScrollInputCallbacks.push_back({ window, aCallback });
-		return (uint)myScrollInputCallbacks.size() - 1;
+	void InputManager::RemoveKeyCallback(uint aCallbakId)
+	{
+		myKeyCallbacks.Remove(aCallbakId);
+	}
+
+	uint InputManager::AddScrollCallback(ScrollCallback aCallback, GLFWwindow* aWindow /*= nullptr*/)
+	{
+		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
+		if (!window)
+			return UINT_MAX;
+
+		ScrollCallbackEntry entry;
+		entry.myWindow = window;
+		entry.myCallback = aCallback;
+		return myScrollCallbacks.Add(entry);
 	}
 
 	void InputManager::RemoveScrollCallback(uint aCallbakId)
 	{
-		if (aCallbakId >= myScrollInputCallbacks.size())
-			return;
-
-		myScrollInputCallbacks[aCallbakId].myCallback = nullptr;
+		myScrollCallbacks.Remove(aCallbakId);
 	}
 
-	void InputManager::KeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods)
+	uint InputManager::AddCharacterCallback(CharacterCallback aCallback, GLFWwindow* aWindow /*= nullptr*/)
+	{
+		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
+		if (!window)
+			return UINT_MAX;
+
+		CharacterCallbackEntry entry;
+		entry.myWindow = window;
+		entry.myCallback = aCallback;
+		return myCharacterCallbacks.Add(entry);
+	}
+
+	void InputManager::RemoveCharacterCallback(uint aCallbakId)
+	{
+		myCharacterCallbacks.Remove(aCallbakId);
+	}
+
+	void InputManager::OnMouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int someMods)
+	{
+		for(const MouseCallbackEntry& entry : ourInstance->myMouseCallbacks.myEntries)
+		{
+			if (entry.IsSet() && aWindow == entry.myWindow && aButton == locMouseButtonToGlfwMapping[entry.myButton])
+			{
+				entry.myCallback(locGlfwToInputStatus(anAction), locGlfwToModifier(someMods));
+			}
+		}
+	}
+
+	void InputManager::OnKeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods)
 	{
 		(void)aScanCode;
-		(void)anAction;
-		(void)someMods;
 
-		for(auto callback : ourInstance->myInputCallbacks)
+		for (const KeyCallbackEntry& entry : ourInstance->myKeyCallbacks.myEntries)
 		{
-			if(callback.myCallback != nullptr && aWindow == callback.myWindow && aKey == locRawInputToGlfwInput(callback.myInput))
+			if (entry.IsSet() && aWindow == entry.myWindow && aKey == locKeyToGlfwMapping[entry.myKey])
 			{
-				callback.myCallback();
+				entry.myCallback(locGlfwToInputStatus(anAction), locGlfwToModifier(someMods));
 			}
 		}
 	}
 
-	void InputManager::MouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int someMods)
+	void InputManager::OnScrollCallback(GLFWwindow* aWindow, double anX, double anY)
 	{
-		(void)anAction;
-		(void)someMods;
-
-		for(auto callback : ourInstance->myInputCallbacks)
+		for (const ScrollCallbackEntry& entry : ourInstance->myScrollCallbacks.myEntries)
 		{
-			if (callback.myCallback != nullptr && aWindow == callback.myWindow && aButton == locRawInputToGlfwInput(callback.myInput))
+			if (entry.IsSet() && aWindow == entry.myWindow)
 			{
-				callback.myCallback();
+				entry.myCallback(anX, anY);
 			}
 		}
 	}
 
-	void InputManager::ScrollCallback(GLFWwindow* aWindow, double anX, double anY)
+	void InputManager::OnCharacterCallback(GLFWwindow* aWindow, uint aUnicodeCodePoint)
 	{
-		for (auto callback : ourInstance->myScrollInputCallbacks)
+		for (const CharacterCallbackEntry& entry : ourInstance->myCharacterCallbacks.myEntries)
 		{
-			if (callback.myCallback != nullptr && aWindow == callback.myWindow)
+			if (entry.IsSet() && aWindow == entry.myWindow)
 			{
-				callback.myCallback(anX, anY);
+				entry.myCallback(aUnicodeCodePoint);
 			}
 		}
 	}

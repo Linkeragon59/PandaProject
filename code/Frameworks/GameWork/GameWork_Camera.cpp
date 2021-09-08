@@ -49,7 +49,7 @@ namespace GameWork
 		prevMouseX = mouseX;
 		prevMouseY = mouseY;
 
-		if (inputManager->PollRawInput(Input::RawInput::MouseLeft) == Input::RawInputState::Pressed)
+		if (inputManager->PollMouseInput(Input::MouseLeft) == Input::Status::Pressed)
 		{
 			static float pitch = 0.0f;
 			static float yaw = -90.0f;
@@ -66,23 +66,23 @@ namespace GameWork
 			myDirection.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
 			myDirection = glm::normalize(myDirection);
 		}
-		if (inputManager->PollRawInput(Input::RawInput::MouseMiddle) == Input::RawInputState::Pressed)
+		if (inputManager->PollMouseInput(Input::MouseMiddle) == Input::Status::Pressed)
 		{
 			myPosition += -0.1f * ((float)deltaMouseX * myLeft + (float)deltaMouseY * myUp);
 		}
-		if (inputManager->PollRawInput(Input::RawInput::KeyW) == Input::RawInputState::Pressed)
+		if (inputManager->PollKeyInput(Input::KeyW) == Input::Status::Pressed)
 		{
 			myPosition += locSpeed * myDirection;
 		}
-		if (inputManager->PollRawInput(Input::RawInput::KeyS) == Input::RawInputState::Pressed)
+		if (inputManager->PollKeyInput(Input::KeyS) == Input::Status::Pressed)
 		{
 			myPosition -= locSpeed * myDirection;
 		}
-		if (inputManager->PollRawInput(Input::RawInput::KeyA) == Input::RawInputState::Pressed)
+		if (inputManager->PollKeyInput(Input::KeyA) == Input::Status::Pressed)
 		{
 			myPosition += locSpeed * myLeft;
 		}
-		if (inputManager->PollRawInput(Input::RawInput::KeyD) == Input::RawInputState::Pressed)
+		if (inputManager->PollKeyInput(Input::KeyD) == Input::Status::Pressed)
 		{
 			myPosition -= locSpeed * myLeft;
 		}

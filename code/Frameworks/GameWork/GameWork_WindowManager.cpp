@@ -35,18 +35,20 @@ namespace GameWork
 	{
 		glfwSetWindowSizeCallback(aWindow, OnSizeCallback);
 		glfwSetFramebufferSizeCallback(aWindow, OnFramebufferSizeCallback);
-		glfwSetKeyCallback(aWindow, OnKeyCallback);
 		glfwSetMouseButtonCallback(aWindow, OnMouseCallback);
+		glfwSetKeyCallback(aWindow, OnKeyCallback);
 		glfwSetScrollCallback(aWindow, OnScrollCallback);
+		glfwSetCharCallback(aWindow, OnCharacterCallback);
 	}
 
 	void WindowManager::UnregisterCallbacks(GLFWwindow* aWindow)
 	{
 		glfwSetWindowSizeCallback(aWindow, nullptr);
 		glfwSetFramebufferSizeCallback(aWindow, nullptr);
-		glfwSetKeyCallback(aWindow, nullptr);
 		glfwSetMouseButtonCallback(aWindow, nullptr);
+		glfwSetKeyCallback(aWindow, nullptr);
 		glfwSetScrollCallback(aWindow, nullptr);
+		glfwSetCharCallback(aWindow, nullptr);
 	}
 
 	void WindowManager::OnSizeCallback(GLFWwindow* aWindow, int aWidth, int aHeight)
@@ -59,18 +61,23 @@ namespace GameWork
 		GameWork::OnWindowFramebufferResize(aWindow, aWidth, aHeight);
 	}
 
-	void WindowManager::OnKeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods)
-	{
-		Input::InputManager::KeyCallback(aWindow, aKey, aScanCode, anAction, someMods);
-	}
-
 	void WindowManager::OnMouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int someMods)
 	{
-		Input::InputManager::MouseCallback(aWindow, aButton, anAction, someMods);
+		Input::InputManager::OnMouseCallback(aWindow, aButton, anAction, someMods);
+	}
+
+	void WindowManager::OnKeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods)
+	{
+		Input::InputManager::OnKeyCallback(aWindow, aKey, aScanCode, anAction, someMods);
 	}
 
 	void WindowManager::OnScrollCallback(GLFWwindow* aWindow, double anX, double anY)
 	{
-		Input::InputManager::ScrollCallback(aWindow, anX, anY);
+		Input::InputManager::OnScrollCallback(aWindow, anX, anY);
+	}
+
+	void WindowManager::OnCharacterCallback(GLFWwindow* aWindow, uint aUnicodeCodePoint)
+	{
+		Input::InputManager::OnCharacterCallback(aWindow, aUnicodeCodePoint);
 	}
 }

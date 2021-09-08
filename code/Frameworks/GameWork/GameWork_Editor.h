@@ -26,6 +26,8 @@ namespace GameWork
 		Tab GetTab() const { return myTab; }
 
 	private:
+		void CallbackUpdate();
+
 		Tab myTab = Tab::ConsoleLog;
 
 		GLFWwindow* myWindow = nullptr;

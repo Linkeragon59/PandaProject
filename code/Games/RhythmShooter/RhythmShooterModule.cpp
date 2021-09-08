@@ -64,11 +64,11 @@ void RhythmShooterModule::OnUnregister()
 void RhythmShooterModule::OnUpdate()
 {
 	Input::InputManager* inputManager = Input::InputManager::GetInstance();
-	if (inputManager->PollRawInput(Input::RawInput::KeyR) == Input::RawInputState::Pressed)
+	if (inputManager->PollKeyInput(Input::KeyR) == Input::Status::Pressed)
 	{
 		myTestModel->Rotate(0.5f, glm::vec3(0.0f, 1.0f, 0.0f));
 	}
-	if (inputManager->PollRawInput(Input::RawInput::KeyE) == Input::RawInputState::Pressed)
+	if (inputManager->PollKeyInput(Input::KeyE) == Input::Status::Pressed)
 	{
 		myTestModel->Scale(glm::vec3(1.01f, 1.0f, 0.99f));
 	}

@@ -184,30 +184,14 @@ namespace GameWork
 		Time::TimeManager::GetInstance()->NextFrame();
 
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
-		bool escapePressed = inputManager->PollRawInput(Input::RawInput::KeyEscape) == Input::RawInputState::Pressed;
+		bool escapePressed = inputManager->PollKeyInput(Input::KeyEscape) == Input::Status::Pressed;
 
-		/*if (inputManager->PollRawInput(Input::RawInput::KeyU) == Input::RawInputState::Pressed)
-		{
-			if (!locSoundPlaying)
-			{
-				locSoundPlaying = true;
-				locSoloud.play(locWave); // Play the wave
-			}
-		}
-		if (inputManager->PollRawInput(Input::RawInput::KeyY) == Input::RawInputState::Pressed)
-		{
-			if (locSoundPlaying)
-			{
-				locSoundPlaying = false;
-				locSoloud.stopAll(); // Stop the wave
-			}
-		}*/
 #if DEBUG_BUILD
-		if (inputManager->PollRawInput(Input::RawInput::KeyK) == Input::RawInputState::Pressed)
+		if (inputManager->PollKeyInput(Input::KeyK) == Input::Status::Pressed)
 		{
 			OpenEditor();
 		}
-		if (inputManager->PollRawInput(Input::RawInput::KeyL) == Input::RawInputState::Pressed)
+		if (inputManager->PollKeyInput(Input::KeyL) == Input::Status::Pressed)
 		{
 			CloseEditor();
 		}
