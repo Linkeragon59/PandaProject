@@ -5,6 +5,8 @@
 #include "Render_DeferredRenderer.h"
 #include "Render_EditorRenderer.h"
 
+#include "Base_Window.h"
+
 #include <GLFW/glfw3.h>
 
 namespace Render
@@ -14,6 +16,12 @@ namespace Render
 		, myRendererType(aRendererType)
 	{
 		myDevice = RenderCore::GetInstance()->GetDevice();
+
+		myFramebufferResizedCallbackId = Window::WindowManager::GetInstance()->AddFramebufferSizeCallback([this](int aWidth, int aHeight) {
+			(void)aWidth;
+			(void)aHeight;
+			myFramebufferResized = true;
+		}, myWindow);
 
 		VK_CHECK_RESULT(glfwCreateWindowSurface(RenderCore::GetInstance()->GetVkInstance(), myWindow, nullptr, &mySurface), "Failed to create the surface!");
 
@@ -25,6 +33,8 @@ namespace Render
 		Cleanup();
 
 		vkDestroySurfaceKHR(RenderCore::GetInstance()->GetVkInstance(), mySurface, nullptr);
+
+		Window::WindowManager::GetInstance()->RemoveFramebufferSizeCallback(myFramebufferResizedCallbackId);
 	}
 
 	void SwapChain::Setup()

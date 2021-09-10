@@ -15,6 +15,7 @@ target_sources(Base
 		Base_Time.h
 		Base_Types.h
 		Base_Utils.h
+		Base_Window.h
 
 		Base_Assert.cpp
 		Base_File.cpp
@@ -22,6 +23,7 @@ target_sources(Base
 		Base_Time.cpp
 		Base_imgui.cpp
 		Base_Input.cpp
+		Base_Window.cpp
 
 		glm.natvis
 )

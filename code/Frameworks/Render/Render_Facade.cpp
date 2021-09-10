@@ -35,11 +35,6 @@ namespace Render
 		RenderCore::GetInstance()->UnregisterWindow(aWindow);
 	}
 
-	void ResizeWindow(GLFWwindow* aWindow)
-	{
-		RenderCore::GetInstance()->ResizeWindow(aWindow);
-	}
-
 	Renderer* GetRenderer(GLFWwindow* aWindow)
 	{
 		return RenderCore::GetInstance()->GetRenderer(aWindow);

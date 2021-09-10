@@ -16,7 +16,6 @@ namespace Render
 
 	void RegisterWindow(GLFWwindow* aWindow, Renderer::Type aRendererType);
 	void UnregisterWindow(GLFWwindow* aWindow);
-	void ResizeWindow(GLFWwindow* aWindow);
 	Renderer* GetRenderer(GLFWwindow* aWindow);
 
 	Handle AddModel(const ModelData& someData);

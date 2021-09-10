@@ -1,4 +1,5 @@
 #include "Base_Input.h"
+#include "Base_Window.h"
 
 #include <GLFW/glfw3.h>
 
@@ -172,7 +173,7 @@ namespace Input
 
 	Status InputManager::PollMouseInput(MouseButton aButton, GLFWwindow* aWindow /*= nullptr*/) const
 	{
-		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
+		GLFWwindow* window = aWindow ? aWindow : Window::WindowManager::GetInstance()->GetMainWindow();
 		if (!window)
 			return Status::Unknown;
 
@@ -181,7 +182,7 @@ namespace Input
 
 	Status InputManager::PollKeyInput(Key aKey, GLFWwindow* aWindow /*= nullptr*/) const
 	{
-		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
+		GLFWwindow* window = aWindow ? aWindow : Window::WindowManager::GetInstance()->GetMainWindow();
 		if (!window)
 			return Status::Unknown;
 
@@ -190,7 +191,7 @@ namespace Input
 
 	void InputManager::PollMousePosition(double& anOutX, double& anOutY, GLFWwindow* aWindow /*= nullptr*/) const
 	{
-		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
+		GLFWwindow* window = aWindow ? aWindow : Window::WindowManager::GetInstance()->GetMainWindow();
 		if (!window)
 		{
 			anOutX = anOutY = -1;
@@ -202,13 +203,9 @@ namespace Input
 
 	uint InputManager::AddMouseCallback(MouseButton aButton, MouseCallback aCallback, GLFWwindow* aWindow /*= nullptr*/)
 	{
-		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
-		if (!window)
-			return UINT_MAX;
-
 		MouseCallbackEntry entry;
 		entry.myButton = aButton;
-		entry.myWindow = window;
+		entry.myWindow = aWindow;
 		entry.myCallback = aCallback;
 		return myMouseCallbacks.Add(entry);
 	}
@@ -220,13 +217,9 @@ namespace Input
 
 	uint InputManager::AddKeyCallback(Key aKey, KeyCallback aCallback, GLFWwindow* aWindow /*= nullptr*/)
 	{
-		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
-		if (!window)
-			return UINT_MAX;
-
 		KeyCallbackEntry entry;
 		entry.myKey = aKey;
-		entry.myWindow = window;
+		entry.myWindow = aWindow;
 		entry.myCallback = aCallback;
 		return myKeyCallbacks.Add(entry);
 	}
@@ -238,12 +231,8 @@ namespace Input
 
 	uint InputManager::AddScrollCallback(ScrollCallback aCallback, GLFWwindow* aWindow /*= nullptr*/)
 	{
-		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
-		if (!window)
-			return UINT_MAX;
-
 		ScrollCallbackEntry entry;
-		entry.myWindow = window;
+		entry.myWindow = aWindow;
 		entry.myCallback = aCallback;
 		return myScrollCallbacks.Add(entry);
 	}
@@ -255,12 +244,8 @@ namespace Input
 
 	uint InputManager::AddCharacterCallback(CharacterCallback aCallback, GLFWwindow* aWindow /*= nullptr*/)
 	{
-		GLFWwindow* window = aWindow ? aWindow : myMainWindow;
-		if (!window)
-			return UINT_MAX;
-
 		CharacterCallbackEntry entry;
-		entry.myWindow = window;
+		entry.myWindow = aWindow;
 		entry.myCallback = aCallback;
 		return myCharacterCallbacks.Add(entry);
 	}
@@ -274,7 +259,7 @@ namespace Input
 	{
 		for(const MouseCallbackEntry& entry : ourInstance->myMouseCallbacks.myEntries)
 		{
-			if (entry.IsSet() && aWindow == entry.myWindow && aButton == locMouseButtonToGlfwMapping[entry.myButton])
+			if (entry.IsSet() && (!entry.myWindow || aWindow == entry.myWindow) && aButton == locMouseButtonToGlfwMapping[entry.myButton])
 			{
 				entry.myCallback(locGlfwToInputStatus(anAction), locGlfwToModifier(someMods));
 			}
@@ -287,7 +272,7 @@ namespace Input
 
 		for (const KeyCallbackEntry& entry : ourInstance->myKeyCallbacks.myEntries)
 		{
-			if (entry.IsSet() && aWindow == entry.myWindow && aKey == locKeyToGlfwMapping[entry.myKey])
+			if (entry.IsSet() && (!entry.myWindow || aWindow == entry.myWindow) && aKey == locKeyToGlfwMapping[entry.myKey])
 			{
 				entry.myCallback(locGlfwToInputStatus(anAction), locGlfwToModifier(someMods));
 			}
@@ -298,7 +283,7 @@ namespace Input
 	{
 		for (const ScrollCallbackEntry& entry : ourInstance->myScrollCallbacks.myEntries)
 		{
-			if (entry.IsSet() && aWindow == entry.myWindow)
+			if (entry.IsSet() && (!entry.myWindow || aWindow == entry.myWindow))
 			{
 				entry.myCallback(anX, anY);
 			}
@@ -309,7 +294,7 @@ namespace Input
 	{
 		for (const CharacterCallbackEntry& entry : ourInstance->myCharacterCallbacks.myEntries)
 		{
-			if (entry.IsSet() && aWindow == entry.myWindow)
+			if (entry.IsSet() && (!entry.myWindow || aWindow == entry.myWindow))
 			{
 				entry.myCallback(aUnicodeCodePoint);
 			}

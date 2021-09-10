@@ -78,9 +78,6 @@ target_compile_features(Render PRIVATE cxx_std_20)
 
 target_include_directories(Render PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(Render GLFW)
-target_link_libraries(Render GLM)
-target_link_libraries(Render ImGui)
 target_link_libraries(Render tinyglTF)
 target_link_libraries(Render VulkanMemoryAllocator)
 target_link_libraries(Render Vulkan)

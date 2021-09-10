@@ -23,13 +23,11 @@ namespace GameWork
 		ImGuiContext* myGuiContext = nullptr;
 
 	private:
-		void ScrollCallback(double aX, double aY);
-		uint myScrollCallbackId = 0;
+		uint myScrollCallbackId = UINT_MAX;
 		double myXScroll = 0.0;
 		double myYScroll = 0.0;
 
-		void CharacterCallback(uint aUnicodeCodePoint);
-		uint myCharacterCallbackId = 0;
+		uint myCharacterCallbackId = UINT_MAX;
 		std::queue<uint> myTextInput;
 
 		Render::Handle myGui = Render::NullHandle;

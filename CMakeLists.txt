@@ -14,4 +14,5 @@ endif()
 
 add_subdirectory(code/Extern)
 add_subdirectory(code/Frameworks)
+add_subdirectory(code/Modules)
 add_subdirectory(code/Games)

@@ -1,11 +1,15 @@
 #pragma once
 
-#include <vector>
 #include <functional>
 
 #include "Base_SlotVector.h"
 
 struct GLFWwindow;
+
+namespace Window
+{
+	class WindowManager;
+}
 
 namespace Input
 {
@@ -197,8 +201,6 @@ namespace Input
 		static void Destroy();
 		static InputManager* GetInstance() { return ourInstance; }
 
-		void SetMainWindow(GLFWwindow* aWindow) { myMainWindow = aWindow; }
-
 		Status PollMouseInput(MouseButton aButton, GLFWwindow* aWindow = nullptr) const;
 		Status PollKeyInput(Key aKey, GLFWwindow* aWindow = nullptr) const;
 		void PollMousePosition(double& anOutX, double& anOutY, GLFWwindow* aWindow = nullptr) const;
@@ -215,6 +217,8 @@ namespace Input
 		uint AddCharacterCallback(CharacterCallback aCallback, GLFWwindow* aWindow = nullptr);
 		void RemoveCharacterCallback(uint aCallbakId);
 
+	protected:
+		friend class Window::WindowManager;
 		static void OnMouseCallback(GLFWwindow* aWindow, int aButton, int anAction, int someMods);
 		static void OnKeyCallback(GLFWwindow* aWindow, int aKey, int aScanCode, int anAction, int someMods);
 		static void OnScrollCallback(GLFWwindow* aWindow, double anX, double anY);
@@ -222,8 +226,6 @@ namespace Input
 
 	private:
 		static InputManager* ourInstance;
-
-		GLFWwindow* myMainWindow = nullptr;
 
 		SlotVector<MouseCallbackEntry> myMouseCallbacks;
 		SlotVector<KeyCallbackEntry> myKeyCallbacks;

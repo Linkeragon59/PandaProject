@@ -17,9 +17,7 @@ namespace Render
 		{
 			Invalid,
 			Deferred,
-#if DEBUG_BUILD
 			Editor,
-#endif
 		};
 
 		enum class DrawType

@@ -18,7 +18,7 @@ namespace Render
 		{
 			if (!myIsEnabled && aEnable)
 			{
-				myThread.Start([&]() {
+				myThread.Start([this]() {
 					if (myResourcesToDelete.empty())
 						return;
 

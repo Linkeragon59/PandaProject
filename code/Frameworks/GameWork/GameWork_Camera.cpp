@@ -2,6 +2,7 @@
 
 #include "Render_Renderer.h"
 #include "Base_Input.h"
+#include "Base_Window.h"
 
 namespace GameWork
 {
@@ -21,7 +22,7 @@ namespace GameWork
 				myFov = 1.0f;
 			if (myFov > 90.0f)
 				myFov = 90.0f;
-		});
+		}, Window::WindowManager::GetInstance()->GetMainWindow());
 	}
 
 	Camera::~Camera()

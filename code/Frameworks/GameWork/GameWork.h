@@ -10,7 +10,6 @@ namespace Render
 namespace GameWork
 {
 	class Module;
-	class WindowManager;
 	class CameraManager;
 	class Prop;
 	class PropManager;
@@ -30,17 +29,9 @@ namespace GameWork
 
 		Render::Renderer* GetMainWindowRenderer() const;
 		float GetMainWindowAspectRatio() const { return myMainWindowAspectRatio; }
-#if DEBUG_BUILD
-		void OpenEditor();
-		void CloseEditor();
-#endif
 
-		WindowManager* GetWindowManager() const { return myWindowManager; }
 		CameraManager* GetCameraManager() const { return myCameraManager; }
 		PropManager* GetPropManager() const { return myPropManager; }
-
-		static void OnWindowResize(GLFWwindow* aWindow, int aWidth, int aHeight);
-		static void OnWindowFramebufferResize(GLFWwindow* aWindow, int aWidth, int aHeight);
 
 	private:
 		static GameWork* ourInstance;
@@ -51,12 +42,9 @@ namespace GameWork
 
 		GLFWwindow* myMainWindow = nullptr;
 		float myMainWindowAspectRatio = 1.0f;
-#if DEBUG_BUILD
-		Editor* myEditor = nullptr;
-#endif
+		uint myWindowResizeCallbackId = UINT_MAX;
 
 		std::vector<Module*> myModules;
-		WindowManager* myWindowManager = nullptr;
 		CameraManager* myCameraManager = nullptr;
 		PropManager* myPropManager = nullptr;
 #if DEBUG_BUILD

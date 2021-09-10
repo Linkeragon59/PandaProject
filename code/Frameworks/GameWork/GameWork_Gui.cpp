@@ -66,8 +66,13 @@ namespace GameWork
 			io.KeyMap[ImGuiKey_Y] = Input::KeyY;
 			io.KeyMap[ImGuiKey_Z] = Input::KeyZ;
 
-			myScrollCallbackId = Input::InputManager::GetInstance()->AddScrollCallback(std::bind(&Gui::ScrollCallback, this, std::placeholders::_1, std::placeholders::_2), myWindow);
-			myCharacterCallbackId = Input::InputManager::GetInstance()->AddCharacterCallback(std::bind(&Gui::CharacterCallback, this, std::placeholders::_1), myWindow);
+			myScrollCallbackId = Input::InputManager::GetInstance()->AddScrollCallback([this](double aXScroll, double aYScroll) {
+				myXScroll = aXScroll;
+				myYScroll = aYScroll;
+			}, myWindow);
+			myCharacterCallbackId = Input::InputManager::GetInstance()->AddCharacterCallback([this](uint aUnicodeCodePoint) {
+				myTextInput.push(aUnicodeCodePoint);
+			}, myWindow);
 		}
 
 		myGui = Render::AddGui(myGuiContext);
@@ -149,16 +154,5 @@ namespace GameWork
 	void Gui::Draw()
 	{
 		Render::GetRenderer(myWindow)->DrawGui(myGui);
-	}
-
-	void Gui::ScrollCallback(double aX, double aY)
-	{
-		myXScroll = aX;
-		myYScroll = aY;
-	}
-
-	void Gui::CharacterCallback(uint aUnicodeCodePoint)
-	{
-		myTextInput.push(aUnicodeCodePoint);
 	}
 }

@@ -23,7 +23,6 @@ namespace Render
 		void Present();
 
 		GLFWwindow* GetWindowHandle() const { return myWindow; }
-		void OnWindowFramebufferReisze() { myFramebufferResized = true; }
 
 		uint GetImagesCount() const { return (uint)myImages.size(); };
 		VkExtent2D GetExtent() const { return myExtent; }
@@ -46,6 +45,7 @@ namespace Render
 		VkDevice myDevice = VK_NULL_HANDLE;
 
 		GLFWwindow* myWindow = nullptr;
+		uint myFramebufferResizedCallbackId = UINT_MAX;
 		bool myFramebufferResized = false;
 		VkSurfaceKHR mySurface = VK_NULL_HANDLE;
 

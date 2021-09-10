@@ -1,7 +1,5 @@
 #pragma once
 
-#if DEBUG_BUILD
-
 #include "Render_RendererImpl.h"
 #include "Render_GuiPipeline.h"
 
@@ -48,5 +46,3 @@ namespace Render
 		std::vector<VkFramebuffer> myFrameBuffers;
 	};
 }
-
-#endif

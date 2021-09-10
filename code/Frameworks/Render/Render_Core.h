@@ -30,8 +30,8 @@ namespace Render
 
 		void RegisterWindow(GLFWwindow* aWindow, Renderer::Type aType);
 		void UnregisterWindow(GLFWwindow* aWindow);
-		void ResizeWindow(GLFWwindow* aWindow);
 		Renderer* GetRenderer(GLFWwindow* aWindow) const;
+
 		ModelContainer* GetModelContainer() const { return myModelContainer; }
 		GuiContainer* GetGuiContainer() const { return myGuiContainer; }
 

@@ -128,15 +128,6 @@ namespace Render
 		UpdateMaxInFlightFramesCount();
 	}
 
-	void RenderCore::ResizeWindow(GLFWwindow* aWindow)
-	{
-		auto it = std::find_if(mySwapChains.begin(), mySwapChains.end(), [aWindow](SwapChain* aSwapChain) { return aSwapChain->GetWindowHandle() == aWindow; });
-		if (it != mySwapChains.end())
-		{
-			(*it)->OnWindowFramebufferReisze();
-		}
-	}
-
 	Renderer* RenderCore::GetRenderer(GLFWwindow* aWindow) const
 	{
 		auto it = std::find_if(mySwapChains.begin(), mySwapChains.end(), [aWindow](SwapChain* aSwapChain) { return aSwapChain->GetWindowHandle() == aWindow; });

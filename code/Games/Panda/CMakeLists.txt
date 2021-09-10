@@ -21,9 +21,7 @@ target_compile_features(Panda PRIVATE cxx_std_20)
 
 target_include_directories(Panda PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(Panda Base)
 target_link_libraries(Panda GameWork)
-target_link_libraries(Panda Render)
 
 if ( CMAKE_SYSTEM_NAME MATCHES "Windows" )
 	set_property(TARGET Panda PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data")

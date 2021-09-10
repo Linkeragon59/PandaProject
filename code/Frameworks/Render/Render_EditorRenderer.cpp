@@ -1,7 +1,5 @@
 #include "Render_EditorRenderer.h"
 
-#if DEBUG_BUILD
-
 #include "Render_SwapChain.h"
 #include "Render_ShaderHelpers.h"
 #include "Render_Debug.h"
@@ -240,5 +238,3 @@ namespace Render
 		myFrameBuffers.clear();
 	}
 }
-
-#endif

@@ -2,15 +2,14 @@
 
 #include "Base_Time.h"
 #include "Base_Input.h"
+#include "Base_Window.h"
 
 #include "Render_Facade.h"
 #include "Render_Renderer.h"
 
 #include "GameWork_Module.h"
-#include "GameWork_WindowManager.h"
 #include "GameWork_CameraManager.h"
 #include "GameWork_PropManager.h"
-#include "GameWork_Editor.h"
 
 #if LINUX_BUILD
 #pragma GCC diagnostic push
@@ -27,21 +26,19 @@
 #include <GLFW/glfw3.h>
 #include <chrono>
 #include <iostream>
+#include <functional>
 
 namespace GameWork
 {
-	GameWork* GameWork::ourInstance = nullptr;
-
 	namespace
 	{
-		const uint locWindowWidth = 1280;
-		const uint locWindowHeight = 720;
-		
 		/*const std::string locTestWavFile = "Frameworks/audio/Ensoniq-ZR-76-01-Dope-77.wav";
 		SoLoud::Soloud locSoloud; // SoLoud engine
 		SoLoud::Wav locWave;      // One wave file
 		bool locSoundPlaying = false;*/
 	}
+
+	GameWork* GameWork::ourInstance = nullptr;
 
 	bool GameWork::Create()
 	{
@@ -109,32 +106,18 @@ namespace GameWork
 		return Render::GetRenderer(myMainWindow);
 	}
 
-#if DEBUG_BUILD
-	void GameWork::OpenEditor()
-	{
-		if (myEditor)
-			return;
-
-		myEditor = new Editor();
-	}
-
-	void GameWork::CloseEditor()
-	{
-		if (!myEditor)
-			return;
-
-		SafeDelete(myEditor);
-	}
-#endif
-
 	GameWork::GameWork()
 	{
 		Time::TimeManager::Create();
+		Window::WindowManager::Create();
 		Input::InputManager::Create();
 
-		myWindowManager = new WindowManager();
-		myMainWindow = myWindowManager->OpenWindow(locWindowWidth, locWindowHeight, "Panda Project v0.1");
-		Input::InputManager::GetInstance()->SetMainWindow(myMainWindow);
+		Window::WindowManager* windowManager = Window::WindowManager::GetInstance();
+		myMainWindow = windowManager->OpenWindow("Panda Engine");
+		myWindowResizeCallbackId = windowManager->AddWindowSizeCallback([this](int aWidth, int aHeight) {
+			myMainWindowAspectRatio = (aHeight != 0) ? (float)aWidth / (float)aHeight : 1.0f;
+		}, myMainWindow);
+
 		int width = 0, height = 0;
 		glfwGetWindowSize(myMainWindow, &width, &height);
 		myMainWindowAspectRatio = (height != 0) ? (float)width / (float)height : 1.0f;
@@ -170,12 +153,13 @@ namespace GameWork
 		Render::UnregisterWindow(myMainWindow);
 		Render::FinalizeRendering();
 
-		myWindowManager->CloseWindow(myMainWindow);
+		Window::WindowManager* windowManager = Window::WindowManager::GetInstance();
+		windowManager->RemoveWindowSizeCallback(myWindowResizeCallbackId);
+		windowManager->CloseWindow(myMainWindow);
 		myMainWindow = nullptr;
 
-		delete myWindowManager;
-
 		Input::InputManager::Destroy();
+		Window::WindowManager::Destroy();
 		Time::TimeManager::Destroy();
 	}
 
@@ -185,17 +169,6 @@ namespace GameWork
 
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		bool escapePressed = inputManager->PollKeyInput(Input::KeyEscape) == Input::Status::Pressed;
-
-#if DEBUG_BUILD
-		if (inputManager->PollKeyInput(Input::KeyK) == Input::Status::Pressed)
-		{
-			OpenEditor();
-		}
-		if (inputManager->PollKeyInput(Input::KeyL) == Input::Status::Pressed)
-		{
-			CloseEditor();
-		}
-#endif
 		
 		Render::StartFrame();
 
@@ -211,29 +184,8 @@ namespace GameWork
 		myDebugPropManager->Update();
 #endif
 
-#if DEBUG_BUILD
-		if (myEditor)
-			myEditor->Update();
-#endif
-
 		Render::EndFrame();
 
 		return !escapePressed;
-	}
-
-	void GameWork::OnWindowResize(GLFWwindow* aWindow, int aWidth, int aHeight)
-	{
-		Assert(ourInstance);
-		if (aWindow == ourInstance->myMainWindow)
-		{
-			ourInstance->myMainWindowAspectRatio = (aHeight != 0) ? (float)aWidth / (float)aHeight : 1.0f;
-		}
-	}
-
-	void GameWork::OnWindowFramebufferResize(GLFWwindow* aWindow, int aWidth, int aHeight)
-	{
-		(void)aWidth;
-		(void)aHeight;
-		Render::ResizeWindow(aWindow);
 	}
 }
