@@ -4,9 +4,11 @@ add_library(Editor "")
 target_sources(Editor
 	PRIVATE
 		Editor_EditorModule.h
+		Editor_GraphEditorCanvas.h
 		Editor_Precompile.h
 
 		Editor_EditorModule.cpp
+		Editor_GraphEditorCanvas.cpp
 )
 
 target_precompile_headers(Editor PRIVATE Editor_Precompile.h)

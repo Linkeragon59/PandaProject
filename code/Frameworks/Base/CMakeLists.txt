@@ -23,6 +23,7 @@ target_sources(Base
 		Base_Time.cpp
 		Base_imgui.cpp
 		Base_Input.cpp
+		Base_Utils.cpp
 		Base_Window.cpp
 
 		glm.natvis

@@ -10,6 +10,8 @@
 
 #include "GameWork_CallbackGui.h"
 
+#include "Editor_GraphEditorCanvas.h"
+
 namespace Editor
 {
 	EditorModule* EditorModule::ourInstance = nullptr;
@@ -58,10 +60,12 @@ namespace Editor
 		Render::RegisterWindow(myWindow, Render::Renderer::Type::Editor);
 
 		myGui = new GameWork::CallbackGui(myWindow, std::bind(&EditorModule::CallbackUpdate, this));
+		myCanvas = new GraphEditorCanvas();
 	}
 
 	void EditorModule::Close()
 	{
+		SafeDelete(myCanvas);
 		SafeDelete(myGui);
 
 		Render::UnregisterWindow(myWindow);
@@ -72,35 +76,43 @@ namespace Editor
 
 	void EditorModule::CallbackUpdate()
 	{
-		int width, height;
-		glfwGetWindowSize(myWindow, &width, &height);
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(viewport->Pos);
+		ImGui::SetNextWindowSize(viewport->Size);
 
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-		ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-		ImGui::SetNextWindowSize(ImVec2((float)width, (float)height), ImGuiCond_Always);
-		ImGui::ShowDemoWindow();
-		/*ImGui::Begin("Vulkan Example", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 
-		ImGui::PushItemWidth(110.0f);
+		ImGui::Begin("Graph Editor", nullptr,
+			ImGuiWindowFlags_AlwaysAutoResize |
+			ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+			ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
+			ImGuiWindowFlags_MenuBar
+		);
 
-		ImDrawList* drawList = ImGui::GetWindowDrawList();
+		ImVec2 availableRegionPos = ImGui::GetCursorScreenPos();
+		ImVec2 availableRegionSize = ImGui::GetContentRegionAvail();
 
-		if (ImGui::CollapsingHeader("Subpasses", ImGuiTreeNodeFlags_DefaultOpen))
+		ImVec2 canvasPos = availableRegionPos;
+		ImVec2 canvasSize = ImVec2(2.0f * availableRegionSize.x / 3.0f, availableRegionSize.y);
+
+		ImVec2 propertiesPos = ImVec2(availableRegionPos.x + 2.0f * availableRegionSize.x / 3.0f, availableRegionPos.y);
+		ImVec2 propertiesSize = ImVec2(availableRegionSize.x / 3.0f, availableRegionSize.y);
+
+		ImGui::SetNextWindowPos(canvasPos);
+		ImGui::BeginChild("canvas", canvasSize, true, ImGuiWindowFlags_NoScrollbar);
 		{
-			ImGui::Text("Test Gui");
+			myCanvas->Draw(canvasPos, canvasSize);
 		}
-		if (ImGui::CollapsingHeader("Subpasses", ImGuiTreeNodeFlags_DefaultOpen))
-		{
-			static char buf[32] = "hello";
-			ImGui::InputText("Input", buf, 32);
-			ImGui::Button("Test Button");
-		}
+		ImGui::EndChild();
 
-		drawList->AddCircle(ImVec2(200.0f, 200.0f), 50.0f, ImGui::GetColorU32(IM_COL32(255, 255, 255, 255)), 0, 5.0f);
+		ImGui::SetNextWindowPos(propertiesPos);
+		ImGui::BeginChild("properties", propertiesSize);
+		ImGui::EndChild();
 
-		ImGui::PopItemWidth();
-
-		ImGui::End();*/
 		ImGui::PopStyleVar();
+
+		ImGui::ShowDemoWindow();
+
+		ImGui::End();
 	}
 }

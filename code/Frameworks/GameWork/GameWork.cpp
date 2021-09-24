@@ -24,9 +24,6 @@
 #endif
 
 #include <GLFW/glfw3.h>
-#include <chrono>
-#include <iostream>
-#include <functional>
 
 namespace GameWork
 {
@@ -57,20 +54,10 @@ namespace GameWork
 	{
 		while (!glfwWindowShouldClose(myMainWindow))
 		{
-			int wantedFPS = 60;
-			std::chrono::duration<double, std::milli> oneFrame = std::chrono::milliseconds((long)(1000.0f / wantedFPS));
-
-			auto start = std::chrono::high_resolution_clock::now();
 			glfwPollEvents();
 
 			if (!Update())
 				break;
-
-			auto end = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<double, std::milli> elapsed = end - start;
-
-			//if (elapsed < oneFrame)
-			//	std::this_thread::sleep_for(oneFrame - elapsed);
 		}
 	}
 

@@ -10,6 +10,8 @@ namespace GameWork
 
 namespace Editor
 {
+	class GraphEditorCanvas;
+
 	class EditorModule : public GameWork::Module
 	{
 	DECLARE_GAMEWORK_MODULE(EditorModule, "Editor")
@@ -27,5 +29,7 @@ namespace Editor
 
 		GLFWwindow* myWindow = nullptr;
 		GameWork::CallbackGui* myGui = nullptr;
+
+		GraphEditorCanvas* myCanvas = nullptr;
 	};
 }

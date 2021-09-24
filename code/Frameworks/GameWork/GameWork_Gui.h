@@ -23,6 +23,15 @@ namespace GameWork
 		ImGuiContext* myGuiContext = nullptr;
 
 	private:
+		void InitStyle();
+		void InitIO();
+
+		GLFWwindow* myWindow = nullptr;
+
+		uint myWindowResizeCallbackId = UINT_MAX;
+		int myWindowWidth = -1;
+		int myWindowHeight = -1;
+
 		uint myScrollCallbackId = UINT_MAX;
 		double myXScroll = 0.0;
 		double myYScroll = 0.0;
@@ -31,6 +40,5 @@ namespace GameWork
 		std::queue<uint> myTextInput;
 
 		Render::Handle myGui = Render::NullHandle;
-		GLFWwindow* myWindow = nullptr;
 	};
 }

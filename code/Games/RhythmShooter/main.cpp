@@ -4,12 +4,14 @@
 
 int main()
 {
+	InitMemoryLeaksDetection();
+
 	if (!GameWork::GameWork::Create())
 		return EXIT_FAILURE;
 
 	Editor::EditorModule::Register();
 	RhythmShooterModule::Register();
-
+	
 	GameWork::GameWork::GetInstance()->Run();
 
 	RhythmShooterModule::Unregister();

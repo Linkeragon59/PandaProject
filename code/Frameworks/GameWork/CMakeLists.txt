@@ -7,10 +7,9 @@ target_sources(GameWork
 		GameWork_CallbackGui.h
 		GameWork_Camera.h
 		GameWork_CameraManager.h
-		GameWork_ConsoleLog.h
 		GameWork_Entity.h
 		GameWork_glTFProp.h
-		GameWork_GraphEditor.h
+		GameWork_Graph.h
 		GameWork_Gui.h
 		GameWork_GuiManager.h
 		GameWork_PointLight.h
@@ -24,10 +23,9 @@ target_sources(GameWork
 		GameWork_CallbackGui.cpp
 		GameWork_Camera.cpp
 		GameWork_CameraManager.cpp
-		GameWork_ConsoleLog.cpp
 		GameWork_Entity.cpp
 		GameWork_glTFProp.cpp
-		GameWork_GraphEditor.cpp
+		GameWork_Graph.cpp
 		GameWork_Gui.cpp
 		GameWork_GuiManager.cpp
 		GameWork_PointLight.cpp
