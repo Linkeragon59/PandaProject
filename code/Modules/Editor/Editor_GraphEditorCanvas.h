@@ -7,8 +7,8 @@
 
 namespace GameWork
 {
-	struct Node;
-	struct Graph;
+	class Node;
+	class Graph;
 }
 
 namespace Editor
@@ -34,19 +34,17 @@ namespace Editor
 		bool IsRectSelecting() const { return myRectSelectionStart != ImVec2(FLT_MAX, FLT_MAX); }
 		void GetHoveredItem(uint& aHoveredNode, uint& aHoveredNodeSlot, bool& aHoveredNodeSlotInput) const;
 
-		void Update();
-		void UpdateRectSelection();
-		void UpdateDraggedConnection();
-		void HandleKeyShorcuts();
-		void HandleNodeAdding();
-		void HandleNodeSelecting();
-		void HandleNodeMoving();
-		void HandleConnectionRemoving();
+		void HandleEvents();
+		void HandleEventsHovered();
+		void HandleEventsAlways();
 
 		void DrawNodes();
 		void DrawConnections();
 		void DrawSelectingRect();
 		void DrawOnGoingConnection();
+
+		void LoadGraph(const char* aPath);
+		void SaveGraph(const char* aPath);
 
 		ImVec2 myPos = ImVec2(0.0f, 0.0f);
 		ImVec2 mySize = ImVec2(0.0f, 0.0f);
@@ -57,9 +55,11 @@ namespace Editor
 
 		bool myIsHovered = false;
 		bool myIsActive = false;
+
 		std::set<uint> mySelectedNodes;
-		ImVec2 myRectSelectionStart = ImVec2(FLT_MAX, FLT_MAX);
 		std::set<uint> myInRectSelectionNodes;
+		ImVec2 myRectSelectionStart = ImVec2(FLT_MAX, FLT_MAX);
+		ImVec2 myNodeToAddPos = ImVec2(FLT_MAX, FLT_MAX);
 
 		struct DraggedSlot
 		{
@@ -88,5 +88,6 @@ namespace Editor
 			std::map<uint, ImVec2> myOutputSlotsPos;
 		};
 		std::map<uint, CachedNodeDrawInfo> myNodesDrawInfo;
+		std::map<uint, ImVec2> myNodesDrawInfoToUpdate;
 	};
 }

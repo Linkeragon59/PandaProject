@@ -1,8 +1,16 @@
 #include "Editor_GraphEditorCanvas.h"
 
+#include "GameWork.h"
 #include "GameWork_Graph.h"
 
 #include "imgui_internal.h"
+
+#include <format>
+#include <iostream>
+#define RAPIDJSON_HAS_STDSTRING 1
+#include "rapidjson/document.h"
+#include "rapidjson/writer.h"
+#include "rapidjson/stringbuffer.h"
 
 namespace Editor
 {
@@ -26,6 +34,8 @@ namespace Editor
 		constexpr ImU32 locNodeSlotColor = IM_COL32(255, 255, 255, 255);
 		constexpr ImU32 locNodeConnectionColor = IM_COL32(255, 255, 255, 255);
 		constexpr ImU32 locNodeSelectionColor = IM_COL32(0, 120, 215, 50);
+
+		constexpr const char* locAddeNodeMenuId = "GraphEditorCanvas:AddNodeMenu";
 
 		bool locIsPointInRect(const ImVec2& aPoint, const ImVec2& aRectCorner, const ImVec2& aRectOppositeCorner)
 		{
@@ -105,22 +115,27 @@ namespace Editor
 		// --- TEMP ---
 		if (myGraph == nullptr)
 		{
-			myGraph = new GameWork::TestGraph();
-			myNodesDrawInfo[0].Update(myGraph->myNodes.at(0), ImVec2(100.0f, 0.0f), myZoomFactor);
-			myNodesDrawInfo[1].Update(myGraph->myNodes.at(1), ImVec2(0.0f, -100.0f), myZoomFactor);
-			myNodesDrawInfo[2].Update(myGraph->myNodes.at(2), ImVec2(0.0f, 100.0f), myZoomFactor);
-			myNodesDrawInfo[3].Update(myGraph->myNodes.at(3), ImVec2(-100.0f, 100.0f), myZoomFactor);
+			myGraph = new GameWork::Graph();
+			myGraph->AddNode("TestNode");
+			myGraph->AddNode("TestNode");
+			myGraph->AddNode("TestNode");
+			myGraph->AddNode("TestNode");
+			myGraph->AddConnection({ myGraph->GetNode(0), 0 }, { myGraph->GetNode(1), 20 });
+			myGraph->AddConnection({ myGraph->GetNode(0), 4 }, { myGraph->GetNode(2), 10 });
+			myGraph->AddConnection({ myGraph->GetNode(2), 2 }, { myGraph->GetNode(3), 20 });
+			myNodesDrawInfo[0].Update(myGraph->GetNode(0), ImVec2(100.0f, 0.0f), myZoomFactor);
+			myNodesDrawInfo[1].Update(myGraph->GetNode(1), ImVec2(0.0f, -100.0f), myZoomFactor);
+			myNodesDrawInfo[2].Update(myGraph->GetNode(2), ImVec2(0.0f, 100.0f), myZoomFactor);
+			myNodesDrawInfo[3].Update(myGraph->GetNode(3), ImVec2(-100.0f, 100.0f), myZoomFactor);
 		}
 		// --- TEMP ---
 		if (myGraph)
 		{
-			ImGui::SetWindowFontScale(myZoomFactor);
-			Update();
+			HandleEvents();
 			DrawNodes();
 			DrawConnections();
 			DrawSelectingRect();
 			DrawOnGoingConnection();
-			ImGui::SetWindowFontScale(1.0f);
 		}
 	}
 
@@ -170,15 +185,15 @@ namespace Editor
 		aHoveredNodeSlot = UINT_MAX;
 		aHoveredNodeSlotInput = true;
 
-		for (const auto& node : myGraph->myNodes)
+		for (const auto& node : myGraph->GetNodes())
 		{
-			const CachedNodeDrawInfo& drawInfo = myNodesDrawInfo.at(node.second->myId);
+			const CachedNodeDrawInfo& drawInfo = myNodesDrawInfo.at(node.second->GetId());
 
 			for (const auto& input : drawInfo.myInputSlotsPos)
 			{
 				if (locIsPointInCircle(mousePos, input.second, locNodeSlotRadius))
 				{
-					aHoveredNode = node.second->myId;
+					aHoveredNode = node.second->GetId();
 					aHoveredNodeSlot = input.first;
 					aHoveredNodeSlotInput = true;
 					return;
@@ -189,7 +204,7 @@ namespace Editor
 			{
 				if (locIsPointInCircle(mousePos, output.second, locNodeSlotRadius))
 				{
-					aHoveredNode = node.second->myId;
+					aHoveredNode = node.second->GetId();
 					aHoveredNodeSlot = output.first;
 					aHoveredNodeSlotInput = false;
 					return;
@@ -198,134 +213,56 @@ namespace Editor
 
 			if (locIsPointInRect(mousePos, drawInfo.myTopLeft, drawInfo.myBottomRight))
 			{
-				aHoveredNode = node.second->myId;
+				aHoveredNode = node.second->GetId();
 				return;
 			}
 		}
 	}
 
-	void GraphEditorCanvas::Update()
+	void GraphEditorCanvas::HandleEvents()
 	{
-		UpdateRectSelection();
-		UpdateDraggedConnection();
-		
-		if (myIsHovered)
-		{
-			HandleKeyShorcuts();
-			HandleNodeAdding();
-			HandleNodeSelecting();
-			HandleNodeMoving();
-			HandleConnectionRemoving();
-		}
+		HandleEventsHovered();
+		HandleEventsAlways();
 	}
 
-	void GraphEditorCanvas::UpdateRectSelection()
+	void GraphEditorCanvas::HandleEventsHovered()
 	{
-		if (IsRectSelecting())
-		{
-			if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
-			{
-				myInRectSelectionNodes.clear();
-				const ImVec2 mousePos = WindowPosToGraphPos(ImGui::GetIO().MousePos);
-				for (const auto& node : myGraph->myNodes)
-				{
-					CachedNodeDrawInfo& drawInfo = myNodesDrawInfo.at(node.second->myId);
-					if (locIsPointInRect(drawInfo.myCenter, myRectSelectionStart, mousePos))
-					{
-						myInRectSelectionNodes.insert(node.second->myId);
-					}
-				}
-			}
-			else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-			{
-				for (uint node : myInRectSelectionNodes)
-				{
-					if (mySelectedNodes.contains(node))
-						mySelectedNodes.erase(node);
-					else
-						mySelectedNodes.insert(node);
-				}
-				myRectSelectionStart = ImVec2(FLT_MAX, FLT_MAX);
-				myInRectSelectionNodes.clear();
-			}
-		}
-	}
+		// Add to this function all the handling that should only be done when the canvas is hovered
 
-	void GraphEditorCanvas::UpdateDraggedConnection()
-	{
-		if (myConnectionStartSlot.IsValid())
-		{
-			if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
-			{
-				uint nodeIndex = UINT_MAX;
-				uint slotIndex = UINT_MAX;
-				bool slotInput = true;
-				GetHoveredItem(nodeIndex, slotIndex, slotInput);
-				if (nodeIndex != UINT_MAX && slotIndex != UINT_MAX && nodeIndex != myConnectionStartSlot.myNodeIndex)
-				{
-					GameWork::Node::Slot startSlot = { myGraph->myNodes.at(myConnectionStartSlot.myNodeIndex), myConnectionStartSlot.mySlotIndex };
-					GameWork::Node::Slot endSlot = { myGraph->myNodes.at(nodeIndex), slotIndex };
-					if (slotInput)
-					{
-						myGraph->AddConnection(endSlot, startSlot);
-					}
-					else
-					{
-						myGraph->AddConnection(startSlot, endSlot);
-					}
-				}
-				myConnectionStartSlot = DraggedSlot();
-			}
-		}
-	}
+		if (!myIsHovered)
+			return;
 
-	void GraphEditorCanvas::HandleKeyShorcuts()
-	{
 		ImGuiIO& io = ImGui::GetIO();
 
 		// Select all nodes
 		if (io.KeysDown[io.KeyMap[ImGuiKey_A]] && io.KeyMods & ImGuiKeyModFlags_Ctrl)
 		{
-			for (const auto& node : myGraph->myNodes)
+			for (const auto& node : myGraph->GetNodes())
 			{
-				mySelectedNodes.insert(node.second->myId);
+				mySelectedNodes.insert(node.second->GetId());
 			}
 		}
 
-		// Delete nodes
+		// Delete selected nodes
 		if (io.KeysDown[io.KeyMap[ImGuiKey_Delete]] || io.KeysDown[io.KeyMap[ImGuiKey_Backspace]])
 		{
 			for (uint node : mySelectedNodes)
 			{
-				GameWork::Node* nodeToRemove = myGraph->myNodes.at(node);
 				myGraph->RemoveNode(node);
-				delete nodeToRemove;
-
 				myNodesDrawInfo.erase(node);
 			}
 			mySelectedNodes.clear();
 			myInRectSelectionNodes.clear();
 		}
-	}
 
-	void GraphEditorCanvas::HandleNodeAdding()
-	{
-		if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-		{
-			GameWork::TestNode* newNode = new GameWork::TestNode();
-			myGraph->AddNode(newNode);
-			myNodesDrawInfo[newNode->myId].Update(newNode, WindowPosToGraphPos(ImGui::GetIO().MousePos), myZoomFactor);
-		}
-	}
-
-	void GraphEditorCanvas::HandleNodeSelecting()
-	{
+		// Add connections, select nodes
 		if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 		{
 			uint nodeIndex = UINT_MAX;
 			uint slotIndex = UINT_MAX;
 			bool slotInput = true;
 			GetHoveredItem(nodeIndex, slotIndex, slotInput);
+
 			if (nodeIndex != UINT_MAX && slotIndex != UINT_MAX)
 			{
 				myConnectionStartSlot.myNodeIndex = nodeIndex;
@@ -339,8 +276,6 @@ namespace Editor
 			}
 			else
 			{
-				ImGuiIO& io = ImGui::GetIO();
-
 				if (!io.KeyCtrl && !mySelectedNodes.contains(nodeIndex))
 				{
 					mySelectedNodes.clear();
@@ -360,58 +295,149 @@ namespace Editor
 				}
 			}
 		}
-	}
 
-	void GraphEditorCanvas::HandleNodeMoving()
-	{
+		// Move nodes
 		if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 		{
 			if (!ImGui::IsMouseDown(ImGuiMouseButton_Middle) && !IsRectSelecting())
 			{
-				for (const auto& node : mySelectedNodes)
+				const ImVec2 dragDelta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.0f);
+				if (dragDelta.x != 0.0f || dragDelta.y != 0.0f)
 				{
-					CachedNodeDrawInfo& drawInfo = myNodesDrawInfo.at(node);
-					const ImVec2 newPos = drawInfo.myCenter + ImGui::GetMouseDragDelta(ImGuiMouseButton_Left, 0.0f) / myZoomFactor;
-					drawInfo.Update(myGraph->myNodes.at(node), newPos, myZoomFactor);
+					for (const auto& node : mySelectedNodes)
+					{
+						myNodesDrawInfoToUpdate[node] = myNodesDrawInfo.at(node).myCenter + dragDelta / myZoomFactor;
+					}
 				}
 			}
 			ImGui::ResetMouseDragDelta(ImGuiMouseButton_Left);
 		}
-	}
 
-	void GraphEditorCanvas::HandleConnectionRemoving()
-	{
+		// Remove connections
 		if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 		{
 			uint nodeIndex = UINT_MAX;
 			uint slotIndex = UINT_MAX;
 			bool slotInput = true;
 			GetHoveredItem(nodeIndex, slotIndex, slotInput);
+
 			if (nodeIndex != UINT_MAX && slotIndex != UINT_MAX)
 			{
-				GameWork::Node::Slot slot = { myGraph->myNodes.at(nodeIndex), slotIndex };
+				GameWork::Node::Slot slot = { myGraph->GetNode(nodeIndex), slotIndex };
 				if (slotInput)
 					myGraph->RemoveConnectionByInput(slot);
 				else
 					myGraph->RemoveConnectionByOutput(slot);
 			}
 		}
+
+		// Add new nodes
+		if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+		{
+			ImGui::OpenPopup(locAddeNodeMenuId);
+			myNodeToAddPos = WindowPosToGraphPos(io.MousePos);
+		}
+	}
+
+	void GraphEditorCanvas::HandleEventsAlways()
+	{
+		// Add to this function all the handling that can be done even when the canvas is not hovered
+
+		// Update the rect selection
+		if (IsRectSelecting())
+		{
+			if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+			{
+				myInRectSelectionNodes.clear();
+				const ImVec2 mousePos = WindowPosToGraphPos(ImGui::GetIO().MousePos);
+				for (const auto& node : myGraph->GetNodes())
+				{
+					CachedNodeDrawInfo& drawInfo = myNodesDrawInfo.at(node.second->GetId());
+					if (locIsPointInRect(drawInfo.myCenter, myRectSelectionStart, mousePos))
+					{
+						myInRectSelectionNodes.insert(node.second->GetId());
+					}
+				}
+			}
+			else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+			{
+				for (uint node : myInRectSelectionNodes)
+				{
+					if (mySelectedNodes.contains(node))
+						mySelectedNodes.erase(node);
+					else
+						mySelectedNodes.insert(node);
+				}
+				myRectSelectionStart = ImVec2(FLT_MAX, FLT_MAX);
+				myInRectSelectionNodes.clear();
+			}
+		}
+
+		// Update the on-going connection
+		if (myConnectionStartSlot.IsValid() && ImGui::IsMouseReleased(ImGuiMouseButton_Left))
+		{
+			uint nodeIndex = UINT_MAX;
+			uint slotIndex = UINT_MAX;
+			bool slotInput = true;
+			GetHoveredItem(nodeIndex, slotIndex, slotInput);
+
+			if (nodeIndex != UINT_MAX && slotIndex != UINT_MAX && nodeIndex != myConnectionStartSlot.myNodeIndex)
+			{
+				GameWork::Node::Slot startSlot = { myGraph->GetNode(myConnectionStartSlot.myNodeIndex), myConnectionStartSlot.mySlotIndex };
+				GameWork::Node::Slot endSlot = { myGraph->GetNode(nodeIndex), slotIndex };
+				if (slotInput)
+				{
+					myGraph->AddConnection(endSlot, startSlot);
+				}
+				else
+				{
+					myGraph->AddConnection(startSlot, endSlot);
+				}
+			}
+			myConnectionStartSlot = DraggedSlot();
+		}
+
+		// Handle the popup menu to add nodes
+		if (ImGui::BeginPopup(locAddeNodeMenuId))
+		{
+			ImGui::Text(" Nodes ");
+			ImGui::Separator();
+			for (const std::string& nodeName : GameWork::GameWork::GetInstance()->GetNodeRegister()->GetAvailableNodes())
+			{
+				if (ImGui::Selectable(nodeName.c_str()))
+				{
+					uint newNodeId = myGraph->AddNode(nodeName.c_str());
+					myNodesDrawInfoToUpdate[newNodeId] = myNodeToAddPos;
+					myNodeToAddPos = ImVec2(FLT_MAX, FLT_MAX);
+				}
+			}
+			ImGui::EndPopup();
+		}
 	}
 
 	void GraphEditorCanvas::DrawNodes()
 	{
+		ImGui::SetWindowFontScale(myZoomFactor);
+
+		for (const auto& nodeToUpdate : myNodesDrawInfoToUpdate)
+		{
+			// There can be new nodes here, so using operator[] on purpose
+			myNodesDrawInfo[nodeToUpdate.first].Update(myGraph->GetNode(nodeToUpdate.first), nodeToUpdate.second, myZoomFactor);
+		}
+		myNodesDrawInfoToUpdate.clear();
+
 		ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
-		for (const auto& node : myGraph->myNodes)
+		for (const auto& node : myGraph->GetNodes())
 		{
-			bool isSelected = mySelectedNodes.contains(node.second->myId);
-			if (myInRectSelectionNodes.contains(node.second->myId))
+			bool isSelected = mySelectedNodes.contains(node.second->GetId());
+			if (myInRectSelectionNodes.contains(node.second->GetId()))
 				isSelected = !isSelected;
 
-			const CachedNodeDrawInfo& drawInfo = myNodesDrawInfo.at(node.second->myId);
+			const CachedNodeDrawInfo& drawInfo = myNodesDrawInfo.at(node.second->GetId());
 			draw_list->AddRectFilled(GraphPosToWindowPos(drawInfo.myTopLeft), GraphPosToWindowPos(drawInfo.myBottomRight), isSelected ? locNodeSelectedColor : locNodeColor, locNodeCornerRounding, ImDrawFlags_RoundCornersAll);
 			draw_list->AddRectFilled(GraphPosToWindowPos(drawInfo.myTopLeft), GraphPosToWindowPos(drawInfo.myHeaderBottomRight), locNodeHeaderColor, locNodeCornerRounding, ImDrawFlags_RoundCornersTop);
-			draw_list->AddText(ImGui::GetFont(), ImGui::GetFontSize(), GraphPosToWindowPos(drawInfo.myTopLeft), locNodeSlotColor, "Test Node");
+			draw_list->AddText(ImGui::GetFont(), ImGui::GetFontSize(), GraphPosToWindowPos(drawInfo.myTopLeft), locNodeSlotColor, node.second->GetName());
 			for (const auto& input : drawInfo.myInputSlotsPos)
 			{
 				draw_list->AddCircle(GraphPosToWindowPos(input.second), (locNodeSlotRadius - locNodeSlotPadding) * myZoomFactor, locNodeSlotColor);
@@ -421,17 +447,19 @@ namespace Editor
 				draw_list->AddCircle(GraphPosToWindowPos(output.second), (locNodeSlotRadius - locNodeSlotPadding) * myZoomFactor, locNodeSlotColor);
 			}
 		}
+
+		ImGui::SetWindowFontScale(1.0f);
 	}
 
 	void GraphEditorCanvas::DrawConnections()
 	{
 		ImDrawList* draw_list = ImGui::GetWindowDrawList();
-		for (const auto& node : myGraph->myNodes)
+		for (const auto& node : myGraph->GetNodes())
 		{
-			const CachedNodeDrawInfo& drawInfo = myNodesDrawInfo.at(node.second->myId);
-			for (const auto& input : node.second->myInputs)
+			const CachedNodeDrawInfo& drawInfo = myNodesDrawInfo.at(node.second->GetId());
+			for (const auto& input : node.second->GetInputs())
 			{
-				const CachedNodeDrawInfo& inputDrawInfo = myNodesDrawInfo.at(input.second.myNode->myId);
+				const CachedNodeDrawInfo& inputDrawInfo = myNodesDrawInfo.at(input.second.myNode->GetId());
 				const ImVec2& outputSlotPos = GraphPosToWindowPos(inputDrawInfo.myOutputSlotsPos.at(input.second.myId));
 				const ImVec2& inputSlotPos = GraphPosToWindowPos(drawInfo.myInputSlotsPos.at(input.first));
 				draw_list->AddLine(outputSlotPos, inputSlotPos, locNodeConnectionColor);
@@ -463,10 +491,36 @@ namespace Editor
 		}
 	}
 
+	void GraphEditorCanvas::LoadGraph(const char* /*aPath*/)
+	{
+
+	}
+
+	void GraphEditorCanvas::SaveGraph(const char* /*aPath*/)
+	{
+		rapidjson::Document doc;
+		doc.SetObject();
+		rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>& allocator = doc.GetAllocator();
+
+		for (const auto& drawInfo : myNodesDrawInfo)
+		{
+			rapidjson::Value key(std::format("{}", drawInfo.first), allocator);
+			rapidjson::Value value(std::format("{};{}", drawInfo.second.myCenter.x, drawInfo.second.myCenter.y), allocator);
+			doc.AddMember(key, value, allocator);
+		}
+
+		rapidjson::StringBuffer buffer;
+		rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+		doc.Accept(writer);
+
+		buffer.GetString();
+		std::cout << buffer.GetString() << std::endl;
+	}
+
 	void GraphEditorCanvas::CachedNodeDrawInfo::Update(const GameWork::Node* aNode, const ImVec2& aCenterPosition, float aZoomFactor)
 	{
-		myHeaderSize = ImGui::CalcTextSize("Test Node") / aZoomFactor;
-		mySize = ImVec2(myHeaderSize.x, myHeaderSize.y + (aNode->myInputSlots.size() + aNode->myOutputSlots.size()) * locNodeSlotRadius * 2.0f);
+		myHeaderSize = ImGui::CalcTextSize(aNode->GetName()) / aZoomFactor;
+		mySize = ImVec2(myHeaderSize.x, myHeaderSize.y + (aNode->GetInputSlotsCount() + aNode->GetOutputSlotsCount()) * locNodeSlotRadius * 2.0f);
 
 		myCenter = aCenterPosition;
 		myTopLeft = aCenterPosition - mySize / 2.0f;
@@ -474,14 +528,14 @@ namespace Editor
 		myHeaderBottomRight = ImVec2(myBottomRight.x, myBottomRight.y - mySize.y + myHeaderSize.y);
 
 		myInputSlotsPos.clear();
-		for (uint i = 0, e = (uint)aNode->myInputSlots.size(); i < e; ++i)
+		for (uint i = 0, e = aNode->GetInputSlotsCount(); i < e; ++i)
 		{
-			myInputSlotsPos[aNode->myInputSlots[i]] = ImVec2(myTopLeft.x + locNodeSlotRadius, myTopLeft.y + myHeaderSize.y + i * locNodeSlotRadius * 2.0f + locNodeSlotRadius);
+			myInputSlotsPos[aNode->GetInputSlotId(i)] = ImVec2(myTopLeft.x + locNodeSlotRadius, myTopLeft.y + myHeaderSize.y + i * locNodeSlotRadius * 2.0f + locNodeSlotRadius);
 		}
 		myOutputSlotsPos.clear();
-		for (uint i = 0, e = (uint)aNode->myOutputSlots.size(); i < e; ++i)
+		for (uint i = 0, e = aNode->GetOutputSlotsCount(); i < e; ++i)
 		{
-			myOutputSlotsPos[aNode->myOutputSlots[i]] = ImVec2(myBottomRight.x - locNodeSlotRadius, myBottomRight.y - (e - i) * locNodeSlotRadius * 2.0f + locNodeSlotRadius);
+			myOutputSlotsPos[aNode->GetOutputSlotId(i)] = ImVec2(myBottomRight.x - locNodeSlotRadius, myBottomRight.y - (e - i) * locNodeSlotRadius * 2.0f + locNodeSlotRadius);
 		}
 	}
 }

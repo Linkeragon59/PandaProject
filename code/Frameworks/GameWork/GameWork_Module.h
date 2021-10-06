@@ -16,6 +16,8 @@ namespace GameWork
 		virtual void OnRegister() = 0;
 		virtual void OnUnregister() = 0;
 		virtual void OnUpdate() = 0;
+		virtual void OnEarlyUpdate() {}
+		virtual void OnLateUpdate() {}
 
 		template<typename ModuleType>
 		static bool RegisterModule(ModuleType*& anInstance)

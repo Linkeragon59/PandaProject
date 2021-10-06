@@ -43,14 +43,20 @@ namespace Editor
 		if (!myWindow)
 			return;
 
+		myGui->Update();
+		myGui->Draw();
+	}
+
+	void EditorModule::OnEarlyUpdate()
+	{
+		if (!myWindow)
+			return;
+
 		if (glfwWindowShouldClose(myWindow))
 		{
 			Close();
 			return;
 		}
-
-		myGui->Update();
-		myGui->Draw();
 	}
 
 	void EditorModule::Open()

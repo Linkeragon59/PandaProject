@@ -11,7 +11,7 @@ target_sources(RhythmShooter
 )
 
 target_precompile_headers(RhythmShooter PRIVATE Precompile.h)
-target_compile_features(RhythmShooter PRIVATE cxx_std_20)
+target_compile_features(RhythmShooter PRIVATE cxx_std_23)
 
 target_include_directories(RhythmShooter PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

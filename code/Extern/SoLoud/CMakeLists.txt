@@ -83,7 +83,7 @@ target_sources(SoLoud
 		20200207/src/core/soloud_thread.cpp
 )
 
-target_compile_features(SoLoud PRIVATE cxx_std_20)
+target_compile_features(SoLoud PRIVATE cxx_std_23)
 if (MSVC)
 	target_compile_options(SoLoud PRIVATE
 		/wd"4100"

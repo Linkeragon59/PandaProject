@@ -15,10 +15,12 @@ namespace Editor
 	class EditorModule : public GameWork::Module
 	{
 	DECLARE_GAMEWORK_MODULE(EditorModule, "Editor")
+
 	protected:
 		void OnRegister() override;
 		void OnUnregister() override;
 		void OnUpdate() override;
+		void OnEarlyUpdate() override;
 
 	private:
 		void Open();

@@ -14,6 +14,7 @@ namespace GameWork
 	class Prop;
 	class PropManager;
 	class Editor;
+	class NodeRegister;
 
 	class GameWork
 	{
@@ -33,6 +34,8 @@ namespace GameWork
 		CameraManager* GetCameraManager() const { return myCameraManager; }
 		PropManager* GetPropManager() const { return myPropManager; }
 
+		NodeRegister* GetNodeRegister() const { return myNodeRegister; }
+
 	private:
 		static GameWork* ourInstance;
 		GameWork();
@@ -51,5 +54,6 @@ namespace GameWork
 		PropManager* myDebugPropManager = nullptr;
 		Prop* myVectorBase = nullptr;
 #endif
+		NodeRegister* myNodeRegister = nullptr;
 	};
 }

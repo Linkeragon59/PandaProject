@@ -10,6 +10,7 @@
 #include "GameWork_Module.h"
 #include "GameWork_CameraManager.h"
 #include "GameWork_PropManager.h"
+#include "GameWork_Graph.h"
 
 #if LINUX_BUILD
 #pragma GCC diagnostic push
@@ -122,6 +123,8 @@ namespace GameWork
 		myVectorBase = myDebugPropManager->Spawn(modelData);
 #endif
 
+		myNodeRegister = new NodeRegister();
+
 		//locSoloud.init(); // Initialize SoLoud
 		//locWave.load(locTestWavFile.c_str()); // Load a wave
 	}
@@ -136,6 +139,8 @@ namespace GameWork
 		myDebugPropManager->Despawn(myVectorBase);
 		delete myDebugPropManager;
 #endif
+
+		delete myNodeRegister;
 
 		Render::UnregisterWindow(myMainWindow);
 		Render::FinalizeRendering();
@@ -156,10 +161,14 @@ namespace GameWork
 
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		bool escapePressed = inputManager->PollKeyInput(Input::KeyEscape) == Input::Status::Pressed;
+
+		for (Module* mod : myModules)
+		{
+			mod->OnEarlyUpdate();
+		}
 		
 		Render::StartFrame();
 
-		// Update Modules
 		for (Module* mod : myModules)
 		{
 			mod->OnUpdate();
@@ -172,6 +181,11 @@ namespace GameWork
 #endif
 
 		Render::EndFrame();
+
+		for (Module* mod : myModules)
+		{
+			mod->OnLateUpdate();
+		}
 
 		return !escapePressed;
 	}

@@ -1,24 +1,15 @@
 #include "GameWork_Graph.h"
 
+#include "GameWork.h"
+
 namespace GameWork
 {
-
-	Node::Node()
-	{
-	}
-
-	Node::~Node()
-	{
-	}
-
 	void Node::Connect(uint aSlotId, const Slot& anOutputSlot)
 	{
 		Assert(std::find(myInputSlots.begin(), myInputSlots.end(), aSlotId) != myInputSlots.end());
 		Assert(!myInputs.contains(aSlotId));
 		Assert(!anOutputSlot.myNode->myOutputs.contains(anOutputSlot.myId));
-
 		myInputs[aSlotId] = anOutputSlot;
-
 		anOutputSlot.myNode->myOutputs.insert(anOutputSlot.myId);
 	}
 
@@ -28,13 +19,8 @@ namespace GameWork
 		{
 			const Slot& outputSlot = myInputs.at(anId);
 			outputSlot.myNode->myOutputs.erase(outputSlot.myId);
-			
 			myInputs.erase(anId);
 		}
-	}
-
-	Graph::Graph()
-	{
 	}
 
 	Graph::~Graph()
@@ -43,15 +29,20 @@ namespace GameWork
 			delete node.second;
 	}
 
-	void Graph::AddNode(Node* aNode)
+	uint Graph::AddNode(const char* aNodeName)
 	{
-		Assert(aNode->myId == UINT_MAX);
-		aNode->myId = GenerateNodeId();
-		Assert(aNode->myId != UINT_MAX, "Too many nodes in the graph!");
+		Node* newNode = GameWork::GetInstance()->GetNodeRegister()->CreateNode(aNodeName);
+		if (!newNode)
+			return UINT_MAX;
+
+		newNode->myId = GenerateNodeId();
+		Assert(newNode->myId != UINT_MAX, "Too many nodes in the graph!");
 		
-		myNodes[aNode->myId] = aNode;
+		myNodes[newNode->myId] = newNode;
 		// Nodes are roots as long as they don't have any output connection
-		myRootNodes[aNode->myId] = aNode;
+		myRootNodes[newNode->myId] = newNode;
+
+		return newNode->myId;
 	}
 
 	void Graph::RemoveNode(uint aNodeId)
@@ -87,6 +78,8 @@ namespace GameWork
 
 		myNodes.erase(aNodeId);
 		myRootNodes.erase(aNodeId);
+
+		delete nodeToRemove;
 	}
 
 	void Graph::AddConnection(const Node::Slot& anInputSlot, const Node::Slot& anOutputSlot)
@@ -136,30 +129,26 @@ namespace GameWork
 		}
 	}
 
-	TestNode::TestNode()
+	NodeRegister::NodeRegister()
 	{
-		AddInputSlot(0);
-		AddInputSlot(2);
-		AddInputSlot(4);
-
-		AddOutputSlot(10);
-		AddOutputSlot(20);
+		RegisterNode(TestNode::GetStaticName(), TestNode::CreateInstance);
+		RegisterNode(TestNode2::GetStaticName(), TestNode2::CreateInstance);
 	}
 
-	TestGraph::TestGraph()
+	void NodeRegister::RegisterNode(const char* aNodeName, const std::function<Node* ()>& aNodeCreateCallback)
 	{
-		TestNode* node1 = new TestNode();
-		TestNode* node2 = new TestNode();
-		TestNode* node3 = new TestNode();
-		TestNode* node4 = new TestNode();
+		const size_t hash = myHasher(std::string_view(aNodeName));
+		Assert(!myNodeCreaters.contains(hash), "Node Registration : Node is already registered %s", aNodeName);
+		myNodeCreaters[hash] = aNodeCreateCallback;
+		myAvailableNodes.insert(aNodeName);
+	}
 
-		AddNode(node1);
-		AddNode(node2);
-		AddNode(node3);
-		AddNode(node4);
+	Node* NodeRegister::CreateNode(const char* aNodeName)
+	{
+		const size_t hash = myHasher(std::string_view(aNodeName));
+		if (!myNodeCreaters.contains(hash))
+			return nullptr;
 
-		AddConnection({ node1, 0 }, { node2, 20 });
-		AddConnection({ node1, 4 }, { node3, 10 });
-		AddConnection({ node3, 2 }, { node4, 20 });
+		return myNodeCreaters.at(hash)();
 	}
 }

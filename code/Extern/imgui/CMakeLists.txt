@@ -17,6 +17,6 @@ target_sources(ImGui
 		1.83/imgui_widgets.cpp
 )
 
-target_compile_features(ImGui PRIVATE cxx_std_20)
+target_compile_features(ImGui PRIVATE cxx_std_23)
 
 target_include_directories(ImGui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/1.83)

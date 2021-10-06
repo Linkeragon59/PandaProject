@@ -17,7 +17,7 @@ target_sources(Panda
 )
 
 target_precompile_headers(Panda PRIVATE Precompile.h)
-target_compile_features(Panda PRIVATE cxx_std_20)
+target_compile_features(Panda PRIVATE cxx_std_23)
 
 target_include_directories(Panda PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

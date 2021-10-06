@@ -35,7 +35,7 @@ target_sources(GameWork
 )
 
 target_precompile_headers(GameWork PRIVATE GameWork_Precompile.h)
-target_compile_features(GameWork PRIVATE cxx_std_20)
+target_compile_features(GameWork PRIVATE cxx_std_23)
 
 target_include_directories(GameWork PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

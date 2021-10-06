@@ -30,10 +30,11 @@ target_sources(Base
 )
 
 target_precompile_headers(Base PRIVATE Base_Precompile.h)
-target_compile_features(Base PRIVATE cxx_std_20)
+target_compile_features(Base PRIVATE cxx_std_23)
 
 target_include_directories(Base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(Base GLFW)
 target_link_libraries(Base GLM)
+target_link_libraries(Base RapidJSON)
 target_link_libraries(Base ImGui)

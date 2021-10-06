@@ -3,6 +3,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "rapidjson/document.h"
+
 namespace FileHelpers
 {
 	bool ReadAsBuffer(const std::string& aFilePath, std::vector<char>& anOutBuffer)
