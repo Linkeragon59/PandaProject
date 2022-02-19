@@ -30,10 +30,9 @@ namespace GameWork
 {
 	namespace
 	{
-		/*const std::string locTestWavFile = "Frameworks/audio/Ensoniq-ZR-76-01-Dope-77.wav";
+		const std::string locTestWavFile = "Frameworks/audio/Ensoniq-ZR-76-01-Dope-77.wav";
 		SoLoud::Soloud locSoloud; // SoLoud engine
 		SoLoud::Wav locWave;      // One wave file
-		bool locSoundPlaying = false;*/
 	}
 
 	GameWork* GameWork::ourInstance = nullptr;
@@ -125,13 +124,13 @@ namespace GameWork
 
 		myNodeRegister = new NodeRegister();
 
-		//locSoloud.init(); // Initialize SoLoud
-		//locWave.load(locTestWavFile.c_str()); // Load a wave
+		locSoloud.init(); // Initialize SoLoud
+		locWave.load(locTestWavFile.c_str()); // Load a wave
 	}
 
 	GameWork::~GameWork()
 	{
-		//locSoloud.deinit(); // Clean up!
+		locSoloud.deinit(); // Clean up!
 
 		delete myCameraManager;
 		delete myPropManager;

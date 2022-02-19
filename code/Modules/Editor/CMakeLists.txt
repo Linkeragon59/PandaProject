@@ -1,19 +1,23 @@
 cmake_minimum_required(VERSION 3.16)
 
-add_library(Editor "")
+add_library(Editor)
 target_sources(Editor
 	PRIVATE
-		Editor_EditorModule.h
-		Editor_GraphEditorCanvas.h
-		Editor_Precompile.h
+		public/Editor_EditorModule.h
 
-		Editor_EditorModule.cpp
-		Editor_GraphEditorCanvas.cpp
+		private/Editor_Precompile.h
+		private/Editor_GraphEditorCanvas.h
+
+		private/Editor_EditorModule.cpp
+		private/Editor_GraphEditorCanvas.cpp
 )
 
-target_precompile_headers(Editor PRIVATE Editor_Precompile.h)
+target_precompile_headers(Editor PRIVATE private/Editor_Precompile.h)
 target_compile_features(Editor PRIVATE cxx_std_23)
 
-target_include_directories(Editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(Editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/public)
+target_include_directories(Editor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/private)
 
-target_link_libraries(Editor GameWork)
+target_link_libraries(Editor PRIVATE GameWork)
+target_link_libraries(Editor PRIVATE GLFWInclude)
+target_link_libraries(Editor PUBLIC GLFWLib)

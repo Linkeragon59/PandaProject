@@ -1,44 +1,48 @@
 cmake_minimum_required(VERSION 3.16)
 
-add_library(GameWork "")
+add_library(GameWork)
 target_sources(GameWork
 	PRIVATE
-		GameWork.h
-		GameWork_CallbackGui.h
-		GameWork_Camera.h
-		GameWork_CameraManager.h
-		GameWork_Entity.h
-		GameWork_glTFProp.h
-		GameWork_Graph.h
-		GameWork_Gui.h
-		GameWork_GuiManager.h
-		GameWork_PointLight.h
-		GameWork_Module.h
-		GameWork_Precompile.h
-		GameWork_Prop.h
-		GameWork_PropManager.h
-		GameWork_SimpleGeometryProp.h
+		public/GameWork.h
+		public/GameWork_CallbackGui.h
+		public/GameWork_Camera.h
+		public/GameWork_CameraManager.h
+		public/GameWork_Entity.h
+		public/GameWork_glTFProp.h
+		public/GameWork_Graph.h
+		public/GameWork_Gui.h
+		public/GameWork_GuiManager.h
+		public/GameWork_PointLight.h
+		public/GameWork_Module.h
+		public/GameWork_Prop.h
+		public/GameWork_PropManager.h
+		public/GameWork_SimpleGeometryProp.h
 
-		GameWork.cpp
-		GameWork_CallbackGui.cpp
-		GameWork_Camera.cpp
-		GameWork_CameraManager.cpp
-		GameWork_Entity.cpp
-		GameWork_glTFProp.cpp
-		GameWork_Graph.cpp
-		GameWork_Gui.cpp
-		GameWork_GuiManager.cpp
-		GameWork_PointLight.cpp
-		GameWork_Prop.cpp
-		GameWork_PropManager.cpp
-		GameWork_SimpleGeometryProp.cpp
+		private/GameWork_Precompile.h
+
+		private/GameWork.cpp
+		private/GameWork_CallbackGui.cpp
+		private/GameWork_Camera.cpp
+		private/GameWork_CameraManager.cpp
+		private/GameWork_Entity.cpp
+		private/GameWork_glTFProp.cpp
+		private/GameWork_Graph.cpp
+		private/GameWork_Gui.cpp
+		private/GameWork_GuiManager.cpp
+		private/GameWork_PointLight.cpp
+		private/GameWork_Prop.cpp
+		private/GameWork_PropManager.cpp
+		private/GameWork_SimpleGeometryProp.cpp
 )
 
-target_precompile_headers(GameWork PRIVATE GameWork_Precompile.h)
+target_precompile_headers(GameWork PRIVATE private/GameWork_Precompile.h)
 target_compile_features(GameWork PRIVATE cxx_std_23)
 
-target_include_directories(GameWork PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(GameWork PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/public)
+target_include_directories(GameWork PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/private)
 
-target_link_libraries(GameWork SoLoud)
-target_link_libraries(GameWork Base)
-target_link_libraries(GameWork Render)
+target_link_libraries(GameWork PRIVATE SoLoud)
+target_link_libraries(GameWork PUBLIC Base)
+target_link_libraries(GameWork PUBLIC Render)
+target_link_libraries(GameWork PRIVATE GLFWInclude)
+target_link_libraries(GameWork PUBLIC GLFWLib)

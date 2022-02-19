@@ -4,15 +4,15 @@ project(PandaProject)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-if (MSVC)
+if ( CMAKE_SYSTEM_NAME MATCHES "Windows" )
     # warning level 4 and all warnings as errors
     add_compile_options(/W4 /WX)
-else()
+elseif ( CMAKE_SYSTEM_NAME MATCHES "Linux" )
     # lots of warnings and all warnings as errors
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 
-add_subdirectory(code/Extern)
-add_subdirectory(code/Frameworks)
-add_subdirectory(code/Modules)
 add_subdirectory(code/Games)
+add_subdirectory(code/Modules)
+add_subdirectory(code/Frameworks)
+add_subdirectory(code/Extern)

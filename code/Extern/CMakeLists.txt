@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
-# Interfaces
+# Interface Libraries
+
 add_subdirectory(glfw)
 add_subdirectory(glm)
 add_subdirectory(rapidjson)
@@ -10,8 +11,10 @@ add_subdirectory(tinygltf)
 add_subdirectory(VulkanMemoryAllocator)
 add_subdirectory(VulkanSDK)
 
-# Compiled libs
+# Dependency Libraries
+
 add_subdirectory(imgui)
 set_target_properties(ImGui PROPERTIES FOLDER "Extern")
+
 add_subdirectory(SoLoud)
 set_target_properties(SoLoud PROPERTIES FOLDER "Extern")

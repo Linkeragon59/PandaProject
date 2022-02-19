@@ -1,40 +1,43 @@
 cmake_minimum_required(VERSION 3.16)
 
-add_library(Base "")
+add_library(Base)
 target_sources(Base
 	PRIVATE
-		Base_Assert.h
-		Base_File.h
-		Base_glm.h
-		Base_imgui.h
-		Base_Input.h
-		Base_Precompile.h
-		Base_SharedPtr.h
-		Base_SlotVector.h
-		Base_Thread.h
-		Base_Time.h
-		Base_Types.h
-		Base_Utils.h
-		Base_Window.h
+		public/Base_Assert.h
+		public/Base_File.h
+		public/Base_glm.h
+		public/Base_imgui.h
+		public/Base_Input.h
+		public/Base_SharedPtr.h
+		public/Base_SlotVector.h
+		public/Base_Thread.h
+		public/Base_Time.h
+		public/Base_Types.h
+		public/Base_Utils.h
+		public/Base_Window.h
 
-		Base_Assert.cpp
-		Base_File.cpp
-		Base_Thread.cpp
-		Base_Time.cpp
-		Base_imgui.cpp
-		Base_Input.cpp
-		Base_Utils.cpp
-		Base_Window.cpp
+		public/glm.natvis
 
-		glm.natvis
+		private/Base_Precompile.h
+
+		private/Base_Assert.cpp
+		private/Base_File.cpp
+		private/Base_Thread.cpp
+		private/Base_Time.cpp
+		private/Base_imgui.cpp
+		private/Base_Input.cpp
+		private/Base_Utils.cpp
+		private/Base_Window.cpp
 )
 
-target_precompile_headers(Base PRIVATE Base_Precompile.h)
+target_precompile_headers(Base PRIVATE private/Base_Precompile.h)
 target_compile_features(Base PRIVATE cxx_std_23)
 
-target_include_directories(Base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(Base PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/public)
+target_include_directories(Base PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/private)
 
-target_link_libraries(Base GLFW)
-target_link_libraries(Base GLM)
-target_link_libraries(Base RapidJSON)
-target_link_libraries(Base ImGui)
+target_link_libraries(Base PRIVATE GLFWInclude)
+target_link_libraries(Base PUBLIC GLFWLib)
+target_link_libraries(Base PUBLIC GLM)
+target_link_libraries(Base PUBLIC RapidJSON)
+target_link_libraries(Base PUBLIC ImGui)

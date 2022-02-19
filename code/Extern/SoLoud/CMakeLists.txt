@@ -84,7 +84,7 @@ target_sources(SoLoud
 )
 
 target_compile_features(SoLoud PRIVATE cxx_std_23)
-if (MSVC)
+if ( CMAKE_SYSTEM_NAME MATCHES "Windows" )
 	target_compile_options(SoLoud PRIVATE
 		/wd"4100"
 		/wd"4244"
@@ -95,7 +95,7 @@ if (MSVC)
 		/wd"4996"
 	)
 	target_compile_definitions(SoLoud PRIVATE WITH_MINIAUDIO)
-else()
+elseif ( CMAKE_SYSTEM_NAME MATCHES "Linux" )
 	target_compile_options(SoLoud PRIVATE
 		-Wno-pedantic
 		-Wno-unused-parameter
