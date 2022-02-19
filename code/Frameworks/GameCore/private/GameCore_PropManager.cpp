@@ -1,10 +1,10 @@
-#include "GameWork_PropManager.h"
+#include "GameCore_PropManager.h"
 
-#include "GameWork_glTFProp.h"
-#include "GameWork_SimpleGeometryProp.h"
-#include "GameWork.h"
+#include "GameCore_glTFProp.h"
+#include "GameCore_SimpleGeometryProp.h"
+#include "GameCore.h"
 
-namespace GameWork
+namespace GameCore
 {
 	PropManager::PropManager(Render::Renderer::DrawType aDrawType /*= Render::Renderer::DrawType::Default*/)
 		: myDrawType(aDrawType)
@@ -21,7 +21,7 @@ namespace GameWork
 
 	void PropManager::Update()
 	{
-		Render::Renderer* renderer = GameWork::GetInstance()->GetMainWindowRenderer();
+		Render::Renderer* renderer = GameCore::GetInstance()->GetMainWindowRenderer();
 
 		for (uint i = 0; i < myProps.size(); ++i)
 		{

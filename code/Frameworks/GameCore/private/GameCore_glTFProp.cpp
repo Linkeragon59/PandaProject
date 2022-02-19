@@ -1,8 +1,8 @@
-#include "GameWork_glTFProp.h"
+#include "GameCore_glTFProp.h"
 
 #include "Render_ModelData.h"
 
-namespace GameWork
+namespace GameCore
 {
 	void glTFProp::SetModelFilename(const std::string& aFilename)
 	{

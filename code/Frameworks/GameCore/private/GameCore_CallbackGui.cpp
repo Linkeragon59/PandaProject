@@ -1,6 +1,6 @@
-#include "GameWork_CallbackGui.h"
+#include "GameCore_CallbackGui.h"
 
-namespace GameWork
+namespace GameCore
 {
 	CallbackGui::CallbackGui(GLFWwindow* aWindow, std::function<void()> aCallback)
 		: Gui(aWindow)

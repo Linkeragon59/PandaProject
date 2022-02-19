@@ -1,6 +1,6 @@
-#include "GameWork_SimpleGeometryProp.h"
+#include "GameCore_SimpleGeometryProp.h"
 
-namespace GameWork
+namespace GameCore
 {
 	void SimpleGeometryProp::SetGeometry(Render::SimpleGeometryModelData::Preset aPreset)
 	{

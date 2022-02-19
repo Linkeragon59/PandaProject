@@ -1,6 +1,6 @@
-#include "GameWork_Entity.h"
+#include "GameCore_Entity.h"
 
-namespace GameWork
+namespace GameCore
 {
 	void Entity::SetPosition(const glm::vec3& aPosition)
 	{

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "GameWork_Gui.h"
+#include "GameCore_Gui.h"
 
 #include <functional>
 
-namespace GameWork
+namespace GameCore
 {
 	class CallbackGui : public Gui
 	{

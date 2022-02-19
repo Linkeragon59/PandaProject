@@ -1,25 +1,25 @@
 #include "RhythmShooterModule.h"
 
-#include "GameWork.h"
-#include "GameWork_CameraManager.h"
-#include "GameWork_Camera.h"
-#include "GameWork_PropManager.h"
-#include "GameWork_Prop.h"
+#include "GameCore.h"
+#include "GameCore_CameraManager.h"
+#include "GameCore_Camera.h"
+#include "GameCore_PropManager.h"
+#include "GameCore_Prop.h"
 
 #include "Render_Renderer.h"
 #include "Base_Input.h"
 
-RhythmShooterModule* RhythmShooterModule::ourInstance = nullptr;
+DEFINE_GAMECORE_MODULE(RhythmShooterModule);
 
 void RhythmShooterModule::OnRegister()
 {
-	GameWork::CameraManager* cameraManager = GameWork::GameWork::GetInstance()->GetCameraManager();
+	GameCore::CameraManager* cameraManager = GameCore::GameCore::GetInstance()->GetCameraManager();
 
 	myCamera = cameraManager->AddCamera();
 	myCamera->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
 	myCamera->SetDirection(glm::vec3(0.0f, 0.0f, -1.0f));
 
-	GameWork::PropManager* propManager = GameWork::GameWork::GetInstance()->GetPropManager();
+	GameCore::PropManager* propManager = GameCore::GameCore::GetInstance()->GetPropManager();
 
 	{
 		Render::SimpleGeometryModelData modelData;
@@ -44,12 +44,12 @@ void RhythmShooterModule::OnRegister()
 
 void RhythmShooterModule::OnUnregister()
 {
-	GameWork::CameraManager* cameraManager = GameWork::GameWork::GetInstance()->GetCameraManager();
+	GameCore::CameraManager* cameraManager = GameCore::GameCore::GetInstance()->GetCameraManager();
 
 	cameraManager->RemoveCamera(myCamera);
 	myCamera = nullptr;
 
-	GameWork::PropManager* propManager = GameWork::GameWork::GetInstance()->GetPropManager();
+	GameCore::PropManager* propManager = GameCore::GameCore::GetInstance()->GetPropManager();
 
 	propManager->Despawn(mySimpleGeometryTest);
 	mySimpleGeometryTest = nullptr;
@@ -61,15 +61,18 @@ void RhythmShooterModule::OnUnregister()
 	myTestAnimatedModel = nullptr;
 }
 
-void RhythmShooterModule::OnUpdate()
+void RhythmShooterModule::OnUpdate(GameCore::Module::UpdateType aType)
 {
-	Input::InputManager* inputManager = Input::InputManager::GetInstance();
-	if (inputManager->PollKeyInput(Input::KeyR) == Input::Status::Pressed)
+	if (aType == GameCore::Module::UpdateType::MainUpdate)
 	{
-		myTestModel->Rotate(0.5f, glm::vec3(0.0f, 1.0f, 0.0f));
-	}
-	if (inputManager->PollKeyInput(Input::KeyE) == Input::Status::Pressed)
-	{
-		myTestModel->Scale(glm::vec3(1.01f, 1.0f, 0.99f));
+		Input::InputManager* inputManager = Input::InputManager::GetInstance();
+		if (inputManager->PollKeyInput(Input::KeyR) == Input::Status::Pressed)
+		{
+			myTestModel->Rotate(0.5f, glm::vec3(0.0f, 1.0f, 0.0f));
+		}
+		if (inputManager->PollKeyInput(Input::KeyE) == Input::Status::Pressed)
+		{
+			myTestModel->Scale(glm::vec3(1.01f, 1.0f, 0.99f));
+		}
 	}
 }

@@ -1,18 +1,18 @@
-#include "GameWork.h"
+#include "GameCore.h"
 #include "PandaModule.h"
 
 int main()
 {
-	if (!GameWork::GameWork::Create())
+	if (!GameCore::GameCore::Create())
 		return EXIT_FAILURE;
 
 	PandaModule::Register();
 
-	GameWork::GameWork::GetInstance()->Run();
+	GameCore::GameCore::GetInstance()->Run();
 
 	PandaModule::Unregister();
 	
-	GameWork::GameWork::Destroy();
+	GameCore::GameCore::Destroy();
 
 	return EXIT_SUCCESS;
 }

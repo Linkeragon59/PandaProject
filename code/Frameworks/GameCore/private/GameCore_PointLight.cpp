@@ -1,8 +1,8 @@
-#include "GameWork_PointLight.h"
+#include "GameCore_PointLight.h"
 
 #include "Render_Renderer.h"
 
-namespace GameWork
+namespace GameCore
 {
 	void PointLight::Update()
 	{

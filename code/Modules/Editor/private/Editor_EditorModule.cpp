@@ -8,13 +8,13 @@
 
 #include "Render_Facade.h"
 
-#include "GameWork_CallbackGui.h"
+#include "GameCore_CallbackGui.h"
 
 #include "Editor_GraphEditorCanvas.h"
 
 namespace Editor
 {
-	EditorModule* EditorModule::ourInstance = nullptr;
+	DEFINE_GAMECORE_MODULE(EditorModule);
 
 	void EditorModule::OnRegister()
 	{
@@ -38,24 +38,26 @@ namespace Editor
 		Input::InputManager::GetInstance()->RemoveKeyCallback(myOpenCloseCallbackId);
 	}
 
-	void EditorModule::OnUpdate()
+	void EditorModule::OnUpdate(GameCore::Module::UpdateType aType)
 	{
-		if (!myWindow)
-			return;
-
-		myGui->Update();
-		myGui->Draw();
-	}
-
-	void EditorModule::OnEarlyUpdate()
-	{
-		if (!myWindow)
-			return;
-
-		if (glfwWindowShouldClose(myWindow))
+		if (aType == GameCore::Module::UpdateType::EarlyUpdate)
 		{
-			Close();
-			return;
+			if (!myWindow)
+				return;
+
+			if (glfwWindowShouldClose(myWindow))
+			{
+				Close();
+				return;
+			}
+		}
+		else if (aType == GameCore::Module::UpdateType::MainUpdate)
+		{
+			if (!myWindow)
+				return;
+
+			myGui->Update();
+			myGui->Draw();
 		}
 	}
 
@@ -65,7 +67,7 @@ namespace Editor
 
 		Render::RegisterWindow(myWindow, Render::Renderer::Type::Editor);
 
-		myGui = new GameWork::CallbackGui(myWindow, std::bind(&EditorModule::CallbackUpdate, this));
+		myGui = new GameCore::CallbackGui(myWindow, std::bind(&EditorModule::CallbackUpdate, this));
 		myCanvas = new GraphEditorCanvas();
 	}
 

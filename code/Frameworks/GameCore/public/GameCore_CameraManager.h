@@ -1,6 +1,6 @@
 #pragma once
 
-namespace GameWork
+namespace GameCore
 {
 	class Camera;
 

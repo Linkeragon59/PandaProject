@@ -1,24 +1,24 @@
 #pragma once
-#include "GameWork_Module.h"
+#include "GameCore_Module.h"
 
-namespace GameWork
+namespace GameCore
 {
 	class Camera;
 	class Prop;
 }
 
-class RhythmShooterModule : public GameWork::Module
+class RhythmShooterModule : public GameCore::Module
 {
-DECLARE_GAMEWORK_MODULE(RhythmShooterModule, "RhythmShooter")
+DECLARE_GAMECORE_MODULE(RhythmShooterModule, "RhythmShooter")
 
 protected:
 	void OnRegister() override;
 	void OnUnregister() override;
-	void OnUpdate() override;
+	void OnUpdate(GameCore::Module::UpdateType aType) override;
 
 private:
-	GameWork::Camera* myCamera = nullptr;
-	GameWork::Prop* mySimpleGeometryTest = nullptr;
-	GameWork::Prop* myTestModel = nullptr;
-	GameWork::Prop* myTestAnimatedModel = nullptr;
+	GameCore::Camera* myCamera = nullptr;
+	GameCore::Prop* mySimpleGeometryTest = nullptr;
+	GameCore::Prop* myTestModel = nullptr;
+	GameCore::Prop* myTestAnimatedModel = nullptr;
 };

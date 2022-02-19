@@ -6,7 +6,7 @@
 
 #include "Base_Input.h"
 
-PandaModule* PandaModule::ourInstance = nullptr;
+DEFINE_GAMECORE_MODULE(PandaModule);
 
 void PandaModule::OnRegister()
 {
@@ -21,15 +21,18 @@ void PandaModule::OnRegister()
 	delete object;
 }
 
-void PandaModule::OnUpdate()
+void PandaModule::OnUpdate(GameCore::Module::UpdateType /*aType*/)
 {
-	/*Input::InputManager* inputManager = Input::InputManager::GetInstance();
-	Input::RawInputState mouseLeftState = inputManager->PollRawInput(Input::RawInput::MouseLeft);
-	if (mouseLeftState == Input::RawInputState::Pressed)
+	/*if (aType == GameCore::Module::UpdateType::MainUpdate)
 	{
-		// Test Perlin and Map classes
-		Map map;
-		map.Print();
+		Input::InputManager* inputManager = Input::InputManager::GetInstance();
+		Input::RawInputState mouseLeftState = inputManager->PollRawInput(Input::RawInput::MouseLeft);
+		if (mouseLeftState == Input::RawInputState::Pressed)
+		{
+			// Test Perlin and Map classes
+			Map map;
+			map.Print();
+		}
 	}*/
 }
 

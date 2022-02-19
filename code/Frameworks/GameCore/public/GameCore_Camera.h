@@ -5,7 +5,7 @@ namespace Render
 	class Renderer;
 }
 
-namespace GameWork
+namespace GameCore
 {
 	class Camera
 	{

@@ -7,39 +7,37 @@ namespace Render
 	class Renderer;
 }
 
-namespace GameWork
+namespace GameCore
 {
-	class Module;
+	class ModuleManager;
 	class CameraManager;
 	class Prop;
 	class PropManager;
 	class Editor;
 	class NodeRegister;
 
-	class GameWork
+	class GameCore
 	{
 	public:
 		static bool Create();
 		static void Destroy();
-		static GameWork* GetInstance() { return ourInstance; }
+		static GameCore* GetInstance() { return ourInstance; }
 
 		void Run();
-
-		bool RegisterModule(Module* aModule);
-		bool UnregisterModule(Module* aModule);
 
 		Render::Renderer* GetMainWindowRenderer() const;
 		float GetMainWindowAspectRatio() const { return myMainWindowAspectRatio; }
 
+		ModuleManager* GetModuleManager() const { return myModuleManager; }
 		CameraManager* GetCameraManager() const { return myCameraManager; }
 		PropManager* GetPropManager() const { return myPropManager; }
 
 		NodeRegister* GetNodeRegister() const { return myNodeRegister; }
 
 	private:
-		static GameWork* ourInstance;
-		GameWork();
-		~GameWork();
+		static GameCore* ourInstance;
+		GameCore();
+		~GameCore();
 
 		bool Update();
 
@@ -47,7 +45,7 @@ namespace GameWork
 		float myMainWindowAspectRatio = 1.0f;
 		uint myWindowResizeCallbackId = UINT_MAX;
 
-		std::vector<Module*> myModules;
+		ModuleManager* myModuleManager = nullptr;
 		CameraManager* myCameraManager = nullptr;
 		PropManager* myPropManager = nullptr;
 #if DEBUG_BUILD

@@ -1,4 +1,4 @@
-#include "GameWork.h"
+#include "GameCore.h"
 
 #include "Base_Time.h"
 #include "Base_Input.h"
@@ -7,10 +7,10 @@
 #include "Render_Facade.h"
 #include "Render_Renderer.h"
 
-#include "GameWork_Module.h"
-#include "GameWork_CameraManager.h"
-#include "GameWork_PropManager.h"
-#include "GameWork_Graph.h"
+#include "GameCore_ModuleManager.h"
+#include "GameCore_CameraManager.h"
+#include "GameCore_PropManager.h"
+#include "GameCore_Graph.h"
 
 #if LINUX_BUILD
 #pragma GCC diagnostic push
@@ -26,7 +26,7 @@
 
 #include <GLFW/glfw3.h>
 
-namespace GameWork
+namespace GameCore
 {
 	namespace
 	{
@@ -35,22 +35,22 @@ namespace GameWork
 		SoLoud::Wav locWave;      // One wave file
 	}
 
-	GameWork* GameWork::ourInstance = nullptr;
+	GameCore* GameCore::ourInstance = nullptr;
 
-	bool GameWork::Create()
+	bool GameCore::Create()
 	{
 		Assert(!ourInstance);
-		ourInstance = new GameWork;
+		ourInstance = new GameCore;
 		return true;
 	}
 
-	void GameWork::Destroy()
+	void GameCore::Destroy()
 	{
 		Assert(ourInstance);
 		SafeDelete(ourInstance);
 	}
 
-	void GameWork::Run()
+	void GameCore::Run()
 	{
 		while (!glfwWindowShouldClose(myMainWindow))
 		{
@@ -61,43 +61,18 @@ namespace GameWork
 		}
 	}
 
-	bool GameWork::RegisterModule(Module* aModule)
-	{
-		for (Module* mod : myModules)
-		{
-			if (strcmp(mod->GetId(), aModule->GetId()) == 0)
-				return false;
-		}
-
-		myModules.push_back(aModule);
-		aModule->OnRegister();
-		return true;
-	}
-
-	bool GameWork::UnregisterModule(Module* aModule)
-	{
-		for (auto it = myModules.begin(); it != myModules.end(); ++it)
-		{
-			if (strcmp((*it)->GetId(), aModule->GetId()) == 0)
-			{
-				(*it)->OnUnregister();
-				myModules.erase(it);
-				return true;
-			}
-		}
-		return false;
-	}
-
-	Render::Renderer* GameWork::GetMainWindowRenderer() const
+	Render::Renderer* GameCore::GetMainWindowRenderer() const
 	{
 		return Render::GetRenderer(myMainWindow);
 	}
 
-	GameWork::GameWork()
+	GameCore::GameCore()
 	{
 		Time::TimeManager::Create();
 		Window::WindowManager::Create();
 		Input::InputManager::Create();
+
+		myModuleManager = new ModuleManager();
 
 		Window::WindowManager* windowManager = Window::WindowManager::GetInstance();
 		myMainWindow = windowManager->OpenWindow("Panda Engine");
@@ -128,7 +103,7 @@ namespace GameWork
 		locWave.load(locTestWavFile.c_str()); // Load a wave
 	}
 
-	GameWork::~GameWork()
+	GameCore::~GameCore()
 	{
 		locSoloud.deinit(); // Clean up!
 
@@ -149,29 +124,25 @@ namespace GameWork
 		windowManager->CloseWindow(myMainWindow);
 		myMainWindow = nullptr;
 
+		delete myModuleManager;
+
 		Input::InputManager::Destroy();
 		Window::WindowManager::Destroy();
 		Time::TimeManager::Destroy();
 	}
 
-	bool GameWork::Update()
+	bool GameCore::Update()
 	{
 		Time::TimeManager::GetInstance()->NextFrame();
 
 		Input::InputManager* inputManager = Input::InputManager::GetInstance();
 		bool escapePressed = inputManager->PollKeyInput(Input::KeyEscape) == Input::Status::Pressed;
 
-		for (Module* mod : myModules)
-		{
-			mod->OnEarlyUpdate();
-		}
+		myModuleManager->Update(Module::UpdateType::EarlyUpdate);
 		
 		Render::StartFrame();
 
-		for (Module* mod : myModules)
-		{
-			mod->OnUpdate();
-		}
+		myModuleManager->Update(Module::UpdateType::MainUpdate);
 
 		myCameraManager->Update();
 		myPropManager->Update();
@@ -181,10 +152,7 @@ namespace GameWork
 
 		Render::EndFrame();
 
-		for (Module* mod : myModules)
-		{
-			mod->OnLateUpdate();
-		}
+		myModuleManager->Update(Module::UpdateType::LateUpdate);
 
 		return !escapePressed;
 	}

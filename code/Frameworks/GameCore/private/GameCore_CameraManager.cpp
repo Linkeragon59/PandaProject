@@ -1,9 +1,9 @@
-#include "GameWork_CameraManager.h"
+#include "GameCore_CameraManager.h"
 
-#include "GameWork_Camera.h"
-#include "GameWork.h"
+#include "GameCore_Camera.h"
+#include "GameCore.h"
 
-namespace GameWork
+namespace GameCore
 {
 	CameraManager::~CameraManager()
 	{
@@ -15,8 +15,8 @@ namespace GameWork
 
 	void CameraManager::Update()
 	{
-		Render::Renderer* renderer = GameWork::GetInstance()->GetMainWindowRenderer();
-		float aspectRatio = GameWork::GetInstance()->GetMainWindowAspectRatio();
+		Render::Renderer* renderer = GameCore::GetInstance()->GetMainWindowRenderer();
+		float aspectRatio = GameCore::GetInstance()->GetMainWindowAspectRatio();
 
 		for (uint i = 0; i < myCameras.size(); ++i)
 		{

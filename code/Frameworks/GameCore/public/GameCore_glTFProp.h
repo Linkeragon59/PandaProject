@@ -1,8 +1,8 @@
 #pragma once
 
-#include "GameWork_Prop.h"
+#include "GameCore_Prop.h"
 
-namespace GameWork
+namespace GameCore
 {
 	class glTFProp : public Prop
 	{

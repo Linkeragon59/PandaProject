@@ -1,7 +1,7 @@
 #include "Editor_GraphEditorCanvas.h"
 
-#include "GameWork.h"
-#include "GameWork_Graph.h"
+#include "GameCore.h"
+#include "GameCore_Graph.h"
 
 #include "imgui_internal.h"
 
@@ -115,7 +115,7 @@ namespace Editor
 		// --- TEMP ---
 		if (myGraph == nullptr)
 		{
-			myGraph = new GameWork::Graph();
+			myGraph = new GameCore::Graph();
 			myGraph->AddNode("TestNode");
 			myGraph->AddNode("TestNode");
 			myGraph->AddNode("TestNode");
@@ -323,7 +323,7 @@ namespace Editor
 
 			if (nodeIndex != UINT_MAX && slotIndex != UINT_MAX)
 			{
-				GameWork::Node::Slot slot = { myGraph->GetNode(nodeIndex), slotIndex };
+				GameCore::Node::Slot slot = { myGraph->GetNode(nodeIndex), slotIndex };
 				if (slotInput)
 					myGraph->RemoveConnectionByInput(slot);
 				else
@@ -383,8 +383,8 @@ namespace Editor
 
 			if (nodeIndex != UINT_MAX && slotIndex != UINT_MAX && nodeIndex != myConnectionStartSlot.myNodeIndex)
 			{
-				GameWork::Node::Slot startSlot = { myGraph->GetNode(myConnectionStartSlot.myNodeIndex), myConnectionStartSlot.mySlotIndex };
-				GameWork::Node::Slot endSlot = { myGraph->GetNode(nodeIndex), slotIndex };
+				GameCore::Node::Slot startSlot = { myGraph->GetNode(myConnectionStartSlot.myNodeIndex), myConnectionStartSlot.mySlotIndex };
+				GameCore::Node::Slot endSlot = { myGraph->GetNode(nodeIndex), slotIndex };
 				if (slotInput)
 				{
 					myGraph->AddConnection(endSlot, startSlot);
@@ -402,7 +402,7 @@ namespace Editor
 		{
 			ImGui::Text(" Nodes ");
 			ImGui::Separator();
-			for (const std::string& nodeName : GameWork::GameWork::GetInstance()->GetNodeRegister()->GetAvailableNodes())
+			for (const std::string& nodeName : GameCore::GameCore::GetInstance()->GetNodeRegister()->GetAvailableNodes())
 			{
 				if (ImGui::Selectable(nodeName.c_str()))
 				{
@@ -517,7 +517,7 @@ namespace Editor
 		std::cout << buffer.GetString() << std::endl;
 	}
 
-	void GraphEditorCanvas::CachedNodeDrawInfo::Update(const GameWork::Node* aNode, const ImVec2& aCenterPosition, float aZoomFactor)
+	void GraphEditorCanvas::CachedNodeDrawInfo::Update(const GameCore::Node* aNode, const ImVec2& aCenterPosition, float aZoomFactor)
 	{
 		myHeaderSize = ImGui::CalcTextSize(aNode->GetName()) / aZoomFactor;
 		mySize = ImVec2(myHeaderSize.x, myHeaderSize.y + (aNode->GetInputSlotsCount() + aNode->GetOutputSlotsCount()) * locNodeSlotRadius * 2.0f);

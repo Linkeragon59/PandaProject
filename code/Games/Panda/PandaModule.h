@@ -1,12 +1,12 @@
 #pragma once
-#include "GameWork_Module.h"
+#include "GameCore_Module.h"
 
-class PandaModule : public GameWork::Module
+class PandaModule : public GameCore::Module
 {
-DECLARE_GAMEWORK_MODULE(PandaModule, "Panda")
+DECLARE_GAMECORE_MODULE(PandaModule, "Panda")
 
 protected:
 	void OnRegister() override;
-	void OnUpdate() override;
+	void OnUpdate(GameCore::Module::UpdateType aType) override;
 	void OnUnregister() override;
 };

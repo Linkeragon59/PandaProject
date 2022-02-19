@@ -1,4 +1,4 @@
-#include "GameWork_Gui.h"
+#include "GameCore_Gui.h"
 
 #include <GLFW/glfw3.h>
 #include "Base_imgui.h"
@@ -8,7 +8,7 @@
 
 #include "Render_Facade.h"
 
-namespace GameWork
+namespace GameCore
 {
 	Gui::Gui(GLFWwindow* aWindow)
 		: myWindow(aWindow)

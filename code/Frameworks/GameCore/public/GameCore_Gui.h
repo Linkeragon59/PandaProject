@@ -7,7 +7,7 @@
 struct GLFWwindow;
 struct ImGuiContext;
 
-namespace GameWork
+namespace GameCore
 {
 	class Gui
 	{

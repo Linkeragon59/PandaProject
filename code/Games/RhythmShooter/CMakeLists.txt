@@ -16,7 +16,7 @@ target_compile_features(RhythmShooter PRIVATE cxx_std_23)
 
 target_include_directories(RhythmShooter PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(RhythmShooter PRIVATE GameWork)
+target_link_libraries(RhythmShooter PRIVATE GameCore)
 target_link_libraries(RhythmShooter PRIVATE Editor)
 
 if ( CMAKE_SYSTEM_NAME MATCHES "Windows" )

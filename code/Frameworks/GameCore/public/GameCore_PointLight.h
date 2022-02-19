@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameWork_Entity.h"
+#include "GameCore_Entity.h"
 #include "Render_Light.h"
 
 namespace Render
@@ -8,7 +8,7 @@ namespace Render
 	class Renderer;
 }
 
-namespace GameWork
+namespace GameCore
 {
 	class PointLight : public Entity
 	{

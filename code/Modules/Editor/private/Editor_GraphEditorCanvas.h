@@ -5,7 +5,7 @@
 #include <map>
 #include <set>
 
-namespace GameWork
+namespace GameCore
 {
 	class Node;
 	class Graph;
@@ -20,7 +20,7 @@ namespace Editor
 
 		void Draw(const ImVec2& aPos, const ImVec2& aSize);
 
-		void SetGraph(GameWork::Graph* aGraph) { myGraph = aGraph; }
+		void SetGraph(GameCore::Graph* aGraph) { myGraph = aGraph; }
 
 	private:
 		void ClampGraphPos();
@@ -70,11 +70,11 @@ namespace Editor
 		};
 		DraggedSlot myConnectionStartSlot = DraggedSlot();
 
-		GameWork::Graph* myGraph = nullptr;
+		GameCore::Graph* myGraph = nullptr;
 
 		struct CachedNodeDrawInfo
 		{
-			void Update(const GameWork::Node* aNode, const ImVec2& aCenterPosition, float aZoomFactor);
+			void Update(const GameCore::Node* aNode, const ImVec2& aCenterPosition, float aZoomFactor);
 			
 			ImVec2 myHeaderSize;
 			ImVec2 mySize;

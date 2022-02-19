@@ -1,9 +1,9 @@
 #pragma once
-#include "GameWork_Module.h"
+#include "GameCore_Module.h"
 
 struct GLFWwindow;
 
-namespace GameWork
+namespace GameCore
 {
 	class CallbackGui;
 }
@@ -12,15 +12,14 @@ namespace Editor
 {
 	class GraphEditorCanvas;
 
-	class EditorModule : public GameWork::Module
+	class EditorModule : public GameCore::Module
 	{
-	DECLARE_GAMEWORK_MODULE(EditorModule, "Editor")
+	DECLARE_GAMECORE_MODULE(EditorModule, "Editor")
 
 	protected:
 		void OnRegister() override;
 		void OnUnregister() override;
-		void OnUpdate() override;
-		void OnEarlyUpdate() override;
+		void OnUpdate(GameCore::Module::UpdateType aType) override;
 
 	private:
 		void Open();
@@ -30,7 +29,7 @@ namespace Editor
 		void CallbackUpdate();
 
 		GLFWwindow* myWindow = nullptr;
-		GameWork::CallbackGui* myGui = nullptr;
+		GameCore::CallbackGui* myGui = nullptr;
 
 		GraphEditorCanvas* myCanvas = nullptr;
 	};

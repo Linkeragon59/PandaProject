@@ -3,7 +3,7 @@
 #include "Render_ModelData.h"
 #include "Render_Renderer.h"
 
-namespace GameWork
+namespace GameCore
 {
 	class Prop;
 

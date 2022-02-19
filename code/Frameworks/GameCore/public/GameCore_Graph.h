@@ -13,7 +13,7 @@ static NodeClass* CreateInstance() { return new NodeClass(); } \
 static const char* GetStaticName() { return #NodeClass; } \
 NodeClass()
 
-namespace GameWork
+namespace GameCore
 {
 	class Node
 	{

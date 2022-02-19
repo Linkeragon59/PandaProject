@@ -1,10 +1,10 @@
-#include "GameWork_Camera.h"
+#include "GameCore_Camera.h"
 
 #include "Render_Renderer.h"
 #include "Base_Input.h"
 #include "Base_Window.h"
 
-namespace GameWork
+namespace GameCore
 {
 	namespace
 	{

@@ -1,8 +1,8 @@
-#include "GameWork_Graph.h"
+#include "GameCore_Graph.h"
 
-#include "GameWork.h"
+#include "GameCore.h"
 
-namespace GameWork
+namespace GameCore
 {
 	void Node::Connect(uint aSlotId, const Slot& anOutputSlot)
 	{
@@ -31,7 +31,7 @@ namespace GameWork
 
 	uint Graph::AddNode(const char* aNodeName)
 	{
-		Node* newNode = GameWork::GetInstance()->GetNodeRegister()->CreateNode(aNodeName);
+		Node* newNode = GameCore::GetInstance()->GetNodeRegister()->CreateNode(aNodeName);
 		if (!newNode)
 			return UINT_MAX;
 

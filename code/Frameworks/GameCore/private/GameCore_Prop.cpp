@@ -1,8 +1,8 @@
-#include "GameWork_Prop.h"
+#include "GameCore_Prop.h"
 
 #include "Render_Facade.h"
 
-namespace GameWork
+namespace GameCore
 {
 	Prop::~Prop()
 	{

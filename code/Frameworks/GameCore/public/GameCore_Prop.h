@@ -1,11 +1,11 @@
 #pragma once
 
-#include "GameWork_Entity.h"
+#include "GameCore_Entity.h"
 #include "Render_Renderer.h"
 #include "Render_Handle.h"
 #include "Render_ModelData.h"
 
-namespace GameWork
+namespace GameCore
 {
 	class Prop : public Entity
 	{
