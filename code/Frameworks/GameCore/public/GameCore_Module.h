@@ -70,7 +70,6 @@ namespace GameCore
 		
 		std::vector<std::string> myDependencies;
 		bool myIsInitialized = false;
-		bool myWasUpdatedThisFrame = false;
 	};
 }
 

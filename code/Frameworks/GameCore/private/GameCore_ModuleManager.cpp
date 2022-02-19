@@ -10,6 +10,8 @@ namespace GameCore
 		myModules.push_back(aModule);
 		aModule->OnRegister();
 		TryInitializeModule(aModule);
+
+		RebuildUpdateQueue();
 		return true;
 	}
 
@@ -22,15 +24,15 @@ namespace GameCore
 		FinalizeModule(aModule);
 		(*module)->OnUnregister();
 		myModules.erase(module);
+
+		RebuildUpdateQueue();
 		return true;
 	}
 
 	void ModuleManager::Update(Module::UpdateType aType)
 	{
-		for (Module* module : myModules)
-			UpdateModule(module, aType);
-		for (Module* module : myModules)
-			module->myWasUpdatedThisFrame = false;
+		for (Module* module : myModulesToUpdate)
+			module->OnUpdate(aType);
 	}
 
 	void ModuleManager::TryInitializeModule(Module* aModule)
@@ -61,6 +63,7 @@ namespace GameCore
 
 	void ModuleManager::FinalizeModule(Module* aModule)
 	{
+		// Set the flag now to avoid considering this module anymore in the search below
 		aModule->myIsInitialized = false;
 		
 		// First finalize modules that depend on the module to finalize
@@ -76,23 +79,24 @@ namespace GameCore
 		aModule->OnFinalize();
 	}
 
-	void ModuleManager::UpdateModule(Module* aModule, Module::UpdateType aType)
+	void ModuleManager::RebuildUpdateQueue()
 	{
-		if (!aModule->myIsInitialized || aModule->myWasUpdatedThisFrame)
+		myModulesToUpdate.clear();
+		for (Module* module : myModules)
+			PushModuleToUpdateQueue(module);
+	}
+
+	void ModuleManager::PushModuleToUpdateQueue(Module* aModule)
+	{
+		if (!aModule->myIsInitialized)
 			return;
 
-		// First ensure the dependencies have been updated
+		// First push the dependencies to the update queue
 		for (const std::string& dependency : aModule->myDependencies)
-		{
-			Module* module = GetModule(dependency);
-			if (module && !module->myWasUpdatedThisFrame)
-			{
-				UpdateModule(module, aType);
-			}
-		}
+			if (Module* module = GetModule(dependency))
+				PushModuleToUpdateQueue(module);
 
-		aModule->OnUpdate(aType);
-		aModule->myWasUpdatedThisFrame = true;
+		myModulesToUpdate.push_back(aModule);
 	}
 
 	Module* ModuleManager::GetModule(const std::string& anId)

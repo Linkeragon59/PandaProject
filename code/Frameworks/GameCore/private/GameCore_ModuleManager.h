@@ -14,10 +14,12 @@ namespace GameCore
 		void TryInitializeModule(Module* aModule);
 		void FinalizeModule(Module* aModule);
 
-		void UpdateModule(Module* aModule, Module::UpdateType aType);
+		void RebuildUpdateQueue();
+		void PushModuleToUpdateQueue(Module* aModule);
 
 		Module* GetModule(const std::string& anId);
 
 		std::vector<Module*> myModules;
+		std::vector<Module*> myModulesToUpdate; // sorted by update order
 	};
 }
