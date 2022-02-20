@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Base_imgui.h"
+#include "GameCore_imgui.h"
 
 #include <map>
 #include <set>

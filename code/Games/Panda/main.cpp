@@ -1,18 +1,18 @@
-#include "GameCore.h"
+#include "GameCore_Facade.h"
 #include "PandaModule.h"
 
 int main()
 {
-	if (!GameCore::GameCore::Create())
+	if (!GameCore::Facade::Create())
 		return EXIT_FAILURE;
 
 	PandaModule::Register();
 
-	GameCore::GameCore::GetInstance()->Run();
+	GameCore::Facade::GetInstance()->Run();
 
 	PandaModule::Unregister();
 	
-	GameCore::GameCore::Destroy();
+	GameCore::Facade::Destroy();
 
 	return EXIT_SUCCESS;
 }

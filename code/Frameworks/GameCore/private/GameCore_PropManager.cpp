@@ -2,7 +2,7 @@
 
 #include "GameCore_glTFProp.h"
 #include "GameCore_SimpleGeometryProp.h"
-#include "GameCore.h"
+#include "GameCore_Facade.h"
 
 namespace GameCore
 {
@@ -21,7 +21,7 @@ namespace GameCore
 
 	void PropManager::Update()
 	{
-		Render::Renderer* renderer = GameCore::GetInstance()->GetMainWindowRenderer();
+		Render::Renderer* renderer = Facade::GetInstance()->GetMainWindowRenderer();
 
 		for (uint i = 0; i < myProps.size(); ++i)
 		{

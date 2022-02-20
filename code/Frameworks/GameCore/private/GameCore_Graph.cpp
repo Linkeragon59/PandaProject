@@ -1,6 +1,6 @@
 #include "GameCore_Graph.h"
 
-#include "GameCore.h"
+#include "GameCore_Facade.h"
 
 namespace GameCore
 {
@@ -31,7 +31,7 @@ namespace GameCore
 
 	uint Graph::AddNode(const char* aNodeName)
 	{
-		Node* newNode = GameCore::GetInstance()->GetNodeRegister()->CreateNode(aNodeName);
+		Node* newNode = Facade::GetInstance()->GetNodeRegister()->CreateNode(aNodeName);
 		if (!newNode)
 			return UINT_MAX;
 

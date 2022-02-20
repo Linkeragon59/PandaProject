@@ -1,25 +1,25 @@
 #include "RhythmShooterModule.h"
 
-#include "GameCore.h"
+#include "GameCore_Facade.h"
 #include "GameCore_CameraManager.h"
 #include "GameCore_Camera.h"
 #include "GameCore_PropManager.h"
 #include "GameCore_Prop.h"
 
 #include "Render_Renderer.h"
-#include "Base_Input.h"
+#include "GameCore_Input.h"
 
 DEFINE_GAMECORE_MODULE(RhythmShooterModule);
 
 void RhythmShooterModule::OnRegister()
 {
-	GameCore::CameraManager* cameraManager = GameCore::GameCore::GetInstance()->GetCameraManager();
+	GameCore::CameraManager* cameraManager = GameCore::Facade::GetInstance()->GetCameraManager();
 
 	myCamera = cameraManager->AddCamera();
 	myCamera->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
 	myCamera->SetDirection(glm::vec3(0.0f, 0.0f, -1.0f));
 
-	GameCore::PropManager* propManager = GameCore::GameCore::GetInstance()->GetPropManager();
+	GameCore::PropManager* propManager = GameCore::Facade::GetInstance()->GetPropManager();
 
 	{
 		Render::SimpleGeometryModelData modelData;
@@ -44,12 +44,12 @@ void RhythmShooterModule::OnRegister()
 
 void RhythmShooterModule::OnUnregister()
 {
-	GameCore::CameraManager* cameraManager = GameCore::GameCore::GetInstance()->GetCameraManager();
+	GameCore::CameraManager* cameraManager = GameCore::Facade::GetInstance()->GetCameraManager();
 
 	cameraManager->RemoveCamera(myCamera);
 	myCamera = nullptr;
 
-	GameCore::PropManager* propManager = GameCore::GameCore::GetInstance()->GetPropManager();
+	GameCore::PropManager* propManager = GameCore::Facade::GetInstance()->GetPropManager();
 
 	propManager->Despawn(mySimpleGeometryTest);
 	mySimpleGeometryTest = nullptr;

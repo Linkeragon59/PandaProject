@@ -6,11 +6,11 @@ namespace GameCore
 {
 	bool Module::RegisterToManager(Module* aModule)
 	{
-		return GameCore::GetInstance()->GetModuleManager()->RegisterModule(aModule);
+		return Facade::GetInstance()->GetModuleManager()->RegisterModule(aModule);
 	}
 
 	bool Module::UnregisterFromManager(Module* aModule)
 	{
-		return GameCore::GetInstance()->GetModuleManager()->UnregisterModule(aModule);
+		return Facade::GetInstance()->GetModuleManager()->UnregisterModule(aModule);
 	}
 }

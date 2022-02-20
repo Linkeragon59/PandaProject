@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameCore.h"
+#include "GameCore_Facade.h"
 
 namespace GameCore
 {
@@ -39,7 +39,7 @@ namespace GameCore
 		template<typename ModuleType>
 		static bool RegisterModule(ModuleType*& anInstance, const std::vector<std::string>& someDependencies)
 		{
-			if (!GameCore::GetInstance())
+			if (!Facade::GetInstance())
 				return false;
 
 			ModuleType* newModule = new ModuleType();
@@ -56,7 +56,7 @@ namespace GameCore
 		template<typename ModuleType>
 		static bool UnregisterModule(ModuleType*& anInstance)
 		{
-			if (!GameCore::GetInstance())
+			if (!Facade::GetInstance())
 				return false;
 
 			bool res = UnregisterFromManager(anInstance);

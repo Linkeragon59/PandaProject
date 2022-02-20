@@ -5,6 +5,7 @@ namespace GameCore
 	class ModuleManager
 	{
 	public:
+		// TODO add error handling (OnInitialize/OnFinalize could fail for some modules)
 		bool RegisterModule(Module* aModule);
 		bool UnregisterModule(Module* aModule);
 

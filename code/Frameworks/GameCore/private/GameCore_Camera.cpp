@@ -1,8 +1,8 @@
 #include "GameCore_Camera.h"
 
 #include "Render_Renderer.h"
-#include "Base_Input.h"
-#include "Base_Window.h"
+#include "GameCore_Input.h"
+#include "GameCore_Window.h"
 
 namespace GameCore
 {

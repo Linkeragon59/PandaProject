@@ -1,7 +1,7 @@
 #include "GameCore_CameraManager.h"
 
+#include "GameCore_Facade.h"
 #include "GameCore_Camera.h"
-#include "GameCore.h"
 
 namespace GameCore
 {
@@ -15,8 +15,8 @@ namespace GameCore
 
 	void CameraManager::Update()
 	{
-		Render::Renderer* renderer = GameCore::GetInstance()->GetMainWindowRenderer();
-		float aspectRatio = GameCore::GetInstance()->GetMainWindowAspectRatio();
+		Render::Renderer* renderer = Facade::GetInstance()->GetMainWindowRenderer();
+		float aspectRatio = Facade::GetInstance()->GetMainWindowAspectRatio();
 
 		for (uint i = 0; i < myCameras.size(); ++i)
 		{

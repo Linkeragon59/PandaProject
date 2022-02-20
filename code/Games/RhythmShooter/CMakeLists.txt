@@ -18,6 +18,7 @@ target_include_directories(RhythmShooter PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(RhythmShooter PRIVATE GameCore)
 target_link_libraries(RhythmShooter PRIVATE Editor)
+target_link_libraries(RhythmShooter PRIVATE Render)
 
 if ( CMAKE_SYSTEM_NAME MATCHES "Windows" )
 	set_property(TARGET RhythmShooter PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/data")

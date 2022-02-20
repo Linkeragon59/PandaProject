@@ -1,10 +1,10 @@
 #include "GameCore_Gui.h"
 
 #include <GLFW/glfw3.h>
-#include "Base_imgui.h"
-#include "Base_Input.h"
-#include "Base_Window.h"
-#include "Base_Time.h"
+#include "GameCore_imgui.h"
+#include "GameCore_Input.h"
+#include "GameCore_Window.h"
+#include "GameCore_Time.h"
 
 #include "Render_Facade.h"
 

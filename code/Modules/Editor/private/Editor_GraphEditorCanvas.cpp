@@ -1,6 +1,6 @@
 #include "Editor_GraphEditorCanvas.h"
 
-#include "GameCore.h"
+#include "GameCore_Facade.h"
 #include "GameCore_Graph.h"
 
 #include "imgui_internal.h"
@@ -402,7 +402,7 @@ namespace Editor
 		{
 			ImGui::Text(" Nodes ");
 			ImGui::Separator();
-			for (const std::string& nodeName : GameCore::GameCore::GetInstance()->GetNodeRegister()->GetAvailableNodes())
+			for (const std::string& nodeName : GameCore::Facade::GetInstance()->GetNodeRegister()->GetAvailableNodes())
 			{
 				if (ImGui::Selectable(nodeName.c_str()))
 				{
