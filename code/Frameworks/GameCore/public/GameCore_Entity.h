@@ -18,10 +18,10 @@ namespace GameCore
 			return T::GetComponent(myId);
 		}
 
-		template<typename T>
-		T* AddComponent()
+		template<typename T, typename... Args>
+		T* AddComponent(Args&&... someArgs)
 		{
-			return T::AddComponent(myId);
+			return T::AddComponent(myId, std::forward<Args>(someArgs)...);
 		}
 
 		template<typename T>

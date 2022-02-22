@@ -16,9 +16,9 @@ namespace GameCore
 		return EntityModule::GetInstance()->GetPositionComponent(aHandle);
 	}
 
-	Entity3DTransformComponent* Entity3DTransformComponent::AddComponent(EntityHandle aHandle)
+	Entity3DTransformComponent* Entity3DTransformComponent::AddComponent(EntityHandle aHandle, const glm::vec3& aPosition)
 	{
-		return EntityModule::GetInstance()->AddPositionComponent(aHandle);
+		return EntityModule::GetInstance()->AddPositionComponent(aHandle, aPosition);
 	}
 
 	void Entity3DTransformComponent::RemoveComponent(EntityHandle aHandle)
@@ -63,11 +63,10 @@ namespace GameCore
 		return nullptr;
 	}
 
-	Entity3DTransformComponent* EntityModule::AddPositionComponent(EntityHandle aHandle)
+	Entity3DTransformComponent* EntityModule::AddPositionComponent(EntityHandle aHandle, const glm::vec3& aPosition)
 	{
-		if (Entity3DTransformComponent* component = GetPositionComponent(aHandle))
-			return component;
-		myPositionComponents[aHandle] = Entity3DTransformComponent();
+		Assert(!GetPositionComponent(aHandle));
+		myPositionComponents[aHandle] = Entity3DTransformComponent(aPosition);
 		return &myPositionComponents[aHandle];
 	}
 

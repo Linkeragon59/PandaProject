@@ -10,6 +10,10 @@ namespace GameCore
 	class Entity3DTransformComponent
 	{
 	public:
+		Entity3DTransformComponent(const glm::vec3& aPosition)
+			: myPosition(aPosition)
+		{}
+
 		// Position - Translation
 		void SetPosition(const glm::vec3& aPosition) { myPosition = aPosition; }
 		void Translate(const glm::vec3& aTranslation) { myPosition += aTranslation; }
@@ -36,7 +40,7 @@ namespace GameCore
 	protected:
 		friend EntityHandle;
 		static Entity3DTransformComponent* GetComponent(EntityHandle aHandle);
-		static Entity3DTransformComponent* AddComponent(EntityHandle aHandle);
+		static Entity3DTransformComponent* AddComponent(EntityHandle aHandle, const glm::vec3& aPosition);
 		static void RemoveComponent(EntityHandle aHandle);
 
 	private:
@@ -55,7 +59,7 @@ namespace GameCore
 		bool Exists(EntityHandle aHandle);
 
 		Entity3DTransformComponent* GetPositionComponent(EntityHandle aHandle);
-		Entity3DTransformComponent* AddPositionComponent(EntityHandle aHandle);
+		Entity3DTransformComponent* AddPositionComponent(EntityHandle aHandle, const glm::vec3& aPosition);
 		void RemovePositionComponent(EntityHandle aHandle);
 
 	private:

@@ -92,7 +92,7 @@ namespace GameCore
 		Entity3DTransformComponent* component = handle.GetComponent<Entity3DTransformComponent>();
 		if (!component)
 		{
-			component = handle.AddComponent<Entity3DTransformComponent>();
+			component = handle.AddComponent<Entity3DTransformComponent>(glm::vec3(1.0f));
 			component->SetPosition(glm::vec3(1.f));
 			handle.RemoveComponent<Entity3DTransformComponent>();
 		}
