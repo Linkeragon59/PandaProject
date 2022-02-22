@@ -64,7 +64,7 @@ namespace Editor
 	void EditorModule::Open()
 	{
 		myWindow = Window::WindowManager::GetInstance()->OpenWindow("Editor");
-		Render::RenderModule::GetInstance()->RegisterWindow(myWindow, Render::Renderer::Type::Editor);
+		Render::RenderModule::GetInstance()->RegisterWindow(myWindow, RendererType::Deferred);
 
 		myGui = new GameCore::CallbackGui(myWindow, std::bind(&EditorModule::CallbackUpdate, this));
 		myCanvas = new GraphEditorCanvas();

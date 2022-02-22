@@ -5,9 +5,9 @@
 #include "GameCore_WindowModule.h"
 #include "GameCore_InputModule.h"
 
-#include "GameCore_CameraManager.h"
-#include "GameCore_PropManager.h"
-#include "GameCore_Graph.h"
+#include "GameCore_Entity.h"
+#include "GameCore_EntityModule.h"
+//#include "GameCore_Graph.h"
 
 #if LINUX_BUILD
 #pragma GCC diagnostic push
@@ -75,17 +75,28 @@ namespace GameCore
 		glfwGetWindowSize(myMainWindow, &width, &height);
 		myMainWindowAspectRatio = (height != 0) ? (float)width / (float)height : 1.0f;
 
-		myCameraManager = new CameraManager();
-		myPropManager = new PropManager();
-#if DEBUG_BUILD
-		myDebugPropManager = new PropManager(Render::Renderer::DrawType::Debug);
-		Render::SimpleGeometryModelData modelData;
-		modelData.FillWithPreset(Render::SimpleGeometryModelData::Preset::VectorBaseWidget);
-		modelData.myTextureFilename = "Frameworks/textures/white.png";
-		myVectorBase = myDebugPropManager->Spawn(modelData);
-#endif
+//		myCameraManager = new CameraManager();
+//		myPropManager = new PropManager();
+//#if DEBUG_BUILD
+//		myDebugPropManager = new PropManager(Render::Renderer::DrawType::Debug);
+//		Render::SimpleGeometryModelData modelData;
+//		modelData.FillWithPreset(Render::SimpleGeometryModelData::Preset::VectorBaseWidget);
+//		modelData.myTextureFilename = "Frameworks/textures/white.png";
+//		myVectorBase = myDebugPropManager->Spawn(modelData);
+//#endif
+//
+//		myNodeRegister = new NodeRegister();
+		EntityModule::Register();
 
-		myNodeRegister = new NodeRegister();
+		EntityHandle handle = EntityHandle::Create();
+		Entity3DTransformComponent* component = handle.GetComponent<Entity3DTransformComponent>();
+		if (!component)
+		{
+			component = handle.AddComponent<Entity3DTransformComponent>();
+			component->SetPosition(glm::vec3(1.f));
+			handle.RemoveComponent<Entity3DTransformComponent>();
+		}
+		EntityHandle::Destroy(handle);
 
 		locSoloud.init(); // Initialize SoLoud
 		locWave.load(locTestWavFile.c_str()); // Load a wave
@@ -95,14 +106,15 @@ namespace GameCore
 	{
 		locSoloud.deinit(); // Clean up!
 
-		delete myCameraManager;
-		delete myPropManager;
-#if DEBUG_BUILD
-		myDebugPropManager->Despawn(myVectorBase);
-		delete myDebugPropManager;
-#endif
-
-		delete myNodeRegister;
+//		delete myCameraManager;
+//		delete myPropManager;
+//#if DEBUG_BUILD
+//		myDebugPropManager->Despawn(myVectorBase);
+//		delete myDebugPropManager;
+//#endif
+//
+//		delete myNodeRegister;
+		EntityModule::Unregister();
 
 		WindowModule::GetInstance()->RemoveWindowSizeCallback(myWindowResizeCallbackId);
 		WindowModule::GetInstance()->CloseWindow(myMainWindow);
@@ -123,11 +135,11 @@ namespace GameCore
 
 		myModuleManager->Update(Module::UpdateType::MainUpdate);
 
-		myCameraManager->Update();
-		myPropManager->Update();
-#if DEBUG_BUILD
-		myDebugPropManager->Update();
-#endif
+//		myCameraManager->Update();
+//		myPropManager->Update();
+//#if DEBUG_BUILD
+//		myDebugPropManager->Update();
+//#endif
 
 		myModuleManager->Update(Module::UpdateType::LateUpdate);
 

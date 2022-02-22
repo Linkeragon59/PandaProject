@@ -12,7 +12,7 @@ namespace Render
 {
 	void DeferredRenderer::Setup(SwapChain* aSwapChain)
 	{
-		RendererImpl::Setup(aSwapChain);
+		Renderer::Setup(aSwapChain);
 
 		myExtent = mySwapChain->GetExtent();
 		myColorFormat = mySwapChain->GetColorFormat();
@@ -41,12 +41,12 @@ namespace Render
 		myColorFormat = VK_FORMAT_UNDEFINED;
 		myDepthFormat = VK_FORMAT_UNDEFINED;
 
-		RendererImpl::Cleanup();
+		Renderer::Cleanup();
 	}
 
 	void DeferredRenderer::StartFrame()
 	{
-		RendererImpl::StartFrame();
+		Renderer::StartFrame();
 
 		std::array<VkImageView, 5> attachments{};
 		attachments[0] = mySwapChain->GetCurrentRenderTarget();
@@ -169,7 +169,7 @@ namespace Render
 
 		vkCmdEndRenderPass(myCommandBuffers[myCurrentFrameIndex]);
 
-		RendererImpl::EndFrame();
+		Renderer::EndFrame();
 	}
 
 	void DeferredRenderer::SetViewport(const VkViewport& aViewport)
@@ -190,14 +190,17 @@ namespace Render
 #endif
 	}
 
-	void DeferredRenderer::AddLight(const PointLight& aPointLight)
-	{
-		myPointLightsSet.AddLight(aPointLight);
-	}
+	//void DeferredRenderer::AddLight(const PointLight& aPointLight)
+	//{
+	//	myPointLightsSet.AddLight(aPointLight);
+	//}
 
-	void DeferredRenderer::DrawModel(Handle aModelHandle, const ModelData& someData, Renderer::DrawType aDrawType)
+	void DeferredRenderer::DrawModel(Model* aModel)
 	{
-		(void)someData;
+		aModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1, ShaderHelpers::BindType::Object);
+
+		/*(void)someData;
+		Entity3DModelComponent* component = RenderModule::GetInstance()->GetComponent(aHandle);
 		Model* model = RenderModule::GetInstance()->GetModelContainer()->GetModel(aModelHandle);
 
 		switch (aDrawType)
@@ -213,7 +216,7 @@ namespace Render
 		default:
 			Assert(false, "Unsupported draw type");
 			break;
-		}		
+		}*/
 	}
 
 	void DeferredRenderer::SetupAttachments()
@@ -482,7 +485,7 @@ namespace Render
 
 	void DeferredRenderer::SetupCommandBuffers()
 	{
-		RendererImpl::SetupCommandBuffers();
+		Renderer::SetupCommandBuffers();
 
 		uint framesCount = mySwapChain->GetImagesCount();
 
@@ -504,7 +507,7 @@ namespace Render
 
 	void DeferredRenderer::DestroyCommandBuffers()
 	{
-		RendererImpl::DestroyCommandBuffers();
+		Renderer::DestroyCommandBuffers();
 
 		mySecondaryCommandBuffersGBuffer.clear();
 		mySecondaryCommandBuffersCombine.clear();

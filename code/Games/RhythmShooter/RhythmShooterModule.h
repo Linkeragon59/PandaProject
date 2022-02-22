@@ -3,8 +3,7 @@
 
 namespace GameCore
 {
-	class Camera;
-	class Prop;
+	class EntityHandle;
 }
 
 class RhythmShooterModule : public GameCore::Module
@@ -18,7 +17,7 @@ protected:
 
 private:
 	GameCore::Camera* myCamera = nullptr;
-	GameCore::Prop* mySimpleGeometryTest = nullptr;
-	GameCore::Prop* myTestModel = nullptr;
-	GameCore::Prop* myTestAnimatedModel = nullptr;
+	GameCore::EntityHandle mySimpleGeometryTest;
+	GameCore::EntityHandle myTestModel;
+	GameCore::EntityHandle myTestAnimatedModel;
 };

@@ -8,14 +8,21 @@
 #include "Render_DescriptorContainer.h"
 #include "Render_ShaderHelpers.h"
 
+#include "GameCore_Entity.h"
+#include "Render_EntityRenderComponent.h"
+
 struct GLFWwindow;
 
 namespace Render
 {
 	struct VulkanDevice;
 	class SwapChain;
-	class ModelContainer;
-	class GuiContainer;
+
+	enum class RendererType
+	{
+		Deferred,
+		Count
+	};
 
 	class RenderModule : public GameCore::Module
 	{
@@ -31,12 +38,32 @@ namespace Render
 		void OnUpdate(GameCore::Module::UpdateType aType) override;
 
 	public:
-		void RegisterWindow(GLFWwindow* aWindow, Renderer::Type aType);
+		void RegisterWindow(GLFWwindow* aWindow, RendererType aType);
 		void UnregisterWindow(GLFWwindow* aWindow);
 		Renderer* GetRenderer(GLFWwindow* aWindow) const;
 
-		ModelContainer* GetModelContainer() const { return myModelContainer; }
-		GuiContainer* GetGuiContainer() const { return myGuiContainer; }
+		template<typename T>
+		T* GetEntityRenderComponent(GameCore::EntityHandle aHandle)
+		{
+			auto entityComponent = myRenderComponents.find(aHandle);
+			if (entityComponent != myRenderComponents.end())
+				return entityComponent->second;
+			return nullptr;
+		}
+		template<typename T>
+		T* AddEntityRenderComponent(GameCore::EntityHandle aHandle)
+		{
+			if (myRenderComponents* component = Get3DModelComponent(aHandle))
+				return component;
+			myRenderComponents[aHandle] = new T();
+			return myRenderComponents[aHandle];
+		}
+		template<typename T>
+		void RemoveEntityRenderComponent(GameCore::EntityHandle aHandle)
+		{
+			delete myRenderComponents[aHandle];
+			myRenderComponents.erase(aHandle);
+		}
 
 		VkInstance GetVkInstance() const { return myVkInstance; }
 
@@ -81,7 +108,6 @@ namespace Render
 		void RecycleDescriptorSets();
 		std::array<DescriptorContainer, (size_t)ShaderHelpers::BindType::Count> myDescriptorContainers;
 
-		ModelContainer* myModelContainer = nullptr;
-		GuiContainer* myGuiContainer = nullptr;
+		std::map<GameCore::EntityHandle, EntityRenderComponent*> myRenderComponents;
 	};
 }

@@ -200,7 +200,6 @@ namespace GameCore
 
 	protected:
 		void OnRegister() override;
-		void OnUpdate(GameCore::Module::UpdateType /*aType*/) override {}
 
 	public:
 		Input::Status PollMouseInput(Input::MouseButton aButton, GLFWwindow* aWindow = nullptr) const;

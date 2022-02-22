@@ -2,18 +2,15 @@
 
 #include "Render_Light.h"
 #include "Render_Handle.h"
-#include "Render_ModelData.h"
-
-struct ImGuiContext;
 
 namespace Render
 {
-	class RendererImpl;
+	class Renderer;
 
 	class Renderer
 	{
 	public:
-		enum class Type
+		enum class RendererType
 		{
 			Invalid,
 			Deferred,
@@ -36,10 +33,10 @@ namespace Render
 		void DrawModel(Handle aModelHandle, const ModelData& someData, DrawType aDrawType = DrawType::Default);
 		void DrawGui(Handle aGuiHandle);
 
-		RendererImpl* GetImpl() const { return myImpl; }
+		Renderer* GetImpl() const { return myImpl; }
 
 	private:
 		Type myType = Type::Invalid;
-		RendererImpl* myImpl;
+		Renderer* myImpl;
 	};
 }

@@ -1,27 +1,66 @@
-#include "Render_ModelData.h"
+#include "Render_EntityRenderComponent.h"
+
+#include "Render_RenderModule.h"
+#include "Render_Model.h"
+#include "Render_glTFModel.h"
 
 namespace Render
 {
-	void SimpleGeometryModelData::FillWithPreset(Preset aPreset)
+	void EntityRenderComponent::Unload()
+	{
+		SafeDelete(myModel);
+	}
+
+	void EntityRenderComponent::Update()
+	{
+		myModel->Update(myMatrix);
+	}
+
+	void EntityRenderComponent::Draw(Renderer* aRenderer)
+	{
+		aRenderer->DrawModel(myModel);
+	}
+
+	EntitySimpleGeometryModelComponent* EntitySimpleGeometryModelComponent::GetComponent(GameCore::EntityHandle aHandle)
+	{
+		return RenderModule::GetInstance()->GetEntityRenderComponent<EntitySimpleGeometryModelComponent>(aHandle);
+	}
+
+	EntitySimpleGeometryModelComponent* EntitySimpleGeometryModelComponent::AddComponent(GameCore::EntityHandle aHandle)
+	{
+		return RenderModule::GetInstance()->AddEntityRenderComponent<EntitySimpleGeometryModelComponent>(aHandle);
+	}
+
+	void EntitySimpleGeometryModelComponent::RemoveComponent(GameCore::EntityHandle aHandle)
+	{
+		RenderModule::GetInstance()->RemoveEntityRenderComponent<EntitySimpleGeometryModelComponent>(aHandle);
+	}
+
+	void EntitySimpleGeometryModelComponent::Load()
+	{
+		myModel = new SimpleGeometryModel(myVertices, myIndices, myTextureFilename);
+	}
+
+	void EntitySimpleGeometryModelComponent::FillWithPreset(Preset aPreset)
 	{
 		switch (aPreset)
 		{
-		case SimpleGeometryModelData::Preset::VectorBaseWidget:
+		case EntitySimpleGeometryModelComponent::Preset::VectorBaseWidget:
 			FillVectorBaseWidget();
 			break;
-		case SimpleGeometryModelData::Preset::Square:
+		case EntitySimpleGeometryModelComponent::Preset::Square:
 			FillSquare();
 			break;
-		case SimpleGeometryModelData::Preset::Cube:
+		case EntitySimpleGeometryModelComponent::Preset::Cube:
 			FillCube();
 			break;
-		case SimpleGeometryModelData::Preset::Disc:
+		case EntitySimpleGeometryModelComponent::Preset::Disc:
 			FillDisc();
 			break;
-		case SimpleGeometryModelData::Preset::Sphere:
+		case EntitySimpleGeometryModelComponent::Preset::Sphere:
 			FillSphere();
 			break;
-		case SimpleGeometryModelData::Preset::Panda:
+		case EntitySimpleGeometryModelComponent::Preset::Panda:
 			FillPanda();
 			break;
 		default:
@@ -30,7 +69,7 @@ namespace Render
 		}
 	}
 
-	void SimpleGeometryModelData::FillVectorBaseWidget()
+	void EntitySimpleGeometryModelComponent::FillVectorBaseWidget()
 	{
 		const float arrowLength = 0.9f;
 		const float spikeLength = 0.1f;
@@ -153,7 +192,7 @@ namespace Render
 		}
 	}
 
-	void SimpleGeometryModelData::FillSquare()
+	void EntitySimpleGeometryModelComponent::FillSquare()
 	{
 		myVertices.resize(4);
 
@@ -184,7 +223,7 @@ namespace Render
 		myIndices[5] = 3;
 	}
 
-	void SimpleGeometryModelData::FillCube()
+	void EntitySimpleGeometryModelComponent::FillCube()
 	{
 		// TODO: I'm sure this can be written more efficiently, I just wanted to get some intuition by writing it explicitly
 
@@ -312,7 +351,7 @@ namespace Render
 		}
 	}
 
-	void SimpleGeometryModelData::FillDisc()
+	void EntitySimpleGeometryModelComponent::FillDisc()
 	{
 		const uint polyPrecision = 60;
 
@@ -338,7 +377,7 @@ namespace Render
 		myVertices[polyPrecision].myUV = glm::vec2(0.5f, 0.5f);
 	}
 
-	void SimpleGeometryModelData::FillSphere()
+	void EntitySimpleGeometryModelComponent::FillSphere()
 	{
 		const uint longitudePolyPrecision = 50;
 		const uint latitudePolyPrecision = 50;
@@ -384,7 +423,7 @@ namespace Render
 		}
 	}
 
-	void SimpleGeometryModelData::FillPanda()
+	void EntitySimpleGeometryModelComponent::FillPanda()
 	{
 		myVertices = {
 		{ {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.5f, 0.5f}, {1.0f, 1.0f, 1.0f, 1.0f} },
@@ -411,5 +450,25 @@ namespace Render
 		};
 
 		myTextureFilename = "Frameworks/textures/panda.jpg";
+	}
+
+	EntityglTFModelComponent* EntityglTFModelComponent::GetComponent(GameCore::EntityHandle aHandle)
+	{
+		return RenderModule::GetInstance()->GetEntityRenderComponent<EntityglTFModelComponent>(aHandle);
+	}
+
+	EntityglTFModelComponent* EntityglTFModelComponent::AddComponent(GameCore::EntityHandle aHandle)
+	{
+		return RenderModule::GetInstance()->AddEntityRenderComponent<EntityglTFModelComponent>(aHandle);
+	}
+
+	void EntityglTFModelComponent::RemoveComponent(GameCore::EntityHandle aHandle)
+	{
+		RenderModule::GetInstance()->RemoveEntityRenderComponent<EntityglTFModelComponent>(aHandle);
+	}
+
+	void EntityglTFModelComponent::Load()
+	{
+		myModel = new glTFModel(myFilename);
 	}
 }

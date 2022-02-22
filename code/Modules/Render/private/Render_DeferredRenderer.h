@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Render_RendererImpl.h"
+#include "Render_Renderer.h"
 #include "Render_VulkanBuffer.h"
 #include "Render_VulkanImage.h"
 #include "Render_DeferredPipeline.h"
@@ -10,7 +10,7 @@ namespace Render
 {
 	class Camera;
 
-	class DeferredRenderer : public RendererImpl
+	class DeferredRenderer : public Renderer
 	{
 	public:
 		void Setup(SwapChain* aSwapChain) override;
@@ -22,9 +22,9 @@ namespace Render
 		void SetViewport(const VkViewport& aViewport);
 		void SetScissor(const VkRect2D& aScissor);
 
-		void AddLight(const PointLight& aPointLight) override;
-		void DrawModel(Handle aModelHandle, const ModelData& someData, Renderer::DrawType aDrawType) override;
-		void DrawGui(Handle /*aGuiHandle*/) override {};
+		//void AddLight(const PointLight& aPointLight) override;
+		void DrawModel(Model* aModel) override;
+		//void DrawGui(Handle /*aGuiHandle*/) override {};
 
 	private:
 		VkExtent2D myExtent = {};

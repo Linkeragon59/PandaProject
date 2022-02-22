@@ -7,14 +7,14 @@ target_sources(GameCore
 		public/GameCore_File.h
 		public/GameCore_glm.h
 		public/GameCore_imgui.h
-		public/GameCore_Input.h
+		public/GameCore_InputModule.h
 		public/GameCore_SharedPtr.h
 		public/GameCore_SlotVector.h
 		public/GameCore_Thread.h
 		public/GameCore_TimeModule.h
 		public/GameCore_Defines.h
 		public/GameCore_Utils.h
-		public/GameCore_Window.h
+		public/GameCore_WindowModule.h
 		public/GameCore_Facade.h
 		public/GameCore_CallbackGui.h
 		public/GameCore_Camera.h
@@ -29,6 +29,7 @@ target_sources(GameCore
 		public/GameCore_Prop.h
 		public/GameCore_PropManager.h
 		public/GameCore_SimpleGeometryProp.h
+		public/GameCore_EntityModule.h
 		public/glm.natvis
 
 		private/GameCore_Precompile.h
@@ -37,9 +38,9 @@ target_sources(GameCore
 		private/GameCore_Thread.cpp
 		private/GameCore_TimeModule.cpp
 		private/GameCore_imgui.cpp
-		private/GameCore_Input.cpp
+		private/GameCore_InputModule.cpp
 		private/GameCore_Utils.cpp
-		private/GameCore_Window.cpp
+		private/GameCore_WindowModule.cpp
 		private/GameCore_Facade.cpp
 		private/GameCore_CallbackGui.cpp
 		private/GameCore_Camera.cpp
@@ -56,6 +57,7 @@ target_sources(GameCore
 		private/GameCore_Prop.cpp
 		private/GameCore_PropManager.cpp
 		private/GameCore_SimpleGeometryProp.cpp
+		private/GameCore_EntityModule.cpp
 )
 
 target_precompile_headers(GameCore PRIVATE private/GameCore_Precompile.h)

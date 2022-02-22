@@ -5,10 +5,10 @@ struct GLFWwindow;
 namespace GameCore
 {
 	class ModuleManager;
-	class CameraManager;
-	class Prop;
-	class PropManager;
-	class NodeRegister;
+	//class CameraManager;
+	//class Prop;
+	//class PropManager;
+	//class NodeRegister;
 
 	class Facade
 	{
@@ -23,10 +23,10 @@ namespace GameCore
 		float GetMainWindowAspectRatio() const { return myMainWindowAspectRatio; }
 
 		ModuleManager* GetModuleManager() const { return myModuleManager; }
-		CameraManager* GetCameraManager() const { return myCameraManager; }
-		PropManager* GetPropManager() const { return myPropManager; }
-
-		NodeRegister* GetNodeRegister() const { return myNodeRegister; }
+		//CameraManager* GetCameraManager() const { return myCameraManager; }
+		//PropManager* GetPropManager() const { return myPropManager; }
+		//
+		//NodeRegister* GetNodeRegister() const { return myNodeRegister; }
 
 	private:
 		static Facade* ourInstance;
@@ -40,12 +40,12 @@ namespace GameCore
 		uint myWindowResizeCallbackId = UINT_MAX;
 
 		ModuleManager* myModuleManager = nullptr;
-		CameraManager* myCameraManager = nullptr;
-		PropManager* myPropManager = nullptr;
-#if DEBUG_BUILD
-		PropManager* myDebugPropManager = nullptr;
-		Prop* myVectorBase = nullptr;
-#endif
-		NodeRegister* myNodeRegister = nullptr;
+//		CameraManager* myCameraManager = nullptr;
+//		PropManager* myPropManager = nullptr;
+//#if DEBUG_BUILD
+//		PropManager* myDebugPropManager = nullptr;
+//		Prop* myVectorBase = nullptr;
+//#endif
+//		NodeRegister* myNodeRegister = nullptr;
 	};
 }

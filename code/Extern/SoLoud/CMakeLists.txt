@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-add_library(SoLoud "")
+add_library(SoLoud)
 target_sources(SoLoud
 	PRIVATE
 		20200207/include/soloud.h

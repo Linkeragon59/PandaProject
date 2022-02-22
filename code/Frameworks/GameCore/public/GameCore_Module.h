@@ -29,12 +29,12 @@ namespace GameCore
 		virtual void OnUnregister() {}
 
 		// Called when all dependencies are Initialized
-		virtual void OnInitialize() {};
+		virtual void OnInitialize() {}
 		// Called when any dependency was Finalized or before Unregistering
-		virtual void OnFinalize() {};
+		virtual void OnFinalize() {}
 
 		// Called each frame after the dependencies have been Updated
-		virtual void OnUpdate(UpdateType aType) = 0;
+		virtual void OnUpdate(UpdateType /*aType*/) {}
 
 		template<typename ModuleType>
 		static bool RegisterModule(ModuleType*& anInstance, const std::vector<std::string>& someDependencies)

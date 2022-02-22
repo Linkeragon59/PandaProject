@@ -1,19 +1,16 @@
-#include "Render_SimpleGeometryModel.h"
+#include "Render_Model.h"
 
 #include "Render_ShaderHelpers.h"
 
 #include <stb_image.h>
 
-#include "GameCore_Input.h"
-#include <chrono>
-
 namespace Render
 {
-	SimpleGeometryModel::SimpleGeometryModel(const SimpleGeometryModelData& someData)
+	SimpleGeometryModel::SimpleGeometryModel(const std::vector<EntitySimpleGeometryModelComponent::Vertex>& someVertices, const std::vector<uint>& someIndices, const std::string& aTextureFilename)
 	{
 		std::vector<ShaderHelpers::Vertex> fullVertices;
-		fullVertices.reserve(someData.myVertices.size());
-		for (const SimpleGeometryModelData::Vertex& vertex : someData.myVertices)
+		fullVertices.reserve(someVertices.size());
+		for (const SimpleGeometryModelData::Vertex& vertex : someVertices)
 		{
 			ShaderHelpers::Vertex fullVertex =
 			{
@@ -28,10 +25,10 @@ namespace Render
 			fullVertices.push_back(fullVertex);
 		}
 
-		VkDeviceSize vertexBufferSize = sizeof(ShaderHelpers::Vertex) * someData.myVertices.size();
-		VkDeviceSize indexBufferSize = sizeof(uint) * someData.myIndices.size();
+		VkDeviceSize vertexBufferSize = sizeof(ShaderHelpers::Vertex) * someVertices.size();
+		VkDeviceSize indexBufferSize = sizeof(uint) * someIndices.size();
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load(someData.myTextureFilename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load(aTextureFilename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		Assert(pixels, "Failed to load an image!");
 
 		VkDeviceSize textureSize = static_cast<VkDeviceSize>(texWidth) * static_cast<VkDeviceSize>(texHeight) * 4;
@@ -48,7 +45,7 @@ namespace Render
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 		indexStaging.Map();
-		memcpy(indexStaging.myMappedData, someData.myIndices.data(), (size_t)indexBufferSize);
+		memcpy(indexStaging.myMappedData, someIndices.data(), (size_t)indexBufferSize);
 		indexStaging.Unmap();
 
 		textureStaging.Create(textureSize,
@@ -67,7 +64,7 @@ namespace Render
 		myIndexBuffer = new VulkanBuffer(indexBufferSize,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-		myIndexCount = (uint)someData.myIndices.size();
+		myIndexCount = (uint)someIndices.size();
 
 		myTexture = new VulkanImage(texWidth, texHeight,
 			VK_FORMAT_R8G8B8A8_SRGB,
@@ -117,9 +114,9 @@ namespace Render
 		myUBOObject->Map();
 	}
 
-	void SimpleGeometryModel::Update(const ModelData& someData)
+	void SimpleGeometryModel::Update(const glm::mat4& aMatrix)
 	{
-		memcpy(myUBOObject->myMappedData, &someData.myMatrix, sizeof(glm::mat4));
+		memcpy(myUBOObject->myMappedData, &aMatrix, sizeof(glm::mat4));
 	}
 
 	void SimpleGeometryModel::Draw(VkCommandBuffer aCommandBuffer, VkPipelineLayout aPipelineLayout, uint aDescriptorSetIndex, ShaderHelpers::BindType aType)

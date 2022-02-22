@@ -1,7 +1,7 @@
 #include "Render_Resource.h"
 
 #include "GameCore_Thread.h"
-#include "GameCore_Time.h"
+#include "GameCore_TimeModule.h"
 
 namespace Render
 {
@@ -24,7 +24,7 @@ namespace Render
 
 					std::lock_guard<std::mutex> lock(myMutex);
 					ResourceToDelete* resource = &myResourcesToDelete.front();
-					while (resource && Time::TimeManager::GetInstance()->GetFrameCounter() >= resource->myFrameToRelease)
+					while (resource && GameCore::TimeModule::GetInstance()->GetFrameCounter() >= resource->myFrameToRelease)
 					{
 						delete resource->myResource;
 						myResourcesToDelete.pop();
@@ -50,7 +50,7 @@ namespace Render
 
 		void AddToDelete(RenderResource* aResource)
 		{
-			ResourceToDelete resource = { aResource, Time::TimeManager::GetInstance()->GetFrameCounter() + RenderModule::GetInstance()->GetMaxInFlightFramesCount() };
+			ResourceToDelete resource = { aResource, GameCore::TimeModule::GetInstance()->GetFrameCounter() + RenderModule::GetInstance()->GetMaxInFlightFramesCount() };
 			
 			std::lock_guard<std::mutex> lock(myMutex);
 			myResourcesToDelete.push(resource);

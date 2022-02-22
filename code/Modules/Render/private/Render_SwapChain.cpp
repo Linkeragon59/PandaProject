@@ -3,21 +3,20 @@
 #include "Render_VulkanDevice.h"
 #include "Render_Renderer.h"
 #include "Render_DeferredRenderer.h"
-#include "Render_EditorRenderer.h"
 
-#include "GameCore_Window.h"
+#include "GameCore_WindowModule.h"
 
 #include <GLFW/glfw3.h>
 
 namespace Render
 {
-	SwapChain::SwapChain(GLFWwindow* aWindow, Renderer::Type aRendererType)
+	SwapChain::SwapChain(GLFWwindow* aWindow, RendererType aRendererType)
 		: myWindow(aWindow)
 		, myRendererType(aRendererType)
 	{
 		myDevice = RenderModule::GetInstance()->GetDevice();
 
-		myFramebufferResizedCallbackId = Window::WindowManager::GetInstance()->AddFramebufferSizeCallback([this](int aWidth, int aHeight) {
+		myFramebufferResizedCallbackId = GameCore::WindowModule::GetInstance()->AddFramebufferSizeCallback([this](int aWidth, int aHeight) {
 			(void)aWidth;
 			(void)aHeight;
 			myFramebufferResized = true;
@@ -34,7 +33,7 @@ namespace Render
 
 		vkDestroySurfaceKHR(RenderModule::GetInstance()->GetVkInstance(), mySurface, nullptr);
 
-		Window::WindowManager::GetInstance()->RemoveFramebufferSizeCallback(myFramebufferResizedCallbackId);
+		GameCore::WindowModule::GetInstance()->RemoveFramebufferSizeCallback(myFramebufferResizedCallbackId);
 	}
 
 	void SwapChain::Setup()
@@ -88,14 +87,14 @@ namespace Render
 			Assert(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire a swapchain image!");
 		}
 
-		myRenderer->GetImpl()->StartFrame();
+		myRenderer->StartFrame();
 	}
 
 	void SwapChain::Present()
 	{
-		VkSemaphore renderCompleteSemaphore = myRenderer->GetImpl()->GetCurrentRenderFinishedSemaphore();
+		VkSemaphore renderCompleteSemaphore = myRenderer->GetCurrentRenderFinishedSemaphore();
 
-		myRenderer->GetImpl()->EndFrame();
+		myRenderer->EndFrame();
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -268,13 +267,21 @@ namespace Render
 
 	void SwapChain::CreateRenderer()
 	{
-		myRenderer = new Renderer(myRendererType);
-		myRenderer->GetImpl()->Setup(this);
+		switch (myRendererType)
+		{
+		case RendererType::Deferred:
+			myRenderer = new DeferredRenderer();
+			break;
+		default:
+			Assert("Unsupported Renderer Type");
+			break;
+		}
+		myRenderer->Setup(this);
 	}
 
 	void SwapChain::DestroyRenderer()
 	{
-		myRenderer->GetImpl()->Cleanup();
+		myRenderer->Cleanup();
 		SafeDelete(myRenderer);
 	}
 }

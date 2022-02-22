@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-add_library(ImGui "")
+add_library(ImGui)
 target_sources(ImGui
 	PRIVATE
 		1.83/imconfig.h

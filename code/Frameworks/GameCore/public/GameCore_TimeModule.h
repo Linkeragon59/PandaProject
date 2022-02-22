@@ -14,6 +14,7 @@ namespace GameCore
 		void OnRegister() override;
 		void OnUpdate(GameCore::Module::UpdateType aType) override;
 
+	public:
 		// Time since startup
 		uint64 GetTimeNs() const { return myTimeNs.count(); }
 		uint64 GetTimeMs() const { return std::chrono::duration_cast<std::chrono::milliseconds>(myTimeNs).count(); }

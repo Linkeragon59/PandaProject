@@ -6,12 +6,13 @@ namespace Render
 {
 	class SwapChain;
 	class Camera;
+	class Model;
 
-	class RendererImpl
+	class Renderer
 	{
 	public:
-		RendererImpl();
-		virtual ~RendererImpl();
+		Renderer();
+		virtual ~Renderer();
 
 		virtual void Setup(SwapChain* aSwapChain);
 		virtual void Cleanup();
@@ -20,9 +21,9 @@ namespace Render
 		virtual void EndFrame();
 
 		void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection);
-		virtual void AddLight(const PointLight& aPointLight) = 0;
-		virtual void DrawModel(Handle aModelHandle, const ModelData& someData, Renderer::DrawType aDrawType) = 0;
-		virtual void DrawGui(Handle aGuiHandle) = 0;
+		//virtual void AddLight(const PointLight& aPointLight) = 0;
+		virtual void DrawModel(Model* aModel) = 0;
+		//virtual void DrawGui(Handle aGuiHandle) = 0;
 
 		VkSemaphore GetCurrentRenderFinishedSemaphore() const { return myRenderFinishedSemaphores[myCurrentFrameIndex]; }
 

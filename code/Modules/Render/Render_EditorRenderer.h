@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Render_RendererImpl.h"
+#include "Render_Renderer.h"
 #include "Render_GuiPipeline.h"
 
 namespace Render
 {
-	class EditorRenderer : public RendererImpl
+	class EditorRenderer : public Renderer
 	{
 	public:
 		void Setup(SwapChain* aSwapChain) override;

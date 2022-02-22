@@ -27,7 +27,6 @@ namespace GameCore
 	protected:
 		void OnRegister() override;
 		void OnUnregister() override;
-		void OnUpdate(GameCore::Module::UpdateType /*aType*/) override {}
 
 	public:
 		GLFWwindow* GetMainWindow() const { return (myWindows.size() > 0) ? myWindows[0] : nullptr; }

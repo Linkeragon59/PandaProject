@@ -7,12 +7,12 @@ struct GLFWwindow;
 
 namespace Render
 {
-	class RendererImpl;
+	class Renderer;
 
 	class SwapChain
 	{
 	public:
-		SwapChain(GLFWwindow* aWindow, Renderer::Type aRendererType);
+		SwapChain(GLFWwindow* aWindow, RendererType aRendererType);
 		~SwapChain();
 		
 		void Setup();
@@ -58,7 +58,7 @@ namespace Render
 		VkSemaphore myCurrentImageAvailableSemaphore = VK_NULL_HANDLE;
 
 		// For now, one renderer per swapchain
-		Renderer::Type myRendererType = Renderer::Type::Invalid;
+		RendererType myRendererType = RendererType::Count;
 		Renderer* myRenderer = nullptr;
 	};
 }

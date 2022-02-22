@@ -1,4 +1,4 @@
-#include "Render_Module.h"
+#include "Render_RenderModule.h"
 
 #include "Render_ShaderHelpers.h"
 #include "Render_Debug.h"
@@ -58,8 +58,6 @@ namespace Render
 	{
 		SetupDefaultData();
 		RenderResource::EnableDeleteQueue(true);
-		myModelContainer = new ModelContainer();
-		myGuiContainer = new GuiContainer();
 
 		RegisterWindow(GameCore::Facade::GetInstance()->GetMainWindow(), Renderer::Type::Deferred);
 	}
@@ -70,8 +68,8 @@ namespace Render
 
 		Assert(mySwapChains.empty(), "Renderering is being finalized while swapchains are still alive!");
 
-		SafeDelete(myModelContainer);
-		SafeDelete(myGuiContainer);
+		Assert(myRenderComponents.empty(), "Some entities are still registered to the Renderering system!")
+
 		RenderResource::EnableDeleteQueue(false);
 
 		for (DescriptorContainer& container : myDescriptorContainers)
@@ -89,6 +87,10 @@ namespace Render
 			for (SwapChain* swapChain : mySwapChains)
 				swapChain->AcquireNext();
 		}
+		else if (aType == GameCore::Module::UpdateType::MainUpdate)
+		{
+
+		}
 		else if (aType == GameCore::Module::UpdateType::LateUpdate)
 		{
 			for (SwapChain* swapChain : mySwapChains)
@@ -96,7 +98,7 @@ namespace Render
 		}
 	}
 
-	void RenderModule::RegisterWindow(GLFWwindow* aWindow, Renderer::Type aType)
+	void RenderModule::RegisterWindow(GLFWwindow* aWindow, RendererType aType)
 	{
 		SwapChain* swapChain = new SwapChain(aWindow, aType);
 		mySwapChains.push_back(swapChain);

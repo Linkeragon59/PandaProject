@@ -9,6 +9,6 @@ namespace Render
 	{
 	public:
 		static void EnableDeleteQueue(bool aEnable);
-		void Release(); // overload
+		void Release() override;
 	};
 }

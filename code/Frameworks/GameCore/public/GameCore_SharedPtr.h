@@ -11,7 +11,7 @@ public:
 	virtual ~SharedResource() {}
 
 	void AddRef() { myRefCount++; }
-	void Release() { if (myRefCount.fetch_sub(1) == 1) delete this; }
+	virtual void Release() { if (myRefCount.fetch_sub(1) == 1) delete this; }
 protected:
 	std::atomic<int> myRefCount = 0;
 };
