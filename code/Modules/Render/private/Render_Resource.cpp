@@ -50,7 +50,7 @@ namespace Render
 
 		void AddToDelete(RenderResource* aResource)
 		{
-			ResourceToDelete resource = { aResource, GameCore::TimeModule::GetInstance()->GetFrameCounter() + RenderModule::GetInstance()->GetMaxInFlightFramesCount() };
+			ResourceToDelete resource = { aResource, GameCore::TimeModule::GetInstance()->GetFrameCounter() + RenderCore::GetInstance()->GetMaxInFlightFramesCount() };
 			
 			std::lock_guard<std::mutex> lock(myMutex);
 			myResourcesToDelete.push(resource);

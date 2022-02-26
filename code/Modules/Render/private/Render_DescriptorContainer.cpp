@@ -4,7 +4,7 @@ namespace Render
 {
 	void DescriptorContainer::Create(ShaderHelpers::BindType aType)
 	{
-		myDevice = RenderModule::GetInstance()->GetDevice();
+		myDevice = RenderCore::GetInstance()->GetDevice();
 		myType = aType;
 
 		myAllocatedSets.resize(1);
@@ -322,7 +322,7 @@ namespace Render
 				descriptorWrites[1].dstSet = aDescriptorSet;
 				descriptorWrites[1].dstBinding = 1;
 				descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				descriptorWrites[1].pImageInfo = info.myImageSamplerInfo ? info.myImageSamplerInfo : RenderModule::GetInstance()->GetWhiteTextureDescriptorInfo();
+				descriptorWrites[1].pImageInfo = info.myImageSamplerInfo ? info.myImageSamplerInfo : RenderCore::GetInstance()->GetWhiteTextureDescriptorInfo();
 
 				vkUpdateDescriptorSets(myDevice, static_cast<uint>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 			}
@@ -345,21 +345,21 @@ namespace Render
 				descriptorWrites[1].dstSet = aDescriptorSet;
 				descriptorWrites[1].dstBinding = 1;
 				descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				descriptorWrites[1].pImageInfo = info.myImageSamplerInfo ? info.myImageSamplerInfo : RenderModule::GetInstance()->GetWhiteTextureDescriptorInfo();
+				descriptorWrites[1].pImageInfo = info.myImageSamplerInfo ? info.myImageSamplerInfo : RenderCore::GetInstance()->GetWhiteTextureDescriptorInfo();
 				// Binding 2 : Material
 				descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptorWrites[2].descriptorCount = 1;
 				descriptorWrites[2].dstSet = aDescriptorSet;
 				descriptorWrites[2].dstBinding = 2;
 				descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-				descriptorWrites[2].pBufferInfo = info.myMaterialInfo ? info.myMaterialInfo : RenderModule::GetInstance()->GetDefaultMaterialDescriptorInfo();
+				descriptorWrites[2].pBufferInfo = info.myMaterialInfo ? info.myMaterialInfo : RenderCore::GetInstance()->GetDefaultMaterialDescriptorInfo();
 				// Binding 3 : Joint Matrices
 				descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 				descriptorWrites[3].descriptorCount = 1;
 				descriptorWrites[3].dstSet = aDescriptorSet;
 				descriptorWrites[3].dstBinding = 3;
 				descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-				descriptorWrites[3].pBufferInfo = info.myJointMatricesInfo ? info.myJointMatricesInfo : RenderModule::GetInstance()->GetDefaultJointsMatrixDescriptorInfo();
+				descriptorWrites[3].pBufferInfo = info.myJointMatricesInfo ? info.myJointMatricesInfo : RenderCore::GetInstance()->GetDefaultJointsMatrixDescriptorInfo();
 
 				vkUpdateDescriptorSets(myDevice, static_cast<uint>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 			}

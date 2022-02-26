@@ -14,7 +14,7 @@ namespace Render
 		: myWindow(aWindow)
 		, myRendererType(aRendererType)
 	{
-		myDevice = RenderModule::GetInstance()->GetDevice();
+		myDevice = RenderCore::GetInstance()->GetDevice();
 
 		myFramebufferResizedCallbackId = GameCore::WindowModule::GetInstance()->AddFramebufferSizeCallback([this](int aWidth, int aHeight) {
 			(void)aWidth;
@@ -22,7 +22,7 @@ namespace Render
 			myFramebufferResized = true;
 		}, myWindow);
 
-		VK_CHECK_RESULT(glfwCreateWindowSurface(RenderModule::GetInstance()->GetVkInstance(), myWindow, nullptr, &mySurface), "Failed to create the surface!");
+		VK_CHECK_RESULT(glfwCreateWindowSurface(RenderCore::GetInstance()->GetVkInstance(), myWindow, nullptr, &mySurface), "Failed to create the surface!");
 
 		Setup();
 	}
@@ -31,7 +31,7 @@ namespace Render
 	{
 		Cleanup();
 
-		vkDestroySurfaceKHR(RenderModule::GetInstance()->GetVkInstance(), mySurface, nullptr);
+		vkDestroySurfaceKHR(RenderCore::GetInstance()->GetVkInstance(), mySurface, nullptr);
 
 		GameCore::WindowModule::GetInstance()->RemoveFramebufferSizeCallback(myFramebufferResizedCallbackId);
 	}
@@ -104,7 +104,7 @@ namespace Render
 		presentInfo.pSwapchains = &myVkSwapChain;
 		presentInfo.pImageIndices = &myCurrentImageIndex;
 
-		VkResult result = vkQueuePresentKHR(RenderModule::GetInstance()->GetGraphicsQueue(), &presentInfo);
+		VkResult result = vkQueuePresentKHR(RenderCore::GetInstance()->GetGraphicsQueue(), &presentInfo);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || myFramebufferResized)
 		{
 			myFramebufferResized = false;
@@ -123,14 +123,14 @@ namespace Render
 
 	void SwapChain::SetupVkSwapChain()
 	{
-		VkPhysicalDevice physicalDevice = RenderModule::GetInstance()->GetPhysicalDevice();
+		VkPhysicalDevice physicalDevice = RenderCore::GetInstance()->GetPhysicalDevice();
 
 		// TODO: Support separate queues for graphics and present.
-		Assert(RenderModule::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.has_value());
+		Assert(RenderCore::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.has_value());
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(
 			physicalDevice,
-			RenderModule::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.value(),
+			RenderCore::GetInstance()->GetVulkanDevice()->myQueueFamilyIndices.myGraphicsFamily.value(),
 			mySurface,
 			&presentSupport);
 		Assert(presentSupport, "The device doesn't support presenting on the graphics queue!");

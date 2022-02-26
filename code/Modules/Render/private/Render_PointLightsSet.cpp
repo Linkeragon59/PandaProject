@@ -46,7 +46,7 @@ namespace Render
 	{
 		ShaderHelpers::LightsSetDescriptorInfo info;
 		info.myLightsInfo = &myLightsUBO->myDescriptor;
-		VkDescriptorSet descriptorSet = RenderModule::GetInstance()->GetDescriptorSet(ShaderHelpers::BindType::LightsSet, info);
+		VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(ShaderHelpers::BindType::LightsSet, info);
 		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
 	}
 }

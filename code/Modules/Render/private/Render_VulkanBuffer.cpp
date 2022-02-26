@@ -14,7 +14,7 @@ namespace Render
 
 	void VulkanBuffer::Create(VkDeviceSize aSize, VkBufferUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
 	{
-		myAllocator = RenderModule::GetInstance()->GetAllocator();
+		myAllocator = RenderCore::GetInstance()->GetAllocator();
 
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

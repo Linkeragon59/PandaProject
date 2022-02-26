@@ -8,7 +8,7 @@ namespace GameCore
 	//class CameraManager;
 	//class Prop;
 	//class PropManager;
-	//class NodeRegister;
+	class NodeRegister;
 
 	class Facade
 	{
@@ -25,13 +25,16 @@ namespace GameCore
 		ModuleManager* GetModuleManager() const { return myModuleManager; }
 		//CameraManager* GetCameraManager() const { return myCameraManager; }
 		//PropManager* GetPropManager() const { return myPropManager; }
-		//
-		//NodeRegister* GetNodeRegister() const { return myNodeRegister; }
+
+		NodeRegister* GetNodeRegister() const { return myNodeRegister; }
 
 	private:
 		static Facade* ourInstance;
 		Facade();
 		~Facade();
+
+		bool Initialize();
+		void Finalize();
 
 		bool Update();
 
@@ -46,6 +49,6 @@ namespace GameCore
 //		PropManager* myDebugPropManager = nullptr;
 //		Prop* myVectorBase = nullptr;
 //#endif
-//		NodeRegister* myNodeRegister = nullptr;
+		NodeRegister* myNodeRegister = nullptr;
 	};
 }

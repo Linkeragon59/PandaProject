@@ -1,6 +1,5 @@
 #include "Render_EntityRenderComponent.h"
 
-#include "Render_RenderModule.h"
 #include "Render_Model.h"
 #include "Render_glTFModel.h"
 
@@ -19,21 +18,6 @@ namespace Render
 	void EntityRenderComponent::Draw(Renderer* aRenderer)
 	{
 		aRenderer->DrawModel(myModel);
-	}
-
-	EntitySimpleGeometryModelComponent* EntitySimpleGeometryModelComponent::GetComponent(GameCore::EntityHandle aHandle)
-	{
-		return RenderModule::GetInstance()->GetEntityRenderComponent<EntitySimpleGeometryModelComponent>(aHandle);
-	}
-
-	EntitySimpleGeometryModelComponent* EntitySimpleGeometryModelComponent::AddComponent(GameCore::EntityHandle aHandle)
-	{
-		return RenderModule::GetInstance()->AddEntityRenderComponent<EntitySimpleGeometryModelComponent>(aHandle);
-	}
-
-	void EntitySimpleGeometryModelComponent::RemoveComponent(GameCore::EntityHandle aHandle)
-	{
-		RenderModule::GetInstance()->RemoveEntityRenderComponent<EntitySimpleGeometryModelComponent>(aHandle);
 	}
 
 	void EntitySimpleGeometryModelComponent::Load()
@@ -450,21 +434,6 @@ namespace Render
 		};
 
 		myTextureFilename = "Frameworks/textures/panda.jpg";
-	}
-
-	EntityglTFModelComponent* EntityglTFModelComponent::GetComponent(GameCore::EntityHandle aHandle)
-	{
-		return RenderModule::GetInstance()->GetEntityRenderComponent<EntityglTFModelComponent>(aHandle);
-	}
-
-	EntityglTFModelComponent* EntityglTFModelComponent::AddComponent(GameCore::EntityHandle aHandle)
-	{
-		return RenderModule::GetInstance()->AddEntityRenderComponent<EntityglTFModelComponent>(aHandle);
-	}
-
-	void EntityglTFModelComponent::RemoveComponent(GameCore::EntityHandle aHandle)
-	{
-		RenderModule::GetInstance()->RemoveEntityRenderComponent<EntityglTFModelComponent>(aHandle);
 	}
 
 	void EntityglTFModelComponent::Load()

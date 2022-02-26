@@ -7,7 +7,7 @@
 
 #include "GameCore_Entity.h"
 #include "GameCore_EntityModule.h"
-//#include "GameCore_Graph.h"
+#include "GameCore_Graph.h"
 
 #if LINUX_BUILD
 #pragma GCC diagnostic push
@@ -38,12 +38,13 @@ namespace GameCore
 	{
 		Assert(!ourInstance);
 		ourInstance = new Facade;
-		return true;
+		return ourInstance->Initialize();
 	}
 
 	void Facade::Destroy()
 	{
 		Assert(ourInstance);
+		ourInstance->Finalize();
 		SafeDelete(ourInstance);
 	}
 
@@ -61,7 +62,15 @@ namespace GameCore
 	Facade::Facade()
 	{
 		myModuleManager = new ModuleManager();
+	}
 
+	Facade::~Facade()
+	{
+		delete myModuleManager;
+	}
+
+	bool Facade::Initialize()
+	{
 		TimeModule::Register();
 		WindowModule::Register();
 		InputModule::Register();
@@ -69,40 +78,47 @@ namespace GameCore
 		myMainWindow = WindowModule::GetInstance()->OpenWindow("Panda Engine");
 		myWindowResizeCallbackId = WindowModule::GetInstance()->AddWindowSizeCallback([this](int aWidth, int aHeight) {
 			myMainWindowAspectRatio = (aHeight != 0) ? (float)aWidth / (float)aHeight : 1.0f;
-		}, myMainWindow);
+			}, myMainWindow);
 
 		int width = 0, height = 0;
 		glfwGetWindowSize(myMainWindow, &width, &height);
 		myMainWindowAspectRatio = (height != 0) ? (float)width / (float)height : 1.0f;
 
-//		myCameraManager = new CameraManager();
-//		myPropManager = new PropManager();
-//#if DEBUG_BUILD
-//		myDebugPropManager = new PropManager(Render::Renderer::DrawType::Debug);
-//		Render::SimpleGeometryModelData modelData;
-//		modelData.FillWithPreset(Render::SimpleGeometryModelData::Preset::VectorBaseWidget);
-//		modelData.myTextureFilename = "Frameworks/textures/white.png";
-//		myVectorBase = myDebugPropManager->Spawn(modelData);
-//#endif
-//
-//		myNodeRegister = new NodeRegister();
+		//		myCameraManager = new CameraManager();
+		//		myPropManager = new PropManager();
+		//#if DEBUG_BUILD
+		//		myDebugPropManager = new PropManager(Render::Renderer::DrawType::Debug);
+		//		Render::SimpleGeometryModelData modelData;
+		//		modelData.FillWithPreset(Render::SimpleGeometryModelData::Preset::VectorBaseWidget);
+		//		modelData.myTextureFilename = "Frameworks/textures/white.png";
+		//		myVectorBase = myDebugPropManager->Spawn(modelData);
+		//#endif
+		//
+		myNodeRegister = new NodeRegister();
 		EntityModule::Register();
 
-		EntityHandle handle = EntityHandle::Create();
-		Entity3DTransformComponent* component = handle.GetComponent<Entity3DTransformComponent>();
-		if (!component)
+		Entity entity = Entity::Create();
+		if (entity.HasComponent<Entity3DTransformComponent>())
 		{
-			component = handle.AddComponent<Entity3DTransformComponent>(glm::vec3(1.0f));
-			component->SetPosition(glm::vec3(1.f));
-			handle.RemoveComponent<Entity3DTransformComponent>();
+			{
+				Entity3DTransformComponent* component = entity.AddComponent<Entity3DTransformComponent>(glm::vec3(1.0f));
+				component->SetPosition(glm::vec3(1.f));
+			}
+			{
+				Entity3DTransformComponent* component = entity.GetComponent<Entity3DTransformComponent>();
+				component->SetPosition(glm::vec3(1.f));
+			}
+			entity.RemoveComponent<Entity3DTransformComponent>();
 		}
-		EntityHandle::Destroy(handle);
+		entity.Destroy();
 
 		locSoloud.init(); // Initialize SoLoud
 		locWave.load(locTestWavFile.c_str()); // Load a wave
+
+		return true;
 	}
 
-	Facade::~Facade()
+	void Facade::Finalize()
 	{
 		locSoloud.deinit(); // Clean up!
 
@@ -113,7 +129,7 @@ namespace GameCore
 //		delete myDebugPropManager;
 //#endif
 //
-//		delete myNodeRegister;
+		SafeDelete(myNodeRegister);
 		EntityModule::Unregister();
 
 		WindowModule::GetInstance()->RemoveWindowSizeCallback(myWindowResizeCallbackId);
@@ -123,8 +139,6 @@ namespace GameCore
 		InputModule::Unregister();
 		WindowModule::Unregister();
 		TimeModule::Unregister();
-
-		delete myModuleManager;
 	}
 
 	bool Facade::Update()

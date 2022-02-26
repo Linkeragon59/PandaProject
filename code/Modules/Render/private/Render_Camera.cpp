@@ -30,7 +30,7 @@ namespace Render
 	{
 		ShaderHelpers::CameraDescriptorInfo info;
 		info.myViewProjMatricesInfo = &myViewProjUBO->myDescriptor;
-		VkDescriptorSet descriptorSet = RenderModule::GetInstance()->GetDescriptorSet(ShaderHelpers::BindType::Camera, info);
+		VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(ShaderHelpers::BindType::Camera, info);
 
 		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aSetIndex, 1, &descriptorSet, 0, NULL);
 	}

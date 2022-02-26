@@ -13,11 +13,9 @@ target_sources(Render
 		private/Render_DeferredPipeline.h
 		private/Render_DeferredRenderer.h
 		private/Render_DescriptorContainer.h
-		private/Render_GuiContainer.h
 		private/Render_GuiPipeline.h
 		private/Render_Helpers.h
 		private/Render_Light.h
-		private/Render_ModelContainer.h
 		private/Render_PointLightsSet.h
 		private/Render_Renderer.h
 		private/Render_Renderer.cpp
@@ -34,10 +32,8 @@ target_sources(Render
 		private/Render_DeferredRenderer.cpp
 		private/Render_DescriptorContainer.cpp
 		private/Render_Gui.cpp
-		private/Render_GuiContainer.cpp
 		private/Render_GuiPipeline.cpp
 		private/Render_Helpers.cpp
-		private/Render_ModelContainer.cpp
 		private/Render_PointLightsSet.cpp
 		private/Render_Precompile.cpp
 		private/Render_Resource.cpp
@@ -49,8 +45,11 @@ target_sources(Render
 		private/Render_EntityRenderComponent.cpp
 		private/Render_Gui.h
 		private/Render_Model.h
+		private/Render_Model.cpp
 		private/Render_glTFModel.h
 		private/Render_glTFModel.cpp
+		private/Render_RenderCore.h
+		private/Render_RenderCore.cpp
 )
 
 target_precompile_headers(Render PRIVATE private/Render_Precompile.h)

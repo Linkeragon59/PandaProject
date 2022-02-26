@@ -53,7 +53,7 @@ namespace Render::Helpers
 	VkCommandBuffer BeginOneTimeCommand(VkCommandPool aCommandPool)
 	{
 		if (aCommandPool == VK_NULL_HANDLE)
-			aCommandPool = RenderModule::GetInstance()->GetGraphicsCommandPool();
+			aCommandPool = RenderCore::GetInstance()->GetGraphicsCommandPool();
 
 		VkCommandBuffer commandBuffer;
 
@@ -63,7 +63,7 @@ namespace Render::Helpers
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = 1;
 
-		VK_CHECK_RESULT(vkAllocateCommandBuffers(RenderModule::GetInstance()->GetDevice(), &allocInfo, &commandBuffer), "Failed to alloc a one time command buffer");
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(RenderCore::GetInstance()->GetDevice(), &allocInfo, &commandBuffer), "Failed to alloc a one time command buffer");
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -79,7 +79,7 @@ namespace Render::Helpers
 	void EndOneTimeCommand(VkCommandBuffer aCommandBuffer, VkQueue aQueue, VkCommandPool aCommandPool /*= VK_NULL_HANDLE*/)
 	{
 		if (aCommandPool == VK_NULL_HANDLE)
-			aCommandPool = RenderModule::GetInstance()->GetGraphicsCommandPool();
+			aCommandPool = RenderCore::GetInstance()->GetGraphicsCommandPool();
 
 		VK_CHECK_RESULT(vkEndCommandBuffer(aCommandBuffer), "Failed to end a one time command buffer");
 
@@ -91,6 +91,6 @@ namespace Render::Helpers
 		vkQueueSubmit(aQueue, 1, &submitInfo, VK_NULL_HANDLE);
 		vkQueueWaitIdle(aQueue);
 
-		vkFreeCommandBuffers(RenderModule::GetInstance()->GetDevice(), aCommandPool, 1, &aCommandBuffer);
+		vkFreeCommandBuffers(RenderCore::GetInstance()->GetDevice(), aCommandPool, 1, &aCommandBuffer);
 	}
 }

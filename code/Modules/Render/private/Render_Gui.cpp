@@ -64,7 +64,7 @@ namespace Render
 
 		ShaderHelpers::GuiDescriptorInfo info;
 		info.myFontSamplerInfo = &myFontTexture->myDescriptor;
-		VkDescriptorSet descriptorSet = RenderModule::GetInstance()->GetDescriptorSet(ShaderHelpers::BindType::Gui, info);
+		VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(ShaderHelpers::BindType::Gui, info);
 		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
 
 		ImGuiIO& io = ImGui::GetIO();
@@ -125,7 +125,7 @@ namespace Render
 
 		myFontTexture->TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			RenderModule::GetInstance()->GetGraphicsQueue());
+			RenderCore::GetInstance()->GetGraphicsQueue());
 
 		VkCommandBuffer commandBuffer = Helpers::BeginOneTimeCommand();
 		{
@@ -137,13 +137,13 @@ namespace Render
 			imageCopyRegion.imageExtent = { static_cast<uint>(texWidth), static_cast<uint>(texHeight), 1 };
 			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myFontTexture->myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
 		}
-		Helpers::EndOneTimeCommand(commandBuffer, RenderModule::GetInstance()->GetGraphicsQueue());
+		Helpers::EndOneTimeCommand(commandBuffer, RenderCore::GetInstance()->GetGraphicsQueue());
 
 		textureStaging.Destroy();
 
 		myFontTexture->TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			RenderModule::GetInstance()->GetGraphicsQueue());
+			RenderCore::GetInstance()->GetGraphicsQueue());
 
 		myFontTexture->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		myFontTexture->CreateImageSampler();

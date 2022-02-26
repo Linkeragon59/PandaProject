@@ -1,10 +1,6 @@
 #pragma once
 #include "GameCore_Module.h"
-
-namespace GameCore
-{
-	class EntityHandle;
-}
+#include "GameCore_Entity.h"
 
 class RhythmShooterModule : public GameCore::Module
 {
@@ -16,8 +12,8 @@ protected:
 	void OnUpdate(GameCore::Module::UpdateType aType) override;
 
 private:
-	GameCore::Camera* myCamera = nullptr;
-	GameCore::EntityHandle mySimpleGeometryTest;
-	GameCore::EntityHandle myTestModel;
-	GameCore::EntityHandle myTestAnimatedModel;
+	//GameCore::Camera* myCamera = nullptr;
+	GameCore::Entity mySimpleGeometryTest;
+	GameCore::Entity myTestModel;
+	GameCore::Entity myTestAnimatedModel;
 };

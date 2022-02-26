@@ -42,14 +42,14 @@ namespace GameCore
 			if (!Facade::GetInstance())
 				return false;
 
-			ModuleType* newModule = new ModuleType();
-			newModule->myDependencies = someDependencies;
-			if (RegisterToManager(newModule))
+			anInstance = new ModuleType();
+			anInstance->myDependencies = someDependencies;
+			if (RegisterToManager(anInstance))
 			{
-				anInstance = newModule;
 				return true;
 			}
-			delete newModule;
+			delete anInstance;
+			anInstance = nullptr;
 			return false;
 		}
 

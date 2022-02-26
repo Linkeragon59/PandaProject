@@ -19,4 +19,7 @@ target_include_directories(Editor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/public)
 target_include_directories(Editor PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/private)
 
 target_link_libraries(Editor PRIVATE GameCore)
+target_link_libraries(Editor PRIVATE Render)
 target_link_libraries(Editor PRIVATE GLFWInclude)
+target_link_libraries(Editor PRIVATE ImGui)
+target_link_libraries(Editor PRIVATE RapidJSON)

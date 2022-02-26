@@ -22,10 +22,6 @@ namespace Render
 
 	struct EntitySimpleGeometryModelComponent : EntityRenderComponent
 	{
-		static EntitySimpleGeometryModelComponent* GetComponent(GameCore::EntityHandle aHandle);
-		static EntitySimpleGeometryModelComponent* AddComponent(GameCore::EntityHandle aHandle);
-		static void RemoveComponent(GameCore::EntityHandle aHandle);
-
 		void Load() override;
 
 		struct Vertex
@@ -60,10 +56,6 @@ namespace Render
 
 	struct EntityglTFModelComponent : EntityRenderComponent
 	{
-		static EntityglTFModelComponent* GetComponent(GameCore::EntityHandle aHandle);
-		static EntityglTFModelComponent* AddComponent(GameCore::EntityHandle aHandle);
-		static void RemoveComponent(GameCore::EntityHandle aHandle);
-
 		void Load() override;
 
 		std::string myFilename;

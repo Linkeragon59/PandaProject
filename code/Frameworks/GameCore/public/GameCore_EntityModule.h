@@ -1,12 +1,27 @@
 #pragma once
-#include "GameCore_Module.h"
-#include "GameCore_Entity.h"
 
-#include <set>
-#include <map>
+#include "GameCore_Module.h"
+#include "GameCore_EntityComponentSystem.h"
 
 namespace GameCore
 {
+	class EntityModule : public Module
+	{
+	DECLARE_GAMECORE_MODULE(EntityModule, "Entity")
+
+	public:
+		inline ECS::EntityManager* GetEntityManager() const { return myEntityManager; }
+		inline ECS::ComponentManager* GetComponentManager() const { return myComponentManager; }
+
+	protected:
+		void OnRegister() override;
+		void OnUnregister() override;
+
+	private:
+		ECS::EntityManager* myEntityManager = nullptr;
+		ECS::ComponentManager* myComponentManager = nullptr;
+	};
+
 	class Entity3DTransformComponent
 	{
 	public:
@@ -37,35 +52,9 @@ namespace GameCore
 		// Result Transform Matrix
 		glm::mat4 GetMatrix() const;
 
-	protected:
-		friend EntityHandle;
-		static Entity3DTransformComponent* GetComponent(EntityHandle aHandle);
-		static Entity3DTransformComponent* AddComponent(EntityHandle aHandle, const glm::vec3& aPosition);
-		static void RemoveComponent(EntityHandle aHandle);
-
 	private:
 		glm::vec3 myPosition = glm::vec3(0.0f);
 		glm::quat myOrientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 		glm::vec3 myScale = glm::vec3(1.0f);
-	};
-
-	class EntityModule : public Module
-	{
-	DECLARE_GAMECORE_MODULE(EntityModule, "Entity")
-
-	public:
-		EntityHandle Create();
-		void Destroy(EntityHandle aHandle);
-		bool Exists(EntityHandle aHandle);
-
-		Entity3DTransformComponent* GetPositionComponent(EntityHandle aHandle);
-		Entity3DTransformComponent* AddPositionComponent(EntityHandle aHandle, const glm::vec3& aPosition);
-		void RemovePositionComponent(EntityHandle aHandle);
-
-	private:
-		std::set<EntityHandle> myUsedEntityIds;
-		std::set<EntityHandle> myFreeEntityIds;
-
-		std::map<EntityHandle, Entity3DTransformComponent> myPositionComponents;
 	};
 }

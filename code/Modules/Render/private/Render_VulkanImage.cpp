@@ -17,8 +17,8 @@ namespace Render
 
 	void VulkanImage::Create(uint aWidth, uint aHeight, VkFormat aFormat, VkImageTiling aTiling, VkImageUsageFlags aUsage, VkMemoryPropertyFlags someProperties)
 	{
-		myDevice = RenderModule::GetInstance()->GetDevice();
-		myAllocator = RenderModule::GetInstance()->GetAllocator();
+		myDevice = RenderCore::GetInstance()->GetDevice();
+		myAllocator = RenderCore::GetInstance()->GetAllocator();
 
 		myFormat = aFormat;
 		myExtent = { aWidth, aHeight, 1 };

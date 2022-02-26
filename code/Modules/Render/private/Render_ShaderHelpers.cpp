@@ -75,7 +75,7 @@ namespace Render::ShaderHelpers
 		createInfo.codeSize = shaderCode.size();
 		createInfo.pCode = reinterpret_cast<const uint*>(shaderCode.data());
 
-		VK_CHECK_RESULT(vkCreateShaderModule(RenderModule::GetInstance()->GetDevice(), &createInfo, nullptr, &shaderModule), "Failed to create a module shader!");
+		VK_CHECK_RESULT(vkCreateShaderModule(RenderCore::GetInstance()->GetDevice(), &createInfo, nullptr, &shaderModule), "Failed to create a module shader!");
 
 		return shaderModule;
 	}

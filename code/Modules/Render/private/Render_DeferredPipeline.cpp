@@ -6,7 +6,7 @@ namespace Render
 {
 	DeferredPipeline::DeferredPipeline()
 	{
-		myDevice = RenderModule::GetInstance()->GetDevice();
+		myDevice = RenderCore::GetInstance()->GetDevice();
 	}
 
 	void DeferredPipeline::Prepare(VkRenderPass aRenderPass)
@@ -71,8 +71,8 @@ namespace Render
 	void DeferredPipeline::SetupGBufferPipeline(VkRenderPass aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
-			RenderModule::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Camera),
-			RenderModule::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Object)
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Camera),
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Object)
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -210,7 +210,7 @@ namespace Render
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
 			myLightingDescriptorSetLayout,
-			RenderModule::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::LightsSet)
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::LightsSet)
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -343,8 +343,8 @@ namespace Render
 	void DeferredPipeline::SetupDebugForwardPipeline(VkRenderPass aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts = {
-			RenderModule::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Camera),
-			RenderModule::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::SimpleObject)
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Camera),
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::SimpleObject)
 		};
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
 		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

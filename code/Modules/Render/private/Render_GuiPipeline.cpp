@@ -7,7 +7,7 @@ namespace Render
 {
 	GuiPipeline::GuiPipeline()
 	{
-		myDevice = RenderModule::GetInstance()->GetDevice();
+		myDevice = RenderCore::GetInstance()->GetDevice();
 	}
 
 	void GuiPipeline::Prepare(VkRenderPass aRenderPass)
@@ -23,7 +23,7 @@ namespace Render
 	void GuiPipeline::SetupPipeline(VkRenderPass aRenderPass)
 	{
 		std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
-			RenderModule::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Gui)
+			RenderCore::GetInstance()->GetDescriptorSetLayout(ShaderHelpers::BindType::Gui)
 		};
 
 		VkPushConstantRange pushConstantRange{};

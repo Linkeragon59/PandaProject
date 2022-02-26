@@ -3,11 +3,6 @@
 
 struct GLFWwindow;
 
-namespace GameCore
-{
-	class CallbackGui;
-}
-
 namespace Editor
 {
 	class GraphEditorCanvas;
@@ -29,7 +24,7 @@ namespace Editor
 		void CallbackUpdate();
 
 		GLFWwindow* myWindow = nullptr;
-		GameCore::CallbackGui* myGui = nullptr;
+		//GameCore::CallbackGui* myGui = nullptr;
 
 		GraphEditorCanvas* myCanvas = nullptr;
 	};

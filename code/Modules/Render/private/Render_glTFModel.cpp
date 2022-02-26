@@ -595,7 +595,7 @@ namespace Render
 			info.myImageSamplerInfo = &image->myImage->myDescriptor;
 			info.myMaterialInfo = &material->mySSBO->myDescriptor;
 			info.myJointMatricesInfo = &skin->mySSBO->myDescriptor;
-			VkDescriptorSet descriptorSet = RenderModule::GetInstance()->GetDescriptorSet(aType, info);
+			VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(aType, info);
 			vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
 
 			vkCmdDrawIndexed(aCommandBuffer, primitive.myIndexCount, 1, primitive.myFirstIndex, 0, 0);
@@ -624,9 +624,9 @@ namespace Render
 
 	glTFModel::glTFModel(const std::string& aFilename)
 	{
-		myDevice = RenderModule::GetInstance()->GetDevice();
+		myDevice = RenderCore::GetInstance()->GetDevice();
 
-		LoadFromFile(aFilename, RenderModule::GetInstance()->GetGraphicsQueue());
+		LoadFromFile(aFilename, RenderCore::GetInstance()->GetGraphicsQueue());
 	}
 
 	glTFModel::~glTFModel()

@@ -4,7 +4,7 @@
 #include "Perlin.h"
 #include "Map.h"
 
-#include "GameCore_Input.h"
+#include "GameCore_InputModule.h"
 
 DEFINE_GAMECORE_MODULE(PandaModule);
 

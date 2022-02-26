@@ -3,12 +3,10 @@
 #include <GLFW/glfw3.h>
 
 #include "GameCore_imgui.h"
-#include "GameCore_Input.h"
-#include "GameCore_Window.h"
+#include "GameCore_InputModule.h"
+#include "GameCore_WindowModule.h"
 
-#include "Render_Facade.h"
-
-#include "GameCore_CallbackGui.h"
+#include "Render_RenderModule.h"
 
 #include "Editor_GraphEditorCanvas.h"
 
@@ -18,7 +16,7 @@ namespace Editor
 
 	void EditorModule::OnRegister()
 	{
-		myOpenCloseCallbackId = Input::InputManager::GetInstance()->AddKeyCallback(Input::KeyF1, [this](Input::Status aStatus, Input::Modifier someModifiers) {
+		myOpenCloseCallbackId = GameCore::InputModule::GetInstance()->AddKeyCallback(Input::KeyF1, [this](Input::Status aStatus, Input::Modifier someModifiers) {
 			(void)someModifiers;
 			if (aStatus == Input::Status::Pressed)
 			{
@@ -35,7 +33,7 @@ namespace Editor
 		if (myWindow != nullptr)
 			Close();
 
-		Input::InputManager::GetInstance()->RemoveKeyCallback(myOpenCloseCallbackId);
+		GameCore::InputModule::GetInstance()->RemoveKeyCallback(myOpenCloseCallbackId);
 	}
 
 	void EditorModule::OnUpdate(GameCore::Module::UpdateType aType)
@@ -56,27 +54,27 @@ namespace Editor
 			if (!myWindow)
 				return;
 
-			myGui->Update();
-			myGui->Draw();
+			//myGui->Update();
+			//myGui->Draw();
 		}
 	}
 
 	void EditorModule::Open()
 	{
-		myWindow = Window::WindowManager::GetInstance()->OpenWindow("Editor");
-		Render::RenderModule::GetInstance()->RegisterWindow(myWindow, RendererType::Deferred);
+		myWindow = GameCore::WindowModule::GetInstance()->OpenWindow("Editor");
+		Render::RenderModule::GetInstance()->RegisterWindow(myWindow, Render::RendererType::Deferred);
 
-		myGui = new GameCore::CallbackGui(myWindow, std::bind(&EditorModule::CallbackUpdate, this));
+		//myGui = new GameCore::CallbackGui(myWindow, std::bind(&EditorModule::CallbackUpdate, this));
 		myCanvas = new GraphEditorCanvas();
 	}
 
 	void EditorModule::Close()
 	{
 		SafeDelete(myCanvas);
-		SafeDelete(myGui);
+		//SafeDelete(myGui);
 
 		Render::RenderModule::GetInstance()->UnregisterWindow(myWindow);
-		Window::WindowManager::GetInstance()->CloseWindow(myWindow);
+		GameCore::WindowModule::GetInstance()->CloseWindow(myWindow);
 		myWindow = nullptr;
 	}
 

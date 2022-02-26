@@ -6,7 +6,6 @@
 #include "Render_ShaderHelpers.h"
 #include "Render_Debug.h"
 #include "Render_Model.h"
-#include "Render_ModelContainer.h"
 
 namespace Render
 {
@@ -16,7 +15,7 @@ namespace Render
 
 		myExtent = mySwapChain->GetExtent();
 		myColorFormat = mySwapChain->GetColorFormat();
-		myDepthFormat = RenderModule::GetInstance()->GetVulkanDevice()->FindBestDepthFormat();
+		myDepthFormat = RenderCore::GetInstance()->GetVulkanDevice()->FindBestDepthFormat();
 
 		SetupAttachments();
 		SetupRenderPass();
@@ -416,7 +415,7 @@ namespace Render
 
 	void DeferredRenderer::DestroyRenderPass()
 	{
-		vkDestroyRenderPass(RenderModule::GetInstance()->GetDevice(), myRenderPass, nullptr);
+		vkDestroyRenderPass(RenderCore::GetInstance()->GetDevice(), myRenderPass, nullptr);
 		myRenderPass = VK_NULL_HANDLE;
 	}
 
@@ -491,7 +490,7 @@ namespace Render
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = RenderModule::GetInstance()->GetGraphicsCommandPool();
+		allocInfo.commandPool = RenderCore::GetInstance()->GetGraphicsCommandPool();
 		allocInfo.commandBufferCount = framesCount;
 
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;

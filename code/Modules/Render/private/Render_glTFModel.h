@@ -6,6 +6,7 @@
 namespace Render
 {
 	struct glTFNode;
+	class glTFModel;
 
 	struct glTFPrimitive
 	{

@@ -7,7 +7,7 @@ namespace Render
 {
 	Renderer::Renderer()
 	{
-		myDevice = RenderModule::GetInstance()->GetDevice();
+		myDevice = RenderCore::GetInstance()->GetDevice();
 		myCamera = new Camera();
 	}
 
@@ -58,7 +58,7 @@ namespace Render
 		submitInfo.pSignalSemaphores = &myRenderFinishedSemaphores[myCurrentFrameIndex];
 
 		vkResetFences(myDevice, 1, &myFrameFences[myCurrentFrameIndex]);
-		VK_CHECK_RESULT(vkQueueSubmit(RenderModule::GetInstance()->GetGraphicsQueue(), 1, &submitInfo, myFrameFences[myCurrentFrameIndex]),
+		VK_CHECK_RESULT(vkQueueSubmit(RenderCore::GetInstance()->GetGraphicsQueue(), 1, &submitInfo, myFrameFences[myCurrentFrameIndex]),
 			"Failed to submit a command buffer");
 
 		myCurrentFrameIndex = (myCurrentFrameIndex + 1) % mySwapChain->GetImagesCount();
@@ -108,7 +108,7 @@ namespace Render
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = RenderModule::GetInstance()->GetGraphicsCommandPool();
+		allocInfo.commandPool = RenderCore::GetInstance()->GetGraphicsCommandPool();
 		allocInfo.commandBufferCount = framesCount;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 

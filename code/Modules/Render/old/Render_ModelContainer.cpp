@@ -1,7 +1,7 @@
 #include "Render_ModelContainer.h"
 
+#include "Render_Model.h"
 #include "Render_glTFModel.h"
-#include "Render_SimpleGeometryModel.h"
 
 namespace Render
 {

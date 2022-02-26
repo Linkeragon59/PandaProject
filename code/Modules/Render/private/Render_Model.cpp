@@ -10,7 +10,7 @@ namespace Render
 	{
 		std::vector<ShaderHelpers::Vertex> fullVertices;
 		fullVertices.reserve(someVertices.size());
-		for (const SimpleGeometryModelData::Vertex& vertex : someVertices)
+		for (const EntitySimpleGeometryModelComponent::Vertex& vertex : someVertices)
 		{
 			ShaderHelpers::Vertex fullVertex =
 			{
@@ -74,7 +74,7 @@ namespace Render
 
 		myTexture->TransitionLayout(VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-			RenderModule::GetInstance()->GetGraphicsQueue());
+			RenderCore::GetInstance()->GetGraphicsQueue());
 
 		VkCommandBuffer commandBuffer = Helpers::BeginOneTimeCommand();
 		{
@@ -93,7 +93,7 @@ namespace Render
 			imageCopyRegion.imageExtent = { static_cast<uint>(texWidth), static_cast<uint>(texHeight), 1 };
 			vkCmdCopyBufferToImage(commandBuffer, textureStaging.myBuffer, myTexture->myImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageCopyRegion);
 		}
-		Helpers::EndOneTimeCommand(commandBuffer, RenderModule::GetInstance()->GetGraphicsQueue());
+		Helpers::EndOneTimeCommand(commandBuffer, RenderCore::GetInstance()->GetGraphicsQueue());
 
 		vertexStaging.Destroy();
 		indexStaging.Destroy();
@@ -101,7 +101,7 @@ namespace Render
 
 		myTexture->TransitionLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			RenderModule::GetInstance()->GetGraphicsQueue());
+			RenderCore::GetInstance()->GetGraphicsQueue());
 
 		myTexture->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		myTexture->CreateImageSampler();
@@ -129,7 +129,7 @@ namespace Render
 		ShaderHelpers::ObjectDescriptorInfo info;
 		info.myModelMatrixInfo = &myUBOObject->myDescriptor;
 		info.myImageSamplerInfo = &myTexture->myDescriptor;
-		VkDescriptorSet descriptorSet = RenderModule::GetInstance()->GetDescriptorSet(aType, info);
+		VkDescriptorSet descriptorSet = RenderCore::GetInstance()->GetDescriptorSet(aType, info);
 		vkCmdBindDescriptorSets(aCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, aPipelineLayout, aDescriptorSetIndex, 1, &descriptorSet, 0, NULL);
 
 		vkCmdDrawIndexed(aCommandBuffer, myIndexCount, 1, 0, 0, 0);

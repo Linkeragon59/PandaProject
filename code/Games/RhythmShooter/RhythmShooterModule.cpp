@@ -1,11 +1,10 @@
 #include "RhythmShooterModule.h"
 
 #include "GameCore_Facade.h"
-#include "GameCore_CameraManager.h"
-#include "GameCore_Camera.h"
-#include "GameCore_PropManager.h"
-#include "GameCore_Prop.h"
-#include "GameCore_Entity.h"
+//#include "GameCore_CameraManager.h"
+//#include "GameCore_Camera.h"
+//#include "GameCore_PropManager.h"
+//#include "GameCore_Prop.h"
 
 #include "Render_EntityRenderComponent.h"
 #include "GameCore_EntityModule.h"
@@ -15,15 +14,15 @@ DEFINE_GAMECORE_MODULE(RhythmShooterModule);
 
 void RhythmShooterModule::OnRegister()
 {
-	GameCore::CameraManager* cameraManager = GameCore::Facade::GetInstance()->GetCameraManager();
-
-	myCamera = cameraManager->AddCamera();
-	myCamera->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
-	myCamera->SetDirection(glm::vec3(0.0f, 0.0f, -1.0f));
+	//GameCore::CameraManager* cameraManager = GameCore::Facade::GetInstance()->GetCameraManager();
+	//
+	//myCamera = cameraManager->AddCamera();
+	//myCamera->SetPosition(glm::vec3(0.0f, 0.0f, 3.0f));
+	//myCamera->SetDirection(glm::vec3(0.0f, 0.0f, -1.0f));
 
 	{
-		mySimpleGeometryTest = GameCore::EntityHandle::Create();
-		GameCore::Entity3DTransformComponent* transformComponent = mySimpleGeometryTest.AddComponent<GameCore::Entity3DTransformComponent>();
+		mySimpleGeometryTest = GameCore::Entity::Create();
+		GameCore::Entity3DTransformComponent* transformComponent = mySimpleGeometryTest.AddComponent<GameCore::Entity3DTransformComponent>(glm::vec3(0.f));
 		transformComponent->SetPosition(glm::vec3(-1.5f, 0.0f, 0.0f));
 		Render::EntitySimpleGeometryModelComponent* modelComponent = mySimpleGeometryTest.AddComponent<Render::EntitySimpleGeometryModelComponent>();
 		modelComponent->FillWithPreset(Render::EntitySimpleGeometryModelComponent::Preset::Sphere);
@@ -47,16 +46,16 @@ void RhythmShooterModule::OnRegister()
 
 void RhythmShooterModule::OnUnregister()
 {
-	GameCore::CameraManager* cameraManager = GameCore::Facade::GetInstance()->GetCameraManager();
-
-	cameraManager->RemoveCamera(myCamera);
-	myCamera = nullptr;
+	//GameCore::CameraManager* cameraManager = GameCore::Facade::GetInstance()->GetCameraManager();
+	//
+	//cameraManager->RemoveCamera(myCamera);
+	//myCamera = nullptr;
 
 	Render::EntitySimpleGeometryModelComponent* modelComponent = mySimpleGeometryTest.GetComponent<Render::EntitySimpleGeometryModelComponent>();
 	modelComponent->Unload();
 	mySimpleGeometryTest.RemoveComponent<Render::EntitySimpleGeometryModelComponent>();
 	mySimpleGeometryTest.RemoveComponent<GameCore::Entity3DTransformComponent>();
-	GameCore::EntityHandle::Destroy(mySimpleGeometryTest);
+	mySimpleGeometryTest.Destroy();
 
 	/*propManager->Despawn(myTestModel);
 	myTestModel = nullptr;
