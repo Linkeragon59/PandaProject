@@ -12,7 +12,7 @@ protected:
 	void OnUpdate(GameCore::Module::UpdateType aType) override;
 
 private:
-	//GameCore::Camera* myCamera = nullptr;
+	GameCore::Entity myCamera;
 	GameCore::Entity mySimpleGeometryTest;
 	GameCore::Entity myTestModel;
 	GameCore::Entity myTestAnimatedModel;

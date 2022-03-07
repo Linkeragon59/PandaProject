@@ -9,12 +9,14 @@ namespace Render
 
 	struct EntityRenderComponent
 	{
-		virtual void Load() {}
-		void Unload();
-		void Update();
-		void Draw(Renderer* aRenderer);
+		virtual ~EntityRenderComponent();
 
-		glm::mat4 myMatrix = glm::mat4(1.0f);
+		virtual void Load() = 0;
+		void Unload();
+		void Update(const glm::mat4& aMatrix);
+
+		Model* GetModel() const { return myModel; }
+
 		bool myIsTransparent = false;
 
 		Model* myModel = nullptr;

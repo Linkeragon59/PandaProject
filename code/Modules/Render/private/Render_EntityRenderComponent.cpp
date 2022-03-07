@@ -5,19 +5,19 @@
 
 namespace Render
 {
+	EntityRenderComponent::~EntityRenderComponent()
+	{
+		Unload();
+	}
+
 	void EntityRenderComponent::Unload()
 	{
 		SafeDelete(myModel);
 	}
 
-	void EntityRenderComponent::Update()
+	void EntityRenderComponent::Update(const glm::mat4& aMatrix)
 	{
-		myModel->Update(myMatrix);
-	}
-
-	void EntityRenderComponent::Draw(Renderer* aRenderer)
-	{
-		aRenderer->DrawModel(myModel);
+		myModel->Update(aMatrix);
 	}
 
 	void EntitySimpleGeometryModelComponent::Load()

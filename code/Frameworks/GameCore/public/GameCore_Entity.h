@@ -8,50 +8,51 @@ namespace GameCore
 	{
 	public:
 		Entity() : myId(UINT_MAX) {}
-		Entity(ECS::EntityId anId) : myId(anId) {}
-		operator ECS::EntityId() const { return myId; }
+		Entity(EntityId anId) : myId(anId) {}
+		operator EntityId() const { return myId; }
 
 		static Entity Create()
 		{
-			return EntityModule::GetInstance()->GetEntityManager()->Create();
+			Entity newEntity = EntityModule::GetInstance()->Create();
+			return newEntity;
 		}
 
 		inline void Destroy()
 		{
-			EntityModule::GetInstance()->GetEntityManager()->Destroy(myId);
+			EntityModule::GetInstance()->Destroy(myId);
 		}
 
 		template<typename T>
 		inline bool HasComponent()
 		{
-			return EntityModule::GetInstance()->GetComponentManager()->HasComponent<T>(myId);
+			return EntityModule::GetInstance()->HasComponent<T>(myId);
 		}
 
 		template<typename T>
 		inline T* GetComponent()
 		{
-			return EntityModule::GetInstance()->GetComponentManager()->GetComponent<T>(myId);
+			return EntityModule::GetInstance()->GetComponent<T>(myId);
 		}
 
 		template<typename T>
 		inline const T* GetComponent() const
 		{
-			return EntityModule::GetInstance()->GetComponentManager()->GetComponent<T>(myId);
+			return EntityModule::GetInstance()->GetComponent<T>(myId);
 		}
 
 		template<typename T, typename... Args>
 		inline T* AddComponent(Args&&... someArgs)
 		{
-			return EntityModule::GetInstance()->GetComponentManager()->AddComponent<T>(myId, std::forward<Args>(someArgs)...);
+			return EntityModule::GetInstance()->AddComponent<T>(myId, std::forward<Args>(someArgs)...);
 		}
 
 		template<typename T>
 		inline void RemoveComponent()
 		{
-			EntityModule::GetInstance()->GetComponentManager()->RemoveComponent<T>(myId);
+			EntityModule::GetInstance()->RemoveComponent<T>(myId);
 		}
 
 	private:
-		ECS::EntityId myId;
+		EntityId myId;
 	};
 }

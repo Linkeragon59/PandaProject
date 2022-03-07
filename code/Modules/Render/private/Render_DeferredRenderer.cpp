@@ -197,25 +197,6 @@ namespace Render
 	void DeferredRenderer::DrawModel(Model* aModel)
 	{
 		aModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1, ShaderHelpers::BindType::Object);
-
-		/*(void)someData;
-		Entity3DModelComponent* component = RenderModule::GetInstance()->GetComponent(aHandle);
-		Model* model = RenderModule::GetInstance()->GetModelContainer()->GetModel(aModelHandle);
-
-		switch (aDrawType)
-		{
-		case Renderer::DrawType::Default:
-			model->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1, ShaderHelpers::BindType::Object);
-			break;
-#if DEBUG_BUILD
-		case Renderer::DrawType::Debug:
-			model->Draw(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], myDeferredPipeline.myDebug3DPipelineLayout, 1, ShaderHelpers::BindType::SimpleObject);
-			break;
-#endif
-		default:
-			Assert(false, "Unsupported draw type");
-			break;
-		}*/
 	}
 
 	void DeferredRenderer::SetupAttachments()

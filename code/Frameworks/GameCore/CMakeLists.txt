@@ -6,8 +6,9 @@ target_sources(GameCore
 		public/GameCore_Assert.h
 		public/GameCore_Defines.h
 		public/GameCore_Entity.h
-		public/GameCore_EntityComponentSystem.h
+		public/GameCore_EntityCameraComponent.h
 		public/GameCore_EntityModule.h
+		public/GameCore_EntityTransformComponent.h
 		public/GameCore_Facade.h
 		public/GameCore_File.h
 		public/GameCore_glm.h
@@ -25,6 +26,7 @@ target_sources(GameCore
 
 		private/GameCore_Precompile.h
 		private/GameCore_Assert.cpp
+		private/GameCore_EntityCameraComponent.cpp
 		private/GameCore_EntityModule.cpp
 		private/GameCore_Facade.cpp
 		private/GameCore_File.cpp

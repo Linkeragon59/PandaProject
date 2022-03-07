@@ -1,27 +1,62 @@
 #include "GameCore_EntityModule.h"
 
+#include "GameCore_EntityCameraComponent.h"
+
 namespace GameCore
 {
 	DEFINE_GAMECORE_MODULE(EntityModule);
 
+	EntityId EntityModule::Create()
+	{
+		EntityId newEntity;
+		if (myFreeEntityIds.size() == 0)
+		{
+			newEntity = myNextEntityId++;
+		}
+		else
+		{
+			newEntity = *myFreeEntityIds.begin();
+			myFreeEntityIds.erase(newEntity);
+		}
+
+		for (uint i = 0; i < (uint)myComponentContainers.size(); ++i)
+			myComponentContainers[i]->OnEntityCreated(newEntity);
+
+		return newEntity;
+	}
+
+	void EntityModule::Destroy(EntityId anId)
+	{
+		if (anId >= myNextEntityId || myFreeEntityIds.find(anId) != myFreeEntityIds.end())
+			return;
+
+		for (uint i = 0; i < (uint)myComponentContainers.size(); ++i)
+			myComponentContainers[i]->OnEntityDestroyed(anId);
+
+		myFreeEntityIds.insert(anId);
+	}
+
 	void EntityModule::OnRegister()
 	{
-		myEntityManager = new ECS::EntityManager;
-		myComponentManager = new ECS::ComponentManager;
 	}
 
 	void EntityModule::OnUnregister()
 	{
-		SafeDelete(myEntityManager);
-		SafeDelete(myComponentManager);
+		for (ComponentContainerBase* container : myComponentContainers)
+			delete container;
+		myComponentContainers.clear();
 	}
 
-	glm::mat4 Entity3DTransformComponent::GetMatrix() const
+	void EntityModule::OnUpdate(UpdateType aType)
 	{
-		glm::mat4 scaling = glm::scale(myScale);
-		glm::mat4 rotation = glm::toMat4(myOrientation);
-		glm::mat4 translation = glm::translate(glm::mat4(1.0f), myPosition);
-		glm::mat4 matrix = translation * rotation * scaling;
-		return matrix;
+		if (aType == Module::UpdateType::MainUpdate)
+		{
+			ComponentContainer<EntityCameraComponent>* container = GetComponentContainer<EntityCameraComponent>();
+			for (EntityCameraComponent* component : *container)
+			{
+				component->SetAspectRatio(Facade::GetInstance()->GetMainWindowAspectRatio());
+				component->Update();
+			}
+		}
 	}
 }

@@ -5,6 +5,9 @@
 #include "Render_SwapChain.h"
 #include "Render_Resource.h"
 
+#include "GameCore_EntityCameraComponent.h"
+#include "GameCore_EntityTransformComponent.h"
+
 #include <GLFW/glfw3.h>
 
 namespace Render
@@ -79,7 +82,51 @@ namespace Render
 
 	void RenderCore::Update()
 	{
+		{
+			GameCore::ComponentContainer<EntitySimpleGeometryModelComponent>* container = GameCore::EntityModule::GetInstance()->GetComponentContainer<EntitySimpleGeometryModelComponent>();
+			GameCore::ComponentContainer<GameCore::Entity3DTransformComponent>* transformContainer = GameCore::EntityModule::GetInstance()->GetComponentContainer<GameCore::Entity3DTransformComponent>();
+			for (auto iter = container->begin(), end = container->end(); iter != end; ++iter)
+			{
+				if (GameCore::Entity3DTransformComponent* transform = transformContainer->GetComponent(iter.GetEntityId()))
+					iter.GetComponent()->Update(transform->GetMatrix());
+			}
+		}
 
+		{
+			GameCore::ComponentContainer<EntityglTFModelComponent>* container = GameCore::EntityModule::GetInstance()->GetComponentContainer<EntityglTFModelComponent>();
+			GameCore::ComponentContainer<GameCore::Entity3DTransformComponent>* transformContainer = GameCore::EntityModule::GetInstance()->GetComponentContainer<GameCore::Entity3DTransformComponent>();
+			for (auto iter = container->begin(), end = container->end(); iter != end; ++iter)
+			{
+				if (GameCore::Entity3DTransformComponent* transform = transformContainer->GetComponent(iter.GetEntityId()))
+					iter.GetComponent()->Update(transform->GetMatrix());
+			}
+		}
+
+		Renderer* renderer = mySwapChains[0]->GetRenderer();
+
+		{
+			GameCore::ComponentContainer<GameCore::EntityCameraComponent>* container = GameCore::EntityModule::GetInstance()->GetComponentContainer<GameCore::EntityCameraComponent>();
+			for (GameCore::EntityCameraComponent* component : *container)
+			{
+				renderer->SetViewProj(component->GetViewMatrix(), component->GetPerspectiveMatrix());
+			}
+		}
+
+		{
+			GameCore::ComponentContainer<EntitySimpleGeometryModelComponent>* container = GameCore::EntityModule::GetInstance()->GetComponentContainer<EntitySimpleGeometryModelComponent>();
+			for (EntitySimpleGeometryModelComponent* component : *container)
+			{
+				renderer->DrawModel(component->GetModel());
+			}
+		}
+
+		{
+			GameCore::ComponentContainer<EntityglTFModelComponent>* container = GameCore::EntityModule::GetInstance()->GetComponentContainer<EntityglTFModelComponent>();
+			for (EntityglTFModelComponent* component : *container)
+			{
+				renderer->DrawModel(component->GetModel());
+			}
+		}
 	}
 
 	void RenderCore::EndFrame()

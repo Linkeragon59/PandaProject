@@ -4,7 +4,6 @@ add_library(Render)
 target_sources(Render
 	PRIVATE
 		public/Render_EntityRenderComponent.h
-		public/Render_Handle.h
 		public/Render_RenderModule.h
 
 		private/Render_Camera.h
@@ -15,7 +14,6 @@ target_sources(Render
 		private/Render_DescriptorContainer.h
 		private/Render_GuiPipeline.h
 		private/Render_Helpers.h
-		private/Render_Light.h
 		private/Render_PointLightsSet.h
 		private/Render_Renderer.h
 		private/Render_Renderer.cpp

@@ -97,21 +97,6 @@ namespace GameCore
 		myNodeRegister = new NodeRegister();
 		EntityModule::Register();
 
-		Entity entity = Entity::Create();
-		if (entity.HasComponent<Entity3DTransformComponent>())
-		{
-			{
-				Entity3DTransformComponent* component = entity.AddComponent<Entity3DTransformComponent>(glm::vec3(1.0f));
-				component->SetPosition(glm::vec3(1.f));
-			}
-			{
-				Entity3DTransformComponent* component = entity.GetComponent<Entity3DTransformComponent>();
-				component->SetPosition(glm::vec3(1.f));
-			}
-			entity.RemoveComponent<Entity3DTransformComponent>();
-		}
-		entity.Destroy();
-
 		locSoloud.init(); // Initialize SoLoud
 		locWave.load(locTestWavFile.c_str()); // Load a wave
 
