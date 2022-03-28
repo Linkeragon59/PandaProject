@@ -1,7 +1,7 @@
 #include "Render_GuiPipeline.h"
 #include "Render_ShaderHelpers.h"
 
-#include "GameCore_imgui.h"
+#include "Render_ImGuiHelper.h"
 
 namespace Render
 {

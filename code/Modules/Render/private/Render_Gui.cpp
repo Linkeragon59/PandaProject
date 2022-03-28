@@ -1,18 +1,138 @@
 #include "Render_Gui.h"
 
-#include "GameCore_imgui.h"
+#include "Render_ImGuiHelper.h"
+
+#include "GameCore_InputModule.h"
+#include "GameCore_WindowModule.h"
+#include "GameCore_TimeModule.h"
+
+#include <GLFW/glfw3.h>
 
 namespace Render
 {
-	Gui::Gui(ImGuiContext* aGuiContext)
-		: myGuiContext(aGuiContext)
+	Gui::Gui()
 	{
+		myGuiContext = ImGui::CreateContext();
+
+		// TODO : Choose the window
+		myWindow = GameCore::Facade::GetInstance()->GetMainWindow();
+		
+		glfwGetWindowSize(myWindow, &myWindowWidth, &myWindowHeight);
+		myWindowResizeCallbackId = GameCore::WindowModule::GetInstance()->AddWindowSizeCallback([this](int aWidth, int aHeight) {
+			myWindowWidth = aWidth;
+			myWindowHeight = aHeight;
+			}, myWindow);
+
+		myScrollCallbackId = GameCore::InputModule::GetInstance()->AddScrollCallback([this](double aXScroll, double aYScroll) {
+			myXScroll = aXScroll;
+			myYScroll = aYScroll;
+			}, myWindow);
+
+		myCharacterCallbackId = GameCore::InputModule::GetInstance()->AddCharacterCallback([this](uint aUnicodeCodePoint) {
+			myTextInput.push(aUnicodeCodePoint);
+			}, myWindow);
+		
 		PrepareFont();
+
+		InitStyle();
+		InitIO();
+	}
+
+	Gui::~Gui()
+	{
+		GameCore::WindowModule::GetInstance()->RemoveWindowSizeCallback(myWindowResizeCallbackId);
+		GameCore::InputModule::GetInstance()->RemoveScrollCallback(myScrollCallbackId);
+		GameCore::InputModule::GetInstance()->RemoveCharacterCallback(myCharacterCallbackId);
+
+		ImGui::DestroyContext(myGuiContext);
 	}
 
 	void Gui::Update()
 	{
 		ImGui::SetCurrentContext(myGuiContext);
+
+		ImGuiIO& io = ImGui::GetIO();
+
+		io.DisplaySize = ImVec2((float)myWindowWidth, (float)myWindowHeight);
+		io.DeltaTime = GameCore::TimeModule::GetInstance()->GetDeltaTime();
+
+		double x, y;
+		GameCore::InputModule::GetInstance()->PollMousePosition(x, y, myWindow);
+		io.MousePos = ImVec2((float)x, (float)y);
+
+		io.MouseDown[ImGuiMouseButton_Left] = GameCore::InputModule::GetInstance()->PollMouseInput(Input::MouseLeft, myWindow) == Input::Status::Pressed;
+		io.MouseDown[ImGuiMouseButton_Right] = GameCore::InputModule::GetInstance()->PollMouseInput(Input::MouseRight, myWindow) == Input::Status::Pressed;
+		io.MouseDown[ImGuiMouseButton_Middle] = GameCore::InputModule::GetInstance()->PollMouseInput(Input::MouseMiddle, myWindow) == Input::Status::Pressed;
+
+		io.MouseWheelH = (float)myXScroll;
+		io.MouseWheel = (float)myYScroll;
+		myXScroll = myYScroll = 0.0;
+
+		io.KeyCtrl = GameCore::InputModule::GetInstance()->PollKeyInput(Input::KeyLeftCtrl, myWindow) == Input::Status::Pressed
+			|| GameCore::InputModule::GetInstance()->PollKeyInput(Input::KeyRightCtrl, myWindow) == Input::Status::Pressed;
+		io.KeyShift = GameCore::InputModule::GetInstance()->PollKeyInput(Input::KeyLeftShift, myWindow) == Input::Status::Pressed
+			|| GameCore::InputModule::GetInstance()->PollKeyInput(Input::KeyRightShift, myWindow) == Input::Status::Pressed;
+		io.KeyAlt = GameCore::InputModule::GetInstance()->PollKeyInput(Input::KeyLeftAlt, myWindow) == Input::Status::Pressed
+			|| GameCore::InputModule::GetInstance()->PollKeyInput(Input::KeyRightAlt, myWindow) == Input::Status::Pressed;
+		io.KeySuper = GameCore::InputModule::GetInstance()->PollKeyInput(Input::KeyLeftSuper, myWindow) == Input::Status::Pressed
+			|| GameCore::InputModule::GetInstance()->PollKeyInput(Input::KeyRightSuper, myWindow) == Input::Status::Pressed;
+
+		for (uint key = 0; key < ImGuiKey_COUNT; ++key)
+		{
+			io.KeysDown[io.KeyMap[key]] = GameCore::InputModule::GetInstance()->PollKeyInput((Input::Key)io.KeyMap[key], myWindow) == Input::Status::Pressed;
+		}
+
+		while (!myTextInput.empty())
+		{
+			io.AddInputCharacter(myTextInput.front());
+			myTextInput.pop();
+		}
+
+		ImGui::NewFrame();
+
+		{
+			ImGuiViewport* viewport = ImGui::GetMainViewport();
+			ImGui::SetNextWindowPos(viewport->Pos);
+			ImGui::SetNextWindowSize(viewport->Size);
+
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
+			ImGui::Begin("Graph Editor", nullptr,
+				ImGuiWindowFlags_AlwaysAutoResize |
+				ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+				ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus |
+				ImGuiWindowFlags_MenuBar
+			);
+
+			ImVec2 availableRegionPos = ImGui::GetCursorScreenPos();
+			ImVec2 availableRegionSize = ImGui::GetContentRegionAvail();
+
+			ImVec2 canvasPos = availableRegionPos;
+			ImVec2 canvasSize = ImVec2(2.0f * availableRegionSize.x / 3.0f, availableRegionSize.y);
+
+			ImVec2 propertiesPos = ImVec2(availableRegionPos.x + 2.0f * availableRegionSize.x / 3.0f, availableRegionPos.y);
+			ImVec2 propertiesSize = ImVec2(availableRegionSize.x / 3.0f, availableRegionSize.y);
+
+			ImGui::SetNextWindowPos(canvasPos);
+			ImGui::BeginChild("canvas", canvasSize, true, ImGuiWindowFlags_NoScrollbar);
+			{
+				//myCanvas->Draw(canvasPos, canvasSize);
+			}
+			ImGui::EndChild();
+
+			ImGui::SetNextWindowPos(propertiesPos);
+			ImGui::BeginChild("properties", propertiesSize);
+			ImGui::EndChild();
+
+			ImGui::PopStyleVar();
+
+			ImGui::ShowDemoWindow();
+
+			ImGui::End();
+		}
+
+		ImGui::Render();
+
 		ImDrawData* imDrawData = ImGui::GetDrawData();
 		if (!imDrawData || imDrawData->CmdListsCount == 0)
 			return;
@@ -148,5 +268,60 @@ namespace Render
 		myFontTexture->CreateImageView(VK_IMAGE_ASPECT_COLOR_BIT);
 		myFontTexture->CreateImageSampler();
 		myFontTexture->SetupDescriptor();
+	}
+
+	void Gui::InitStyle()
+	{
+		ImGuiStyle& style = ImGui::GetStyle();
+
+		style.Colors[ImGuiCol_TitleBg] = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+		style.Colors[ImGuiCol_TitleBgActive] = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+		style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(1.0f, 0.0f, 0.0f, 0.1f);
+		style.Colors[ImGuiCol_MenuBarBg] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+		style.Colors[ImGuiCol_Header] = ImVec4(0.8f, 0.0f, 0.0f, 0.4f);
+		style.Colors[ImGuiCol_HeaderActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+		style.Colors[ImGuiCol_HeaderHovered] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+		style.Colors[ImGuiCol_FrameBg] = ImVec4(0.0f, 0.0f, 0.0f, 0.8f);
+		style.Colors[ImGuiCol_CheckMark] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
+		style.Colors[ImGuiCol_SliderGrab] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+		style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
+		style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(1.0f, 1.0f, 1.0f, 0.1f);
+		style.Colors[ImGuiCol_FrameBgActive] = ImVec4(1.0f, 1.0f, 1.0f, 0.2f);
+		style.Colors[ImGuiCol_Button] = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+		style.Colors[ImGuiCol_ButtonHovered] = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
+		style.Colors[ImGuiCol_ButtonActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
+	}
+
+	void Gui::InitIO()
+	{
+		ImGuiIO& io = ImGui::GetIO();
+
+		// For now, disable the .ini files, as it is not useful so far
+		io.IniFilename = nullptr;
+
+		io.DisplaySize = ImVec2((float)myWindowWidth, (float)myWindowHeight);
+
+		io.KeyMap[ImGuiKey_Tab] = Input::KeyTab;
+		io.KeyMap[ImGuiKey_LeftArrow] = Input::KeyLeft;
+		io.KeyMap[ImGuiKey_RightArrow] = Input::KeyRight;
+		io.KeyMap[ImGuiKey_UpArrow] = Input::KeyUp;
+		io.KeyMap[ImGuiKey_DownArrow] = Input::KeyDown;
+		io.KeyMap[ImGuiKey_PageUp] = Input::KeyPageUp;
+		io.KeyMap[ImGuiKey_PageDown] = Input::KeyPageDown;
+		io.KeyMap[ImGuiKey_Home] = Input::KeyHome;
+		io.KeyMap[ImGuiKey_End] = Input::KeyEnd;
+		io.KeyMap[ImGuiKey_Insert] = Input::KeyInsert;
+		io.KeyMap[ImGuiKey_Delete] = Input::KeyDelete;
+		io.KeyMap[ImGuiKey_Backspace] = Input::KeyBackspace;
+		io.KeyMap[ImGuiKey_Space] = Input::KeySpace;
+		io.KeyMap[ImGuiKey_Enter] = Input::KeyEnter;
+		io.KeyMap[ImGuiKey_Escape] = Input::KeyEscape;
+		io.KeyMap[ImGuiKey_KeyPadEnter] = Input::KeyNumPadEnter;
+		io.KeyMap[ImGuiKey_A] = Input::KeyA;
+		io.KeyMap[ImGuiKey_C] = Input::KeyC;
+		io.KeyMap[ImGuiKey_V] = Input::KeyV;
+		io.KeyMap[ImGuiKey_X] = Input::KeyX;
+		io.KeyMap[ImGuiKey_Y] = Input::KeyY;
+		io.KeyMap[ImGuiKey_Z] = Input::KeyZ;
 	}
 }

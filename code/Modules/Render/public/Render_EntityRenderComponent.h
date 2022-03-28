@@ -6,10 +6,11 @@ namespace Render
 {
 	class Renderer;
 	class Model;
+	class Gui;
 
-	struct EntityRenderComponent
+	struct EntityModelComponent
 	{
-		virtual ~EntityRenderComponent();
+		virtual ~EntityModelComponent();
 
 		virtual void Load() = 0;
 		void Unload();
@@ -22,7 +23,7 @@ namespace Render
 		Model* myModel = nullptr;
 	};
 
-	struct EntitySimpleGeometryModelComponent : EntityRenderComponent
+	struct EntitySimpleGeometryModelComponent : EntityModelComponent
 	{
 		void Load() override;
 
@@ -56,11 +57,25 @@ namespace Render
 		std::string myTextureFilename;
 	};
 
-	struct EntityglTFModelComponent : EntityRenderComponent
+	struct EntityglTFModelComponent : EntityModelComponent
 	{
 		void Load() override;
 
 		std::string myFilename;
 		bool myIsAnimated = false;
+	};
+
+	struct EntityGuiComponent
+	{
+		EntityGuiComponent();
+		~EntityGuiComponent();
+
+		void Load();
+		void Unload();
+		void Update();
+
+		Gui* GetGui() const { return myGui; }
+
+		Gui* myGui = nullptr;
 	};
 }

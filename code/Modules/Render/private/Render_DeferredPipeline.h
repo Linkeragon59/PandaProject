@@ -13,7 +13,6 @@ namespace Render
 
 		// TODO:
 		// - Add transparent sub pass
-		// - Add UI sub pass
 		VkPipeline myGBufferPipeline = VK_NULL_HANDLE;
 		VkPipelineLayout myGBufferPipelineLayout = VK_NULL_HANDLE;
 
@@ -26,19 +25,25 @@ namespace Render
 		VkPipelineLayout myDebug3DPipelineLayout = VK_NULL_HANDLE;
 #endif
 
+		VkPipeline myGuiPipeline = VK_NULL_HANDLE;
+		VkPipelineLayout myGuiPipelineLayout = VK_NULL_HANDLE;
+
 	private:
 		void SetupDescriptorSetLayouts();
 		void DestroyDescriptorSetLayouts();
 
-		void SetupGBufferPipeline(VkRenderPass aRenderPass);
+		void SetupGBufferPipeline(VkRenderPass aRenderPass, uint aSubpass);
 		void DestroyGBufferPipeline();
 
-		void SetupLightingPipeline(VkRenderPass aRenderPass);
+		void SetupLightingPipeline(VkRenderPass aRenderPass, uint aSubpass);
 		void DestroyLightingPipeline();
 
 #if DEBUG_BUILD
-		void SetupDebugForwardPipeline(VkRenderPass aRenderPass);
+		void SetupDebugForwardPipeline(VkRenderPass aRenderPass, uint aSubpass);
 		void DestroyDebugForwardPipeline();
 #endif
+
+		void SetupGuiPipeline(VkRenderPass aRenderPass, uint aSubpass);
+		void DestroyGuiPipeline();
 	};
 }

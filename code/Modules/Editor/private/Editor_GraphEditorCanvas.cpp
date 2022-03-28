@@ -1,5 +1,7 @@
 #include "Editor_GraphEditorCanvas.h"
 
+/*
+
 #include "GameCore_Facade.h"
 #include "GameCore_Graph.h"
 
@@ -491,12 +493,12 @@ namespace Editor
 		}
 	}
 
-	void GraphEditorCanvas::LoadGraph(const char* /*aPath*/)
+	void GraphEditorCanvas::LoadGraph(const char* / *aPath* /)
 	{
 
 	}
 
-	void GraphEditorCanvas::SaveGraph(const char* /*aPath*/)
+	void GraphEditorCanvas::SaveGraph(const char* / *aPath* /)
 	{
 		rapidjson::Document doc;
 		doc.SetObject();
@@ -539,3 +541,5 @@ namespace Editor
 		}
 	}
 }
+
+*/

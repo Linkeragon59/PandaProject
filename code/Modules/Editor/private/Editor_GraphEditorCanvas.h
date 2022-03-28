@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GameCore_imgui.h"
+/*
 
 #include <map>
 #include <set>
@@ -91,3 +91,5 @@ namespace Editor
 		std::map<uint, ImVec2> myNodesDrawInfoToUpdate;
 	};
 }
+
+*/

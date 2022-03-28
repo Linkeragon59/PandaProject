@@ -13,7 +13,6 @@ target_sources(GameCore
 		public/GameCore_File.h
 		public/GameCore_glm.h
 		public/GameCore_Graph.h
-		public/GameCore_imgui.h
 		public/GameCore_InputModule.h
 		public/GameCore_Module.h
 		public/GameCore_SharedPtr.h
@@ -31,7 +30,6 @@ target_sources(GameCore
 		private/GameCore_Facade.cpp
 		private/GameCore_File.cpp
 		private/GameCore_Graph.cpp
-		private/GameCore_imgui.cpp
 		private/GameCore_InputModule.cpp
 		private/GameCore_Module.cpp
 		private/GameCore_ModuleManager.h
@@ -55,4 +53,3 @@ target_link_libraries(GameCore PUBLIC GLFWLib)
 target_link_libraries(GameCore PRIVATE GLFWInclude)
 target_link_libraries(GameCore PRIVATE SoLoud)
 target_link_libraries(GameCore PRIVATE RapidJSON)
-target_link_libraries(GameCore PRIVATE ImGui)

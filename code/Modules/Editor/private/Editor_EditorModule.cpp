@@ -2,7 +2,6 @@
 
 #include <GLFW/glfw3.h>
 
-#include "GameCore_imgui.h"
 #include "GameCore_InputModule.h"
 #include "GameCore_WindowModule.h"
 
@@ -65,12 +64,12 @@ namespace Editor
 		Render::RenderModule::GetInstance()->RegisterWindow(myWindow, Render::RendererType::Deferred);
 
 		//myGui = new GameCore::CallbackGui(myWindow, std::bind(&EditorModule::CallbackUpdate, this));
-		myCanvas = new GraphEditorCanvas();
+		//myCanvas = new GraphEditorCanvas();
 	}
 
 	void EditorModule::Close()
 	{
-		SafeDelete(myCanvas);
+		//SafeDelete(myCanvas);
 		//SafeDelete(myGui);
 
 		Render::RenderModule::GetInstance()->UnregisterWindow(myWindow);
@@ -80,7 +79,7 @@ namespace Editor
 
 	void EditorModule::CallbackUpdate()
 	{
-		ImGuiViewport* viewport = ImGui::GetMainViewport();
+		/*ImGuiViewport* viewport = ImGui::GetMainViewport();
 		ImGui::SetNextWindowPos(viewport->Pos);
 		ImGui::SetNextWindowSize(viewport->Size);
 
@@ -117,6 +116,6 @@ namespace Editor
 
 		ImGui::ShowDemoWindow();
 
-		ImGui::End();
+		ImGui::End();*/
 	}
 }

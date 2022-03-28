@@ -7,6 +7,7 @@ namespace Render
 	class SwapChain;
 	class Camera;
 	class Model;
+	class Gui;
 
 	class Renderer
 	{
@@ -23,7 +24,7 @@ namespace Render
 		void SetViewProj(const glm::mat4& aView, const glm::mat4& aProjection);
 		//virtual void AddLight(const PointLight& aPointLight) = 0;
 		virtual void DrawModel(Model* aModel) = 0;
-		//virtual void DrawGui(Handle aGuiHandle) = 0;
+		virtual void DrawGui(Gui* aGui) = 0;
 
 		VkSemaphore GetCurrentRenderFinishedSemaphore() const { return myRenderFinishedSemaphores[myCurrentFrameIndex]; }
 

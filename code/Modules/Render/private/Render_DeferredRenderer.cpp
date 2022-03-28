@@ -6,6 +6,7 @@
 #include "Render_ShaderHelpers.h"
 #include "Render_Debug.h"
 #include "Render_Model.h"
+#include "Render_Gui.h"
 
 namespace Render
 {
@@ -103,15 +104,19 @@ namespace Render
 		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
 		Debug::BeginRegion(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], "Subpass 0: Deferred G-Buffer", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-		cmdBufferInheritanceInfo.subpass = 1;
+		cmdBufferInheritanceInfo.subpass++;
 		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
 		Debug::BeginRegion(mySecondaryCommandBuffersCombine[myCurrentFrameIndex], "Subpass 1: Deferred Lighting", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 #if DEBUG_BUILD
-		cmdBufferInheritanceInfo.subpass = 2;
+		cmdBufferInheritanceInfo.subpass++;
 		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
 		Debug::BeginRegion(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], "Subpass 2: Debug Forward", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 #endif
+
+		cmdBufferInheritanceInfo.subpass++;
+		VK_CHECK_RESULT(vkBeginCommandBuffer(mySecondaryCommandBuffersGui[myCurrentFrameIndex], &secondaryCmdBufferBeginInfo), "Failed to begin a command buffer");
+		Debug::BeginRegion(mySecondaryCommandBuffersGui[myCurrentFrameIndex], "Subpass 3: Gui", glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		vkCmdBindPipeline(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGBufferPipeline);
 		myCamera->BindViewProj(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 0);
@@ -124,6 +129,8 @@ namespace Render
 		vkCmdBindPipeline(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myDebug3DPipeline);
 		myCamera->BindViewProj(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], myDeferredPipeline.myDebug3DPipelineLayout, 0);
 #endif
+
+		vkCmdBindPipeline(mySecondaryCommandBuffersGui[myCurrentFrameIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, myDeferredPipeline.myGuiPipeline);
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
@@ -158,13 +165,21 @@ namespace Render
 		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex]), "Failed to end a command buffer");
 #endif
 
+		Debug::EndRegion(mySecondaryCommandBuffersGui[myCurrentFrameIndex]);
+		VK_CHECK_RESULT(vkEndCommandBuffer(mySecondaryCommandBuffersGui[myCurrentFrameIndex]), "Failed to end a command buffer");
+
 		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex]);
 		vkCmdNextSubpass(myCommandBuffers[myCurrentFrameIndex], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
 		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersCombine[myCurrentFrameIndex]);
-#if DEBUG_BUILD
 		vkCmdNextSubpass(myCommandBuffers[myCurrentFrameIndex], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+#if DEBUG_BUILD
 		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex]);
+		vkCmdNextSubpass(myCommandBuffers[myCurrentFrameIndex], VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 #endif
+
+		vkCmdExecuteCommands(myCommandBuffers[myCurrentFrameIndex], 1, &mySecondaryCommandBuffersGui[myCurrentFrameIndex]);
 
 		vkCmdEndRenderPass(myCommandBuffers[myCurrentFrameIndex]);
 
@@ -178,6 +193,7 @@ namespace Render
 #if DEBUG_BUILD
 		vkCmdSetViewport(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], 0, 1, &aViewport);
 #endif
+		vkCmdSetViewport(mySecondaryCommandBuffersGui[myCurrentFrameIndex], 0, 1, &aViewport);
 	}
 
 	void DeferredRenderer::SetScissor(const VkRect2D& aScissor)
@@ -187,6 +203,7 @@ namespace Render
 #if DEBUG_BUILD
 		vkCmdSetScissor(mySecondaryCommandBuffersDebugForward[myCurrentFrameIndex], 0, 1, &aScissor);
 #endif
+		vkCmdSetScissor(mySecondaryCommandBuffersGui[myCurrentFrameIndex], 0, 1, &aScissor);
 	}
 
 	//void DeferredRenderer::AddLight(const PointLight& aPointLight)
@@ -197,6 +214,11 @@ namespace Render
 	void DeferredRenderer::DrawModel(Model* aModel)
 	{
 		aModel->Draw(mySecondaryCommandBuffersGBuffer[myCurrentFrameIndex], myDeferredPipeline.myGBufferPipelineLayout, 1, ShaderHelpers::BindType::Object);
+	}
+
+	void DeferredRenderer::DrawGui(Gui* aGui)
+	{
+		aGui->Draw(mySecondaryCommandBuffersGui[myCurrentFrameIndex], myDeferredPipeline.myGuiPipelineLayout, 0);
 	}
 
 	void DeferredRenderer::SetupAttachments()
@@ -343,15 +365,25 @@ namespace Render
 			debugForwardDescription.pInputAttachments = inputReferences;
 			subpassDescriptions.push_back(debugForwardDescription);
 #endif
+
+			// Fourth subpass: Gui
+			VkSubpassDescription guiDescription{};
+			guiDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+			guiDescription.colorAttachmentCount = 1;
+			guiDescription.pColorAttachments = colorReferences;
+			subpassDescriptions.push_back(guiDescription);
 		}
 
 		// TODO: Understand subpass dependencies better!
 		// Subpass dependencies for layout transitions
 		std::vector<VkSubpassDependency> dependencies;
 		{
+			uint srcSubpass = VK_SUBPASS_EXTERNAL;
+			uint dstSubpass = 0;
+
 			VkSubpassDependency gbufferDependency{};
-			gbufferDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-			gbufferDependency.dstSubpass = 0;
+			gbufferDependency.srcSubpass = srcSubpass;
+			gbufferDependency.dstSubpass = dstSubpass;
 			gbufferDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 			gbufferDependency.srcAccessMask = 0;
 			gbufferDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
@@ -359,9 +391,11 @@ namespace Render
 			gbufferDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 			dependencies.push_back(gbufferDependency);
 
+			srcSubpass = dstSubpass++;
+
 			VkSubpassDependency lightingDependency{};
-			lightingDependency.srcSubpass = 0;
-			lightingDependency.dstSubpass = 1;
+			lightingDependency.srcSubpass = srcSubpass;
+			lightingDependency.dstSubpass = dstSubpass;
 			lightingDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 			lightingDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 			lightingDependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
@@ -369,17 +403,31 @@ namespace Render
 			lightingDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 			dependencies.push_back(lightingDependency);
 
+			srcSubpass = dstSubpass++;
+
 #if DEBUG_BUILD
 			VkSubpassDependency debugForwardDependency{};
-			debugForwardDependency.srcSubpass = 1;
-			debugForwardDependency.dstSubpass = 2;
+			debugForwardDependency.srcSubpass = srcSubpass;
+			debugForwardDependency.dstSubpass = dstSubpass;
 			debugForwardDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 			debugForwardDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 			debugForwardDependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 			debugForwardDependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 			debugForwardDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 			dependencies.push_back(debugForwardDependency);
+
+			srcSubpass = dstSubpass++;
 #endif
+
+			VkSubpassDependency guiDependency{};
+			guiDependency.srcSubpass = srcSubpass;
+			guiDependency.dstSubpass = dstSubpass;
+			guiDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			guiDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			guiDependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			guiDependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			guiDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+			dependencies.push_back(guiDependency);
 		}
 
 		VkRenderPassCreateInfo renderPassInfo = {};
@@ -483,6 +531,8 @@ namespace Render
 		mySecondaryCommandBuffersDebugForward.resize(framesCount);
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, mySecondaryCommandBuffersDebugForward.data()), "Failed to create command buffers!");
 #endif
+		mySecondaryCommandBuffersGui.resize(framesCount);
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(myDevice, &allocInfo, mySecondaryCommandBuffersGui.data()), "Failed to create command buffers!");
 	}
 
 	void DeferredRenderer::DestroyCommandBuffers()
@@ -494,6 +544,7 @@ namespace Render
 #if DEBUG_BUILD
 		mySecondaryCommandBuffersDebugForward.clear();
 #endif
+		mySecondaryCommandBuffersGui.clear();
 	}
 
 	void DeferredRenderer::SetupFrameBuffers()

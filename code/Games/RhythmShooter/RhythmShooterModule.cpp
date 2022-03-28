@@ -22,6 +22,9 @@ void RhythmShooterModule::OnRegister()
 		modelComponent->FillWithPreset(Render::EntitySimpleGeometryModelComponent::Preset::Sphere);
 		modelComponent->myTextureFilename = "Games/RhythmShooter/textures/earth.png";
 		modelComponent->Load();
+
+		Render::EntityGuiComponent* guiComponent = mySimpleGeometryTest.AddComponent<Render::EntityGuiComponent>();
+		guiComponent->Load();
 	}
 
 	{

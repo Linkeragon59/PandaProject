@@ -102,6 +102,14 @@ namespace Render
 			}
 		}
 
+		{
+			GameCore::ComponentContainer<EntityGuiComponent>* container = GameCore::EntityModule::GetInstance()->GetComponentContainer<EntityGuiComponent>();
+			for (EntityGuiComponent* component : *container)
+			{
+				component->Update();
+			}
+		}
+
 		Renderer* renderer = mySwapChains[0]->GetRenderer();
 
 		{
@@ -125,6 +133,14 @@ namespace Render
 			for (EntityglTFModelComponent* component : *container)
 			{
 				renderer->DrawModel(component->GetModel());
+			}
+		}
+
+		{
+			GameCore::ComponentContainer<EntityGuiComponent>* container = GameCore::EntityModule::GetInstance()->GetComponentContainer<EntityGuiComponent>();
+			for (EntityGuiComponent* component : *container)
+			{
+				renderer->DrawGui(component->GetGui());
 			}
 		}
 	}

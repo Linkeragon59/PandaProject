@@ -24,7 +24,7 @@ namespace Render
 
 		//void AddLight(const PointLight& aPointLight) override;
 		void DrawModel(Model* aModel) override;
-		//void DrawGui(Handle /*aGuiHandle*/) override {};
+		void DrawGui(Gui* aGui) override;
 
 	private:
 		VkExtent2D myExtent = {};
@@ -68,6 +68,7 @@ namespace Render
 #if DEBUG_BUILD
 		std::vector<VkCommandBuffer> mySecondaryCommandBuffersDebugForward;
 #endif
+		std::vector<VkCommandBuffer> mySecondaryCommandBuffersGui;
 
 		// Frame Buffers - one per frame
 		void SetupFrameBuffers();

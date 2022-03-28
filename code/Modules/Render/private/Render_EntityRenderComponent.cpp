@@ -2,20 +2,21 @@
 
 #include "Render_Model.h"
 #include "Render_glTFModel.h"
+#include "Render_Gui.h"
 
 namespace Render
 {
-	EntityRenderComponent::~EntityRenderComponent()
+	EntityModelComponent::~EntityModelComponent()
 	{
 		Unload();
 	}
 
-	void EntityRenderComponent::Unload()
+	void EntityModelComponent::Unload()
 	{
 		SafeDelete(myModel);
 	}
 
-	void EntityRenderComponent::Update(const glm::mat4& aMatrix)
+	void EntityModelComponent::Update(const glm::mat4& aMatrix)
 	{
 		myModel->Update(aMatrix);
 	}
@@ -439,5 +440,29 @@ namespace Render
 	void EntityglTFModelComponent::Load()
 	{
 		myModel = new glTFModel(myFilename);
+	}
+
+	EntityGuiComponent::EntityGuiComponent()
+	{
+	}
+
+	EntityGuiComponent::~EntityGuiComponent()
+	{
+		Unload();
+	}
+
+	void EntityGuiComponent::Load()
+	{
+		myGui = new Gui();
+	}
+
+	void EntityGuiComponent::Unload()
+	{
+		SafeDelete(myGui);
+	}
+
+	void EntityGuiComponent::Update()
+	{
+		myGui->Update();
 	}
 }
